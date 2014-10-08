@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.base &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.calc.base &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../../index.html" />
     <link rel="up" title="ocgis" href="../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,6 +45,7 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.base</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">abc</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
@@ -53,137 +54,196 @@
 <span class="kn">from</span> <span class="nn">ocgis.util.logging_ocgis</span> <span class="kn">import</span> <span class="n">ocgis_lh</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">ocgis.exc</span> <span class="kn">import</span> <span class="n">SampleSizeNotImplemented</span><span class="p">,</span> <span class="n">DefinitionValidationError</span><span class="p">,</span>\
-    <span class="n">UnitsValidationError</span>
+<span class="kn">from</span> <span class="nn">ocgis.exc</span> <span class="kn">import</span> <span class="n">SampleSizeNotImplemented</span><span class="p">,</span> <span class="n">DefinitionValidationError</span><span class="p">,</span> <span class="n">UnitsValidationError</span>
 <span class="kn">from</span> <span class="nn">ocgis.util.units</span> <span class="kn">import</span> <span class="n">get_are_units_equal_by_string_or_cfunits</span>
 
 
 <div class="viewcode-block" id="AbstractFunction"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction">[docs]</a><span class="k">class</span> <span class="nc">AbstractFunction</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Required class attributes to overload:</span>
-<span class="sd">    </span>
+
 <span class="sd">    * **description** (str): A arbitrary length string describing the calculation.</span>
-<span class="sd">    * **dtype** (type): The output data type for this function. Use 32-bit when </span>
-<span class="sd">      possible to avoid conversion issues (e.g. netCDF-3). When possible, the input</span>
-<span class="sd">      data type will be used for the output data type.</span>
+<span class="sd">    * **dtype** (type): The output data type for this function. Use 32-bit when possible to avoid conversion issues</span>
+<span class="sd">      (e.g. netCDF-3). When possible, the input data type will be used for the output data type.</span>
 <span class="sd">    * **key** (str): The function&#39;s unique string identifier.</span>
-<span class="sd">    </span>
+<span class="sd">    * **standard_name** (str): Standard name to store in output metadata.</span>
+<span class="sd">    * **long_name** (str): Long name description to store in output metadata.</span>
+
 <span class="sd">    :param alias: The string identifier to use for the calculation.</span>
 <span class="sd">    :type alias: str</span>
 <span class="sd">    :param dtype: The output data type.</span>
-<span class="sd">    :type dtype: np.dtype</span>
+<span class="sd">    :type dtype: :class:`numpy.core.multiarray.dtype`</span>
 <span class="sd">    :param field: The field object over which the calculation is applied.</span>
 <span class="sd">    :type field: :class:`ocgis.interface.base.Field`</span>
-<span class="sd">    :param file_only: If `True` pass through but compute output sizes, etc.</span>
+<span class="sd">    :param file_only: If ``True`` pass through but compute output sizes, etc.</span>
 <span class="sd">    :type file_only: bool</span>
-<span class="sd">    :param vc: The :class:`ocgis.interface.base.variable.VariableCollection` to append</span>
-<span class="sd">     output calculation arrays to. If `None` a new collection will be created.</span>
+<span class="sd">    :param vc: The :class:`ocgis.interface.base.variable.VariableCollection` to append output calculation arrays to.</span>
+<span class="sd">     If ``None`` a new collection will be created.</span>
 <span class="sd">    :type vc: :class:`ocgis.interface.base.variable.VariableCollection`</span>
-<span class="sd">    :param parms: A dictionary of parameter values.</span>
+<span class="sd">    :param parms: A dictionary of parameter values. The includes any parameters for the calculation.</span>
 <span class="sd">    :type parms: dict</span>
 <span class="sd">    :param tgd: An instance of :class:`ocgis.interface.base.dimension.temporal.TemporalGroupDimension`.</span>
 <span class="sd">    :type tgd: :class:`ocgis.interface.base.dimension.temporal.TemporalGroupDimension`</span>
-<span class="sd">    :param use_raw_values: If `True`, calculation is performed on raw values from an aggregated data request. This requires the execution of :func:`ocgis.calc.base.OcgFunction.aggregate_spatial` to aggregate the calculations on individual data cells.</span>
+<span class="sd">    :param use_raw_values: If ``True``, calculation is performed on raw values from an aggregated data request. This</span>
+<span class="sd">     requires the execution of :func:`ocgis.calc.base.OcgFunction.aggregate_spatial` to aggregate the calculations on</span>
+<span class="sd">     individual data cells.</span>
 <span class="sd">    :type agg: bool</span>
-<span class="sd">    :param calc_sample_size: If `True`, also compute sample sizes for the calculation.</span>
+<span class="sd">    :param calc_sample_size: If ``True``, also compute sample sizes for the calculation.</span>
 <span class="sd">    :type calc_sample_size: bool</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    :param meta_attrs: Dictionary with keys as attribute and names with arbitrary values. This will overload default</span>
+<span class="sd">     metadata attributes from the calculation.</span>
+
+<span class="sd">    &gt;&gt;&gt; meta_attrs = {&#39;standard_name&#39;: &#39;the_real&#39;, &#39;long_name&#39;: &#39;The Real Long Name&#39;, &#39;note_count&#39;: 55}</span>
+
+<span class="sd">    :type meta_attrs: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
-    
+
     <span class="nd">@abc.abstractproperty</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">str</span>
+    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">str</span>
+
     <span class="nd">@abc.abstractproperty</span>
-    <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="bp">None</span>
+    <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">None</span>
+
     <span class="n">Group</span> <span class="o">=</span> <span class="bp">None</span>
+
     <span class="nd">@abc.abstractproperty</span>
-    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">str</span>
-    <span class="c">#: The calculation&#39;s long name. Default is the empty string.</span>
-    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-    <span class="c">#: The calculation&#39;s standard name. Default is the empty string.</span>
-    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-    <span class="c">#: The calculation&#39;s output units. Modify :meth:`get_output_units` for more</span>
-    <span class="c">#: complex units calculations. If the units are left as the default &#39;_input&#39;</span>
-    <span class="c">#: then the input variable units are maintained. Otherwise, they will be set</span>
-    <span class="c">#: to units attribute value. The string flag is used to allow ``None`` units</span>
-    <span class="c">#: to be applied.</span>
+    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">str</span>
+
+    <span class="c">#: The calculation&#39;s long name.</span>
+    <span class="nd">@abc.abstractproperty</span>
+    <span class="k">def</span> <span class="nf">long_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">str</span>
+
+    <span class="c">#: The calculation&#39;s standard name.</span>
+    <span class="nd">@abc.abstractproperty</span>
+    <span class="k">def</span> <span class="nf">standard_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">str</span>
+
+    <span class="c">#: The calculation&#39;s output units. Modify :meth:`get_output_units` for more complex units calculations. If the units</span>
+    <span class="c">#: are left as the default &#39;_input&#39; then the input variable units are maintained. Otherwise, they will be set to</span>
+    <span class="c">#: units attribute value. The string flag is used to allow ``None`` units to be applied.</span>
     <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;_input_&#39;</span>
-    
-    <span class="c">## standard empty dictionary to use for calculation outputs when the operation</span>
-    <span class="c">## is file only</span>
-    <span class="n">_empty_fill</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;fill&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">,</span><span class="s">&#39;sample_size&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">}</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">alias</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">field</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">file_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">vc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">parms</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">tgd</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">use_raw_values</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">calc_sample_size</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                 <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="c"># standard empty dictionary to use for calculation outputs when the operation is file only</span>
+    <span class="n">_empty_fill</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;fill&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;sample_size&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">file_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">vc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">parms</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">tgd</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">use_raw_values</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">calc_sample_size</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">meta_attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alias</span> <span class="o">=</span> <span class="n">alias</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span> <span class="o">=</span> <span class="n">fill_value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vc</span> <span class="o">=</span> <span class="n">vc</span> <span class="ow">or</span> <span class="n">VariableCollection</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span> <span class="o">=</span> <span class="n">file_only</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parms</span> <span class="o">=</span> <span class="n">get_default_or_apply</span><span class="p">(</span><span class="n">parms</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_format_parms_</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parms</span> <span class="o">=</span> <span class="n">get_default_or_apply</span><span class="p">(</span><span class="n">parms</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_parms_</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">{})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span> <span class="o">=</span> <span class="n">tgd</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span> <span class="o">=</span> <span class="n">use_raw_values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span> <span class="o">=</span> <span class="n">calc_sample_size</span>
-                
-<div class="viewcode-block" id="AbstractFunction.aggregate_spatial"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.aggregate_spatial">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_spatial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">weights</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta_attrs</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">meta_attrs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AbstractFunction.aggregate_spatial"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.aggregate_spatial">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_spatial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Optional method to overload the method for spatial aggregation.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    </div>
-<div class="viewcode-block" id="AbstractFunction.aggregate_temporal"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.aggregate_temporal">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_temporal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        :param values: The input array with dimensions `(m, n)`.</span>
+<span class="sd">        :type values: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        :param weights: The input weights array with dimension matching ``value``.</span>
+<span class="sd">        :type weights: :class:`numpy.core.multiarray.ndarray`</span>
+<span class="sd">        :rtype: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span>
+</div>
+<div class="viewcode-block" id="AbstractFunction.aggregate_temporal"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.aggregate_temporal">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_temporal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Optional method to overload for temporal aggregation.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-        </div>
+
+<span class="sd">        :param values: The input five-dimensional array.</span>
+<span class="sd">        :type values: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</div>
     <span class="nd">@abc.abstractmethod</span>
-<div class="viewcode-block" id="AbstractFunction.calculate"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        The calculation method to overload. Values are explicitly passed to </span>
-<span class="sd">        avoid dereferencing. Reducing along the time axis is required (i.e. axis=0).</span>
-<span class="sd">        </span>
-<span class="sd">        :param values: A three-dimensional array with dimensions (time,row,column).</span>
+<div class="viewcode-block" id="AbstractFunction.calculate"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The calculation method to overload. Values are explicitly passed to  avoid dereferencing. Reducing along the</span>
+<span class="sd">        time axis is required (i.e. axis=0).</span>
+
+<span class="sd">        :param values: A three-dimensional array with dimensions (time, row, column).</span>
 <span class="sd">        :type values: :class:`numpy.ma.MaskedArray`</span>
-<span class="sd">        :param kwds: Any keyword parameters for the function.</span>
-<span class="sd">        :rtype: `numpy.ma.MaskedArray`</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        :param kwargs: Any keyword parameters for the function.</span>
+<span class="sd">        :rtype: :class:`numpy.ma.MaskedArray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">pass</span>
-    </div>
+</div>
 <div class="viewcode-block" id="AbstractFunction.execute"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Execute the computation over the input field.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c">## call the subclass execute method</span>
+
+<span class="sd">        :rtype: :class:`ocgis.interface.base.variable.VariableCollection`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># call the subclass execute method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_execute_</span><span class="p">()</span>
-        <span class="c">## allow the field metadata to be modified</span>
+        <span class="c"># allow the field metadata to be modified</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_field_metadata</span><span class="p">()</span>
-        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vc</span><span class="p">)</span>
-    </div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vc</span>
+</div>
     <span class="k">def</span> <span class="nf">get_function_definition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;key&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span><span class="s">&#39;alias&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span><span class="s">&#39;parms&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">}</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    
-<div class="viewcode-block" id="AbstractFunction.get_output_units"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.get_output_units">[docs]</a>    <span class="k">def</span> <span class="nf">get_output_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">variable</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary representation of the function definition.</span>
+
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;key&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;alias&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span> <span class="s">&#39;parms&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+<div class="viewcode-block" id="AbstractFunction.get_output_units"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.get_output_units">[docs]</a>    <span class="k">def</span> <span class="nf">get_output_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the output units.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+
+<span class="sd">        :type variable: :class:`ocgis.interface.base.variable.Variable`</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="s">&#39;_input_&#39;</span><span class="p">:</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">units</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    </div>
-    <span class="k">def</span> <span class="nf">get_sample_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
+
+        <span class="k">return</span> <span class="n">ret</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_sample_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the sample size of the temporal group based on the mask.</span>
+
+<span class="sd">        :type values: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        :rtype: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">to_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">to_sum</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-    
-    <span class="k">def</span> <span class="nf">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">variable</span><span class="p">):</span>
-        <span class="c">## raw values are to be used by the calculation. if this is True, and</span>
-        <span class="c">## no raw field is associated with the input field, then use the standard</span>
-        <span class="c">## value.</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">to_sum</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Select the appropriate value to use for the calculation. This will return the raw or aggregated values. If the</span>
+<span class="sd">        data is not spatially aggregated, then this will have no effect.</span>
+
+<span class="sd">        :param variable: :class:`ocgis.interface.base.variable.Variable`</span>
+<span class="sd">        :rtype: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># raw values are to be used by the calculation. if this is True, and no raw field is associated with the input</span>
+        <span class="c"># field, then use the standard value.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">_raw</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">ret</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">value</span>
@@ -191,427 +251,441 @@
                 <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">_raw</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">variable</span><span class="o">.</span><span class="n">alias</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    
+        <span class="k">return</span> <span class="n">ret</span>
+
     <span class="k">def</span> <span class="nf">set_field_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Modify the :class:~`ocgis.interface.base.field.Field` metadata dictionary.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">pass</span>
-    
-    <span class="k">def</span> <span class="nf">set_variable_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">variable</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Set variable level metadata. If units are to be updated, this must be</span>
-<span class="sd">        done on the &quot;units&quot; attribute of the variable as this value is read </span>
-<span class="sd">        directly from the variable object during conversion.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">set_variable_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set variable level metadata. If units are to be updated, this must be done on the &quot;units&quot; attribute of the</span>
+<span class="sd">        variable as this value is read directly from the variable object during conversion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
-    
+
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="AbstractFunction.validate"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="AbstractFunction.validate"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Optional method to overload that validates the input :class:`ocgis.OcgOperations`.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+
+<span class="sd">        :type ops: :class:`ocgis.api.operations.OcgOperations`</span>
+<span class="sd">        :raises: :class:`ocgis.exc.DefinitionValidationError`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">pass</span>
-    </div>
-<div class="viewcode-block" id="AbstractFunction.validate_units"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.validate_units">[docs]</a>    <span class="k">def</span> <span class="nf">validate_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Optional method to overload for units validation at the calculation level.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+</div>
+<div class="viewcode-block" id="AbstractFunction.validate_units"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractFunction.validate_units">[docs]</a>    <span class="k">def</span> <span class="nf">validate_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Optional method to overload for units validation at the calculation level.&quot;&quot;&quot;</span>
+
         <span class="k">pass</span>
-    </div>
-    <span class="k">def</span> <span class="nf">_add_to_collection_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">parent_variables</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">alias</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                            <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        
-        <span class="c">## dtype should come in with each new variable</span>
-        <span class="k">assert</span><span class="p">(</span><span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="c">## if there is no fill value, use the default for the data type</span>
+</div>
+    <span class="k">def</span> <span class="nf">_add_to_collection_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">parent_variables</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                            <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="c"># dtype should come in with each new variable</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="c"># if there is no fill value, use the default for the data type</span>
         <span class="k">if</span> <span class="n">fill_value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">fill_value</span>
-        
-        <span class="c">## the value parameters should come in as a dictionary with two keys</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">fill_value</span>
+
+        <span class="c"># the value parameters should come in as a dictionary with two keys</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fill</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&#39;fill&#39;</span><span class="p">]</span>
             <span class="n">sample_size</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&#39;sample_size&#39;</span><span class="p">]</span>
-        <span class="c">## some computations will just pass the array without the sample size</span>
-        <span class="c">## if _get_temporal_agg_fill_ is bypassed.</span>
+        <span class="c"># some computations will just pass the array without the sample size if _get_temporal_agg_fill_ is bypassed.</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="n">fill</span> <span class="o">=</span> <span class="n">value</span>
             <span class="n">sample_size</span> <span class="o">=</span> <span class="bp">None</span>
-        
+
         <span class="n">alias</span> <span class="o">=</span> <span class="n">alias</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span>
         <span class="n">fdef</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_function_definition</span><span class="p">()</span>
-        <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;attrs&#39;</span><span class="p">:{</span><span class="s">&#39;standard_name&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_name</span><span class="p">,</span>
-                         <span class="s">&#39;long_name&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">long_name</span><span class="p">}}</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;standard_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">standard_name</span><span class="p">,</span> <span class="s">&#39;long_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">long_name</span><span class="p">}}</span>
         <span class="n">parents</span> <span class="o">=</span> <span class="n">VariableCollection</span><span class="p">(</span><span class="n">variables</span><span class="o">=</span><span class="n">parent_variables</span><span class="p">)</span>
-        
-        <span class="c">## attempt to copy the grid_mapping attribute for the derived variable</span>
+
+        <span class="c"># attempt to copy the grid_mapping attribute for the derived variable</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">meta</span><span class="p">[</span><span class="s">&#39;attrs&#39;</span><span class="p">][</span><span class="s">&#39;grid_mapping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parents</span><span class="o">.</span><span class="n">first</span><span class="p">()</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s">&#39;attrs&#39;</span><span class="p">][</span><span class="s">&#39;grid_mapping&#39;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
-        
-        <span class="c">## if the operation is file only, creating a variable with an empty</span>
-        <span class="c">## value will raise an exception. pass a dummy data source because even</span>
-        <span class="c">## if the value is trying to be loaded it should not be accessible!</span>
+
+        <span class="c"># if the operation is file only, creating a variable with an empty value will raise an exception. pass a dummy</span>
+        <span class="c"># data source because even if the value is trying to be loaded it should not be accessible!</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="s">&#39;foo_data_source&#39;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="n">dv</span> <span class="o">=</span> <span class="n">DerivedVariable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span><span class="n">alias</span><span class="o">=</span><span class="n">alias</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span>
-                             <span class="n">fdef</span><span class="o">=</span><span class="n">fdef</span><span class="p">,</span><span class="n">parents</span><span class="o">=</span><span class="n">parents</span><span class="p">,</span><span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-                             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
-        
-        <span class="c">## allow more complex manipulations of metadata</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="n">DerivedVariable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="n">alias</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span> <span class="n">fdef</span><span class="o">=</span><span class="n">fdef</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="n">parents</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+                             <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+
+        <span class="c"># allow more complex manipulations of metadata</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_variable_metadata</span><span class="p">(</span><span class="n">dv</span><span class="p">)</span>
-        <span class="c">## add the variable to the variable collection</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_set_derived_variable_alias_</span><span class="p">(</span><span class="n">dv</span><span class="p">,</span><span class="n">parent_variables</span><span class="p">)</span>
+        <span class="c"># overload the metadata attributes with any provided</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta_attrs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">dv</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s">&#39;attrs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta_attrs</span><span class="p">)</span>
+        <span class="c"># add the variable to the variable collection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_derived_variable_alias_</span><span class="p">(</span><span class="n">dv</span><span class="p">,</span> <span class="n">parent_variables</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vc</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="n">dv</span><span class="p">)</span>
-        
-        <span class="c">## add the sample size if it is present in the fill dictionary</span>
+
+        <span class="c"># add the sample size if it is present in the fill dictionary</span>
         <span class="k">if</span> <span class="n">sample_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;attrs&#39;</span><span class="p">:{</span><span class="s">&#39;standard_name&#39;</span><span class="p">:</span><span class="s">&#39;sample_size&#39;</span><span class="p">,</span>
-                             <span class="s">&#39;long_name&#39;</span><span class="p">:</span><span class="s">&#39;Statistical Sample Size&#39;</span><span class="p">}}</span>
-            <span class="n">dv</span> <span class="o">=</span> <span class="n">DerivedVariable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">alias</span><span class="o">=</span><span class="s">&#39;n_&#39;</span><span class="o">+</span><span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-                                 <span class="n">fdef</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">parents</span><span class="o">=</span><span class="n">parents</span><span class="p">,</span><span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">,</span>
-                                 <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;standard_name&#39;</span><span class="p">:</span> <span class="s">&#39;sample_size&#39;</span><span class="p">,</span> <span class="s">&#39;long_name&#39;</span><span class="p">:</span> <span class="s">&#39;Statistical Sample Size&#39;</span><span class="p">}}</span>
+            <span class="n">dv</span> <span class="o">=</span> <span class="n">DerivedVariable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s">&#39;n_&#39;</span> <span class="o">+</span> <span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span> <span class="n">fdef</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                 <span class="n">parents</span><span class="o">=</span><span class="n">parents</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">vc</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="n">dv</span><span class="p">)</span>
-        
+
     <span class="nd">@abc.abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_execute_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">pass</span>
-    
-    <span class="k">def</span> <span class="nf">_format_parms_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-    
+    <span class="k">def</span> <span class="nf">_execute_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_format_parms_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">values</span>
+
     <span class="k">def</span> <span class="nf">_get_parms_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">ir</span><span class="p">,</span><span class="n">il</span><span class="p">,</span><span class="n">parms</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="c">## subset the values by the current temporal group</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span>
-        <span class="c">## only 3-d data should be sent to the temporal aggregation method</span>
-        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
-        <span class="c">## execute the temporal aggregation or calculation</span>
-        <span class="n">cc</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="o">**</span><span class="n">parms</span><span class="p">)</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span><span class="n">values</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">_get_temporal_agg_fill_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">parms</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">shp_fill</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="c">## if a default data type was provided at initialization, use this value</span>
-        <span class="c">## otherwise use the data type from the input value.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span>
+
+    <span class="k">def</span> <span class="nf">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c"># subset the values by the current temporal group</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="c"># only 3-d data should be sent to the temporal aggregation method</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="c"># execute the temporal aggregation or calculation</span>
+        <span class="n">cc</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">parms</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cc</span><span class="p">,</span> <span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">_get_temporal_agg_fill_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">parms</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">shp_fill</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c"># if a default data type was provided at initialization, use this value otherwise use the data type from the</span>
+        <span class="c"># input value.</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span>
-        
+
         <span class="c">## if no shape is provided for the fill array, create it.</span>
         <span class="k">if</span> <span class="n">shp_fill</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">shp_fill</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="n">shp_fill</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgd</span><span class="o">.</span><span class="n">dgroups</span><span class="p">)</span>
-        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_fill</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
-        
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_fill</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
+
         <span class="c">## this array holds output from the sample size computations</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
-            <span class="n">fill_sample_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">)</span>
+            <span class="n">fill_sample_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">fill_sample_size</span> <span class="o">=</span> <span class="bp">None</span>
-        
-        <span class="c">## reference the weights if we are using raw values for the calculations</span>
-        <span class="c">## and the data is spatially aggregated.</span>
+
+        <span class="c"># reference the weights if we are using raw values for the calculations and the data is spatially aggregated.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">_raw</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">weights</span>
-        
-        <span class="c">## this is a bit confusing. depending on the computational class we may</span>
-        <span class="c">## be just aggregating temporally or actually executing the calculation.</span>
+
+        <span class="c"># this is a bit confusing. depending on the computational class we may be just aggregating temporally or</span>
+        <span class="c"># actually executing the calculation.</span>
         <span class="n">f</span> <span class="o">=</span> <span class="n">f</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span>
-        
-        <span class="c">## choose the constructor parms or those passed to the method directly.</span>
+
+        <span class="c"># choose the constructor parms or those passed to the method directly.</span>
         <span class="n">parms</span> <span class="o">=</span> <span class="n">parms</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span>
-        
-        <span class="k">for</span> <span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])):</span>
-            
-            <span class="c">## reference for the current iteration group used by some computations</span>
+
+        <span class="k">for</span> <span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])):</span>
+
+            <span class="c"># reference for the current iteration group used by some computations</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span><span class="o">.</span><span class="n">dgroups</span><span class="p">[</span><span class="n">it</span><span class="p">]</span>
-            
-            <span class="n">cc</span><span class="p">,</span><span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_slice_and_calculation_</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">ir</span><span class="p">,</span><span class="n">il</span><span class="p">,</span><span class="n">parms</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
-            
-            <span class="c">## compute the sample size of the computation if requested</span>
+
+            <span class="n">cc</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_slice_and_calculation_</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="c"># compute the sample size of the computation if requested</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
                 <span class="n">sample_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sample_size</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-                <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
-                <span class="n">sample_size</span> <span class="o">=</span> <span class="n">sample_size</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">assert</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">sample_size</span> <span class="o">=</span> <span class="n">sample_size</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sample_size</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">sample_size</span> <span class="o">=</span> <span class="bp">None</span>
-                            
-            <span class="c">## temporal aggregation / calculation should reduce the data to only its spatial</span>
-            <span class="c">## dimensions</span>
-            <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="c">## resize the data back to 5 dimensions</span>
-            <span class="n">cc</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            
-            <span class="c">## put the data in the fill array</span>
+
+            <span class="c"># temporal aggregation / calculation should reduce the data to only its spatial dimensions</span>
+            <span class="k">assert</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="c"># resize the data back to 5 dimensions</span>
+            <span class="n">cc</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c"># put the data in the fill array</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">fill</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">cc</span>
+                <span class="n">fill</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">cc</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
-                    <span class="n">fill_sample_size</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">sample_size</span>
-            <span class="c">## if it doesn&#39;t fit, check if we need to spatially aggregate</span>
+                    <span class="n">fill_sample_size</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">sample_size</span>
+            <span class="c"># if it doesn&#39;t fit, check if we need to spatially aggregate</span>
             <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span><span class="p">:</span>
-                    <span class="n">fill</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_spatial</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span><span class="n">weights</span><span class="p">)</span>
+                    <span class="n">fill</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_spatial</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
-                        <span class="n">fill_sample_size</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_spatial</span><span class="p">(</span><span class="n">sample_size</span><span class="p">,</span><span class="n">weights</span><span class="p">)</span>
+                        <span class="n">fill_sample_size</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_spatial</span><span class="p">(</span><span class="n">sample_size</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-        
-        <span class="c">## we need to transfer the data mask from the fill to the sample size</span>
+                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+
+        <span class="c"># we need to transfer the data mask from the fill to the sample size</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
             <span class="n">fill_sample_size</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">fill</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="k">return</span><span class="p">({</span><span class="s">&#39;fill&#39;</span><span class="p">:</span><span class="n">fill</span><span class="p">,</span><span class="s">&#39;sample_size&#39;</span><span class="p">:</span><span class="n">fill_sample_size</span><span class="p">})</span>
-    
-    <span class="k">def</span> <span class="nf">_get_or_pass_spatial_agg_fill_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
-        <span class="c">## determine if the output data needs to be spatially aggregated</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;fill&#39;</span><span class="p">:</span> <span class="n">fill</span><span class="p">,</span> <span class="s">&#39;sample_size&#39;</span><span class="p">:</span> <span class="n">fill_sample_size</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_get_or_pass_spatial_agg_fill_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="c"># determine if the output data needs to be spatially aggregated</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span> <span class="ow">and</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span><span class="n">mask</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">fill_value</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">fill_value</span><span class="p">)</span>
             <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">_raw</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">weights</span>
             <span class="n">r_aggregate_spatial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregate_spatial</span>
-            <span class="k">for</span> <span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]]):</span>
-                <span class="n">ret</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_aggregate_spatial</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="n">it</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:],</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]]):</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_aggregate_spatial</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">values</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">_set_derived_variable_alias_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dv</span><span class="p">,</span><span class="n">parent_variables</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">_set_derived_variable_alias_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dv</span><span class="p">,</span> <span class="n">parent_variables</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the alias of the derived variable.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">original_alias</span> <span class="o">=</span> <span class="n">dv</span><span class="o">.</span><span class="n">alias</span>
-            <span class="n">dv</span><span class="o">.</span><span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span><span class="n">parent_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Alias updated to maintain uniquencess Changing &quot;{0}&quot; to &quot;{1}&quot;.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_alias</span><span class="p">,</span><span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">dv</span><span class="o">.</span><span class="n">alias</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span> <span class="n">parent_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Alias updated to maintain uniquencess Changing &quot;{0}&quot; to &quot;{1}&quot;.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original_alias</span><span class="p">,</span> <span class="n">dv</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
+            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
 
-        </div>
+</div>
 <div class="viewcode-block" id="AbstractUnivariateFunction"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractUnivariateFunction">[docs]</a><span class="k">class</span> <span class="nc">AbstractUnivariateFunction</span><span class="p">(</span><span class="n">AbstractFunction</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for functions accepting a single univariate input.</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
-    <span class="c">#: Optional sequence of acceptable string units defintions for input variables.</span>
-    <span class="c">#: If this is set to ``None``, no unit validation will occur.</span>
+    <span class="c">#: Optional sequence of acceptable string units defintions for input variables. If this is set to ``None``, no unit</span>
+    <span class="c">#: validation will occur.</span>
     <span class="n">required_units</span> <span class="o">=</span> <span class="bp">None</span>
-    
-    <span class="k">def</span> <span class="nf">validate_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">variable</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">validate_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_are_units_equal_by_string_or_cfunits</span><span class="p">(</span><span class="n">variable</span><span class="o">.</span><span class="n">units</span><span class="p">,</span><span class="n">target</span><span class="p">,</span><span class="n">try_cfunits</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_are_units_equal_by_string_or_cfunits</span><span class="p">(</span><span class="n">variable</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">try_cfunits</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> \
                        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_units</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">matches</span><span class="p">):</span>
-                <span class="k">raise</span><span class="p">(</span><span class="n">UnitsValidationError</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">required_units</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">))</span>
-        
+                <span class="k">raise</span> <span class="p">(</span><span class="n">UnitsValidationError</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">))</span>
+
     <span class="k">def</span> <span class="nf">_execute_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
-            
+
             <span class="bp">self</span><span class="o">.</span><span class="n">validate_units</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
-            
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_fill</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">variable</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">)</span>
-                
+                <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">variable</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">)</span>
+
             <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">or</span> <span class="n">variable</span><span class="o">.</span><span class="n">dtype</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="n">fill</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="n">fill</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="k">assert</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-            
+                <span class="k">assert</span> <span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                    <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregate_temporal</span><span class="p">,</span><span class="n">parms</span><span class="o">=</span><span class="p">{})</span>
+                    <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregate_temporal</span><span class="p">,</span> <span class="n">parms</span><span class="o">=</span><span class="p">{})</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
                         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Sample sizes not relevant for scalar transforms.&#39;</span>
-                        <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
+                        <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_pass_spatial_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span>
-                    
+
             <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_units</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
-                                        
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span><span class="n">parent_variables</span><span class="o">=</span><span class="p">[</span><span class="n">variable</span><span class="p">],</span>
-                                     <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span> <span class="n">parent_variables</span><span class="o">=</span><span class="p">[</span><span class="n">variable</span><span class="p">],</span>
+                                     <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span>
                                      <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
 
 </div>
 <div class="viewcode-block" id="AbstractParameterizedFunction"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractParameterizedFunction">[docs]</a><span class="k">class</span> <span class="nc">AbstractParameterizedFunction</span><span class="p">(</span><span class="n">AbstractFunction</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for functions accepting parameters.</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
-    
+
     <span class="nd">@abc.abstractproperty</span>
 <div class="viewcode-block" id="AbstractParameterizedFunction.parms_definition"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractParameterizedFunction.parms_definition">[docs]</a>    <span class="k">def</span> <span class="nf">parms_definition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A dictionary describing the input parameters with keys corresponding to</span>
 <span class="sd">        parameter names and values to their types. Set the type to `None` for no</span>
 <span class="sd">        type checking.</span>
-<span class="sd">        </span>
+
 <span class="sd">        &gt;&gt;&gt; {&#39;threshold&#39;:float,&#39;operation&#39;:str,&#39;basis&#39;:None}</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">dict</span>
     </div>
-    <span class="k">def</span> <span class="nf">_format_parms_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_format_parms_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param values: A dictionary containing the parameter values to check.</span>
+<span class="sd">        :type values: dict[str, type]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms_definition</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">v</span><span class="p">)</span>
-            <span class="c">## likely a nonetype</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms_definition</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
+                    <span class="n">formatted</span> <span class="o">=</span> <span class="n">v</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms_definition</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">v</span><span class="p">)</span>
+            <span class="c"># likely a nonetype</span>
             <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms_definition</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
                     <span class="n">formatted</span> <span class="o">=</span> <span class="n">v</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-            <span class="c">## likely a required variable for a multivariate calculation</span>
+                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+            <span class="c"># likely a required variable for a multivariate calculation</span>
             <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">:</span>
                     <span class="n">formatted</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span><span class="n">formatted</span><span class="p">})</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                    <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">formatted</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">ret</span>
 
-        </div>
+</div>
 <div class="viewcode-block" id="AbstractUnivariateSetFunction"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractUnivariateSetFunction">[docs]</a><span class="k">class</span> <span class="nc">AbstractUnivariateSetFunction</span><span class="p">(</span><span class="n">AbstractUnivariateFunction</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Base class for functions operating on a single variable but always reducing</span>
-<span class="sd">    intput data along the time dimension.</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for functions operating on a single variable but always reducing input data along the time dimension.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
-    
-<div class="viewcode-block" id="AbstractUnivariateSetFunction.aggregate_temporal"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractUnivariateSetFunction.aggregate_temporal">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_temporal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="AbstractUnivariateSetFunction.aggregate_temporal"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractUnivariateSetFunction.aggregate_temporal">[docs]</a>    <span class="k">def</span> <span class="nf">aggregate_temporal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This operations is always implicit to :meth:`~ocgis.calc.base.AbstractFunction.calculate`.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;aggregation implicit to calculate method&#39;</span><span class="p">))</span>
-    </div>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;aggregation implicit to calculate method&#39;</span><span class="p">)</span>
+</div>
     <span class="k">def</span> <span class="nf">_execute_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">shp_fill</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">shp_fill</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgd</span><span class="o">.</span><span class="n">dgroups</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
-            
+
             <span class="bp">self</span><span class="o">.</span><span class="n">validate_units</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
-            
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_fill</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c">## some calculations need information from the current variable iteration</span>
+                <span class="c"># some calculations need information from the current variable iteration</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_curr_variable</span> <span class="o">=</span> <span class="n">variable</span>
-                <span class="c">## return the value from the variable</span>
+                <span class="c"># return the value from the variable</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variable_value</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
-                <span class="c">## execute the calculations</span>
-                <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">shp_fill</span><span class="o">=</span><span class="n">shp_fill</span><span class="p">)</span>
-            <span class="c">## get the variable&#39;s output units</span>
+                <span class="c"># execute the calculations</span>
+                <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">shp_fill</span><span class="o">=</span><span class="n">shp_fill</span><span class="p">)</span>
+            <span class="c"># get the variable&#39;s output units</span>
             <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_units</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
-            <span class="c">## add the output to the variable collection</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span><span class="n">parent_variables</span><span class="o">=</span><span class="p">[</span><span class="n">variable</span><span class="p">],</span>
-                                     <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span>
-                                     <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
-            
+            <span class="c"># add the output to the variable collection</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span> <span class="n">parent_variables</span><span class="o">=</span><span class="p">[</span><span class="n">variable</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                     <span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">calc_grouping</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">ocgis.api.parms.definition</span> <span class="kn">import</span> <span class="n">Calc</span>
+
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Set functions must have a temporal grouping.&#39;</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">Calc</span><span class="p">,</span><span class="n">msg</span><span class="p">),</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-    
+            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">Calc</span><span class="p">,</span> <span class="n">msg</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+
 </div>
 <div class="viewcode-block" id="AbstractMultivariateFunction"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractMultivariateFunction">[docs]</a><span class="k">class</span> <span class="nc">AbstractMultivariateFunction</span><span class="p">(</span><span class="n">AbstractFunction</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Base class for functions operating on multivariate inputs.</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
     <span class="c">#: Optional dictionary mapping unit definitions for required variables.</span>
     <span class="c">#: For example: required_units = {&#39;tas&#39;:&#39;fahrenheit&#39;,&#39;rhs&#39;:&#39;percent&#39;}</span>
     <span class="n">required_units</span> <span class="o">=</span> <span class="bp">None</span>
-    <span class="c">#: If True, time aggregation is external to the calculation and will require</span>
-    <span class="c">#: running the standard time aggregation methods.</span>
+    <span class="c">#: If True, time aggregation is external to the calculation and will require running the standard time aggregation</span>
+    <span class="c">#: methods.</span>
     <span class="n">time_aggregation_external</span> <span class="o">=</span> <span class="bp">True</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;calc_sample_size&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
-            <span class="n">exc</span> <span class="o">=</span> <span class="n">SampleSizeNotImplemented</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span><span class="s">&#39;Multivariate functions do not calculate sample size at this time.&#39;</span><span class="p">)</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;calc_sample_size&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">exc</span> <span class="o">=</span> <span class="n">SampleSizeNotImplemented</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span>
+                                           <span class="s">&#39;Multivariate functions do not calculate sample size at this time.&#39;</span><span class="p">)</span>
+            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">AbstractFunction</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
-    
+            <span class="n">AbstractFunction</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
     <span class="nd">@abc.abstractproperty</span>
 <div class="viewcode-block" id="AbstractMultivariateFunction.required_variables"><a class="viewcode-back" href="../../../computation.html#ocgis.calc.base.AbstractMultivariateFunction.required_variables">[docs]</a>    <span class="k">def</span> <span class="nf">required_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Required property/attribute containing the list of input variables expected</span>
 <span class="sd">        by the function.</span>
 <span class="sd">        </span>
 <span class="sd">        &gt;&gt;&gt; [&#39;tas&#39;,&#39;rhs&#39;]</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-        </div>
-    <span class="k">def</span> <span class="nf">get_output_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
-        <span class="k">return</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">ir</span><span class="p">,</span><span class="n">il</span><span class="p">,</span><span class="n">parms</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_output_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_aggregation_external</span><span class="p">:</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">AbstractFunction</span><span class="o">.</span><span class="n">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">ir</span><span class="p">,</span><span class="n">il</span><span class="p">,</span><span class="n">parms</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">AbstractFunction</span><span class="o">.</span><span class="n">_get_slice_and_calculation_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_parms</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">parms</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">parms</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">:</span>
-                    <span class="n">new_parms</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span><span class="p">,</span><span class="n">il</span><span class="p">,:,:]</span>
+                    <span class="n">new_parms</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">ir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">new_parms</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
             <span class="n">cc</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">**</span><span class="n">new_parms</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">cc</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
     <span class="k">def</span> <span class="nf">_execute_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        
+
         <span class="bp">self</span><span class="o">.</span><span class="n">validate_units</span><span class="p">()</span>
-        
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="n">k</span><span class="p">]])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">}</span>
-        <span class="c">## try again without the parms dictionary</span>
+            <span class="n">parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="n">k</span><span class="p">]])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">}</span>
+        <span class="c"># try again without the parms dictionary</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="n">parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">}</span>
-            
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variable_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">:</span>
-                <span class="n">parms</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="p">})</span>
-        
+                <span class="n">parms</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
             <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_fill</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_aggregation_external</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="o">**</span><span class="n">parms</span><span class="p">)</span>
-                
+
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="n">fill</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_raw_values</span><span class="p">:</span>
-                    <span class="k">assert</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                    <span class="k">assert</span> <span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">assert</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+                    <span class="k">assert</span> <span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                    <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregate_temporal</span><span class="p">,</span><span class="n">parms</span><span class="o">=</span><span class="p">{})</span>
+                    <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregate_temporal</span><span class="p">,</span> <span class="n">parms</span><span class="o">=</span><span class="p">{})</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_pass_spatial_agg_fill_</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_temporal_agg_fill_</span><span class="p">(</span><span class="n">parms</span><span class="o">=</span><span class="n">parms</span><span class="p">)</span>
-                
+
         <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_units</span><span class="p">()</span>
-                        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span><span class="n">parent_variables</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
-                                 <span class="n">alias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span>
-                                 <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
-    
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_collection_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span> <span class="n">parent_variables</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">alias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">,</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">calc_sample_size</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">ocgis.api.parms.definition</span> <span class="kn">import</span> <span class="n">CalcSampleSize</span>
-            <span class="n">exc</span> <span class="o">=</span> <span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">CalcSampleSize</span><span class="p">,</span><span class="s">&#39;Multivariate functions do not calculate sample size at this time.&#39;</span><span class="p">)</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-        
-        <span class="c">## ensure the required variables are presents</span>
+
+            <span class="n">exc</span> <span class="o">=</span> <span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">CalcSampleSize</span><span class="p">,</span>
+                                            <span class="s">&#39;Multivariate functions do not calculate sample size at this time.&#39;</span><span class="p">)</span>
+            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+
+        <span class="c"># ensure the required variables are presents</span>
         <span class="n">aliases</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">alias</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ops</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()]</span>
         <span class="n">should_raise</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ops</span><span class="o">.</span><span class="n">calc</span><span class="p">:</span>
@@ -623,9 +697,12 @@
                 <span class="k">break</span>
         <span class="k">if</span> <span class="n">should_raise</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">ocgis.api.parms.definition</span> <span class="kn">import</span> <span class="n">Calc</span>
-            <span class="n">exc</span> <span class="o">=</span> <span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">Calc</span><span class="p">,</span><span class="s">&#39;Variable aliases are missing for multivariate function &quot;{0}&quot;. Required variable aliases are: {1}.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span><span class="n">cls</span><span class="o">.</span><span class="n">required_variables</span><span class="p">))</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
-            
+
+            <span class="n">exc</span> <span class="o">=</span> <span class="n">DefinitionValidationError</span><span class="p">(</span><span class="n">Calc</span><span class="p">,</span>
+                                            <span class="s">&#39;Variable aliases are missing for multivariate function &quot;{0}&quot;. Required variable aliases are: {1}.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">required_variables</span><span class="p">))</span>
+            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.base&#39;</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">validate_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">required_variable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">:</span>
@@ -633,19 +710,20 @@
                 <span class="n">variable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">alias_variable</span><span class="p">]</span>
                 <span class="n">source</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">units</span>
                 <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_units</span><span class="p">[</span><span class="n">required_variable</span><span class="p">]</span>
-                <span class="n">match</span> <span class="o">=</span> <span class="n">get_are_units_equal_by_string_or_cfunits</span><span class="p">(</span><span class="n">source</span><span class="p">,</span><span class="n">target</span><span class="p">,</span><span class="n">try_cfunits</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">get_are_units_equal_by_string_or_cfunits</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">try_cfunits</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">match</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
-                    <span class="k">raise</span><span class="p">(</span><span class="n">UnitsValidationError</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="n">target</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">))</span>
-                
-    <span class="k">def</span> <span class="nf">_set_derived_variable_alias_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dv</span><span class="p">,</span><span class="n">parent_variables</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">UnitsValidationError</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_derived_variable_alias_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dv</span><span class="p">,</span> <span class="n">parent_variables</span><span class="p">):</span>
         <span class="k">pass</span>
 
-    </div>
+</div>
 <span class="k">class</span> <span class="nc">AbstractKeyedOutputFunction</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
-    
+
     <span class="nd">@abc.abstractproperty</span>
-    <span class="k">def</span> <span class="nf">structure_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">dict</span>
+    <span class="k">def</span> <span class="nf">structure_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">dict</span>
 </pre></div>
 
           </div>
@@ -673,7 +751,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

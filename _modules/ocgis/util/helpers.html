@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.util.helpers &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.util.helpers &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../../index.html" />
     <link rel="up" title="ocgis" href="../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,6 +45,7 @@
           <div class="body">
             
   <h1>Source code for ocgis.util.helpers</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">from</span> <span class="nn">shapely.geometry.polygon</span> <span class="kn">import</span> <span class="n">Polygon</span>
@@ -64,16 +65,56 @@
 <span class="kn">from</span> <span class="nn">fiona.crs</span> <span class="kn">import</span> <span class="n">from_epsg</span>
 
 
-<span class="k">def</span> <span class="nf">write_geom_dict</span><span class="p">(</span><span class="n">dct</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="n">crs</span> <span class="o">=</span> <span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">)</span>
+<div class="viewcode-block" id="get_sorted_uris_by_time_dimension"><a class="viewcode-back" href="../../../utility.html#ocgis.util.helpers.get_sorted_uris_by_time_dimension">[docs]</a><span class="k">def</span> <span class="nf">get_sorted_uris_by_time_dimension</span><span class="p">(</span><span class="n">uris</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sort a sequence of NetCDF URIs by the maximum time extent in ascending order.</span>
+
+<span class="sd">    :param uris: The sequence of NetCDF URIs to sort.</span>
+<span class="sd">    :type uris: list[str]</span>
+
+<span class="sd">    &gt;&gt;&gt; uris = [&#39;/path/to/file2.nc&#39;, &#39;path/to/file1.nc&#39;]</span>
+
+<span class="sd">    :param str variable: The target variable for sorting. If ``None`` is provided, then the variable will be</span>
+<span class="sd">     autodiscovered.</span>
+<span class="sd">    :returns: A sequence of sorted URIs.</span>
+<span class="sd">    :rtype: list[str]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">RequestDataset</span>
+
+    <span class="n">to_sort</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
+        <span class="n">rd</span> <span class="o">=</span> <span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="n">variable</span><span class="p">)</span>
+        <span class="n">to_sort</span><span class="p">[</span><span class="n">rd</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">extent_datetime</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">uri</span>
+    <span class="n">sorted_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">to_sort</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_sort</span><span class="p">[</span><span class="n">sk</span><span class="p">]</span> <span class="k">for</span> <span class="n">sk</span> <span class="ow">in</span> <span class="n">sorted_keys</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ret</span>
+
+</div>
+<span class="k">def</span> <span class="nf">write_geom_dict</span><span class="p">(</span><span class="n">dct</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">epsg</span><span class="o">=</span><span class="mi">4326</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param dct:</span>
+<span class="sd">    :type dct: dict</span>
+
+<span class="sd">    &gt;&gt;&gt; dct = {1: Point(1, 2), 2: Point(3, 4)}</span>
+
+<span class="sd">    :param path:</span>
+<span class="sd">    :type path: str</span>
+<span class="sd">    :param filename:</span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="s">&#39;out&#39;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mkdtemp</span><span class="p">(),</span> <span class="s">&#39;{0}.shp&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+
+    <span class="n">crs</span> <span class="o">=</span> <span class="n">crs</span> <span class="ow">or</span> <span class="n">from_epsg</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
     <span class="n">driver</span> <span class="o">=</span> <span class="s">&#39;ESRI Shapefile&#39;</span>
-    <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;properties&#39;</span><span class="p">:{</span><span class="s">&#39;UGID&#39;</span><span class="p">:</span><span class="s">&#39;int&#39;</span><span class="p">},</span><span class="s">&#39;geometry&#39;</span><span class="p">:</span><span class="n">dct</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geom_type</span><span class="p">}</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mkdtemp</span><span class="p">(),</span><span class="s">&#39;out.shp&#39;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="n">driver</span><span class="p">,</span><span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span><span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span> <span class="k">as</span> <span class="n">source</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-            <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;properties&#39;</span><span class="p">:{</span><span class="s">&#39;UGID&#39;</span><span class="p">:</span><span class="n">k</span><span class="p">},</span><span class="s">&#39;geometry&#39;</span><span class="p">:</span><span class="n">mapping</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;properties&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;UGID&#39;</span><span class="p">:</span> <span class="s">&#39;int&#39;</span><span class="p">},</span> <span class="s">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">dct</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geom_type</span><span class="p">}</span>
+    <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="n">driver</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span> <span class="k">as</span> <span class="n">source</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;properties&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;UGID&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">},</span> <span class="s">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">mapping</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
             <span class="n">source</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
-    <span class="k">return</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
     
 <span class="k">def</span> <span class="nf">get_added_slice</span><span class="p">(</span><span class="n">slice1</span><span class="p">,</span><span class="n">slice2</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
@@ -165,98 +206,7 @@
         <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">ret</span><span class="p">,{</span><span class="s">&#39;row&#39;</span><span class="p">:</span><span class="nb">slice</span><span class="p">(</span><span class="n">start_row</span><span class="p">,</span><span class="n">stop_row</span><span class="p">),</span><span class="s">&#39;col&#39;</span><span class="p">:</span><span class="nb">slice</span><span class="p">(</span><span class="n">start_col</span><span class="p">,</span><span class="n">stop_col</span><span class="p">)})</span>
         
     <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        
-<span class="k">def</span> <span class="nf">get_rotated_pole_spatial_grid_dimension</span><span class="p">(</span><span class="n">crs</span><span class="p">,</span><span class="n">grid</span><span class="p">,</span><span class="n">inverse</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">rc_original</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    http://osgeo-org.1560.x6.nabble.com/Rotated-pole-coordinate-system-a-howto-td3885700.html</span>
-<span class="sd">    </span>
-<span class="sd">    :param :class:`ocgis.interface.base.crs.CFRotatedPole` crs:</span>
-<span class="sd">    :param :class:`ocgis.interface.base.dimension.spatial.SpatialGridDimension` grid:</span>
-<span class="sd">    :param bool inverse: If True, this is an inverse transformation.</span>
-<span class="sd">    :param dict rc_original: Contains original metadata information for the row and</span>
-<span class="sd">     column dimensions.</span>
-<span class="sd">    :returns :class:`ocgis.interface.base.dimension.spatial.SpatialGridDimension`:</span>
-<span class="sd">    &#39;&#39;&#39;</span>
-    <span class="kn">import</span> <span class="nn">csv</span>
-    <span class="kn">import</span> <span class="nn">subprocess</span>
-    <span class="k">class</span> <span class="nc">ProjDialect</span><span class="p">(</span><span class="n">csv</span><span class="o">.</span><span class="n">excel</span><span class="p">):</span>
-        <span class="n">lineterminator</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
-        <span class="n">delimiter</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">dialect</span><span class="o">=</span><span class="n">ProjDialect</span><span class="p">)</span>
-    <span class="n">new_mask</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">inverse</span><span class="p">:</span>
-        <span class="n">_row</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">_col</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">shp</span> <span class="o">=</span> <span class="p">(</span><span class="n">_row</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">_col</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        
-        <span class="k">def</span> <span class="nf">_itr_writer_</span><span class="p">(</span><span class="n">_row</span><span class="p">,</span><span class="n">_col</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">row_idx</span><span class="p">,</span><span class="n">col_idx</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">_row</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">range</span><span class="p">(</span><span class="n">_row</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
-                <span class="k">yield</span><span class="p">(</span><span class="n">_col</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span><span class="n">col_idx</span><span class="p">],</span><span class="n">_row</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span><span class="n">col_idx</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">_row</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">row</span><span class="o">.</span><span class="n">value</span>
-        <span class="n">_col</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">col</span><span class="o">.</span><span class="n">value</span>
-        <span class="n">shp</span> <span class="o">=</span> <span class="p">(</span><span class="n">_row</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">_col</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        
-        <span class="k">def</span> <span class="nf">_itr_writer_</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">row_idx</span><span class="p">,</span><span class="n">col_idx</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">_row</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">range</span><span class="p">(</span><span class="n">_col</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
-                <span class="k">yield</span><span class="p">(</span><span class="n">_col</span><span class="p">[</span><span class="n">col_idx</span><span class="p">],</span><span class="n">_row</span><span class="p">[</span><span class="n">row_idx</span><span class="p">])</span>
-<span class="c">#    uid = np.arange(1,(shp[0]*shp[1])+1,dtype=int).reshape(*shp)</span>
-<span class="c">#    uid = np.ma.array(data=uid,mask=False)</span>
-<span class="c">#    for row_idx,col_idx in itertools.product(range(_row.shape[0]),range(_col.shape[0])):</span>
-    <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">_itr_writer_</span><span class="p">(</span><span class="n">_row</span><span class="p">,</span><span class="n">_col</span><span class="p">):</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-    <span class="n">cmd</span> <span class="o">=</span> <span class="n">crs</span><span class="o">.</span><span class="n">_trans_proj</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
-    <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">inverse</span><span class="p">:</span>
-        <span class="n">program</span> <span class="o">=</span> <span class="s">&#39;invproj&#39;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">program</span> <span class="o">=</span> <span class="s">&#39;proj&#39;</span>
-    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="n">program</span><span class="p">,</span><span class="s">&#39;-f&#39;</span><span class="p">,</span><span class="s">&#39;&quot;</span><span class="si">%.6f</span><span class="s">&quot;&#39;</span><span class="p">,</span><span class="s">&#39;-m&#39;</span><span class="p">,</span><span class="s">&#39;57.2957795130823&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cmd</span>
-    <span class="n">capture</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">capture</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
-    <span class="n">new_coords</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">coord</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coords</span><span class="p">):</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">coord</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="n">coord</span><span class="p">)</span>
-        <span class="c">## likely empty string</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">coord</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span>
-        <span class="n">new_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
-        
-    <span class="n">new_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_coords</span><span class="p">)</span>
-    <span class="n">new_row</span> <span class="o">=</span> <span class="n">new_coords</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">shp</span><span class="p">)</span>
-    <span class="n">new_col</span> <span class="o">=</span> <span class="n">new_coords</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">shp</span><span class="p">)</span>
-    
-    <span class="n">new_grid</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
-    <span class="c">## reset geometries</span>
-    <span class="n">new_grid</span><span class="o">.</span><span class="n">_geom</span> <span class="o">=</span> <span class="bp">None</span>
-    <span class="k">if</span> <span class="n">inverse</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">ocgis.interface.base.dimension.base</span> <span class="kn">import</span> <span class="n">VectorDimension</span>
-        <span class="n">new_row</span> <span class="o">=</span> <span class="n">new_row</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">new_col</span> <span class="o">=</span> <span class="n">new_col</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">VectorDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">new_row</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="n">rc_original</span><span class="p">[</span><span class="s">&#39;row&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">meta</span><span class="o">=</span><span class="n">rc_original</span><span class="p">[</span><span class="s">&#39;row&#39;</span><span class="p">][</span><span class="s">&#39;meta&#39;</span><span class="p">])</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="n">VectorDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">new_col</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="n">rc_original</span><span class="p">[</span><span class="s">&#39;col&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">meta</span><span class="o">=</span><span class="n">rc_original</span><span class="p">[</span><span class="s">&#39;col&#39;</span><span class="p">][</span><span class="s">&#39;meta&#39;</span><span class="p">])</span>
-        <span class="n">new_col</span><span class="p">,</span><span class="n">new_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">new_col</span><span class="p">,</span><span class="n">new_row</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">_row_src_idx</span> <span class="o">=</span> <span class="n">new_grid</span><span class="o">.</span><span class="n">row</span><span class="o">.</span><span class="n">_src_idx</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">_col_src_idx</span> <span class="o">=</span> <span class="n">new_grid</span><span class="o">.</span><span class="n">col</span><span class="o">.</span><span class="n">_src_idx</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="n">new_grid</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="bp">None</span>
-    <span class="n">new_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="n">new_row</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
-    <span class="n">new_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_value</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="n">new_mask</span><span class="p">)</span>
-    <span class="n">new_value</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">new_row</span>
-    <span class="n">new_value</span><span class="p">[</span><span class="mi">1</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">new_col</span>
-    <span class="n">new_grid</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span>
-            
-    <span class="k">return</span><span class="p">(</span><span class="n">new_grid</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="get_interpolated_bounds"><a class="viewcode-back" href="../../../utility.html#ocgis.util.helpers.get_interpolated_bounds">[docs]</a><span class="k">def</span> <span class="nf">get_interpolated_bounds</span><span class="p">(</span><span class="n">centroids</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
@@ -626,87 +576,25 @@
         <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="n">pattern</span><span class="p">,</span><span class="n">files</span><span class="p">):</span>
             <span class="k">yield</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
 
-<span class="c">#def reduce_query(query):</span>
-<span class="c">#    ## parse keys into groups.</span>
-<span class="c">#    groups = {}</span>
-<span class="c">#    ungrouped = {}</span>
-<span class="c">#    exp_key = re.compile(&#39;^(\D+)\d+$&#39;)</span>
-<span class="c">#    exp_number = re.compile(&#39;^\D+(\d+)$&#39;)</span>
-<span class="c">#    for key,value in query.iteritems():</span>
-<span class="c">#        try:</span>
-<span class="c">#            m_key = re.match(exp_key,key).groups()[0]</span>
-<span class="c">#            m_number = int(re.match(exp_number,key).groups()[0])</span>
-<span class="c">#            if m_key not in groups:</span>
-<span class="c">#                groups[m_key] = []</span>
-<span class="c">#            groups[m_key].append(m_number)</span>
-<span class="c">#        except AttributeError:</span>
-<span class="c">#            ungrouped[key] = value</span>
-<span class="c">#    ## sort the groups</span>
-<span class="c">#    for value in groups.itervalues():</span>
-<span class="c">#        value.sort()</span>
-<span class="c">#    ## ensure the groups are the same. only applicable if there are any</span>
-<span class="c">#    ## grouped variables.</span>
-<span class="c">#    if len(groups) &gt; 0:</span>
-<span class="c">#        arch = groups[&#39;uri&#39;]</span>
-<span class="c">#        for key,value in groups.iteritems():</span>
-<span class="c">#            try:</span>
-<span class="c">#                assert(arch == value)</span>
-<span class="c">#            except AssertionError:</span>
-<span class="c">#                if key in [&#39;uri&#39;,&#39;variable&#39;]:</span>
-<span class="c">#                    raise(DefinitionValidationError(&#39;reduce_query&#39;,&#39;Integer group indicators are not consistent.&#39;))</span>
-<span class="c">#                else:</span>
-<span class="c">#                    fill = [None]*len(arch)</span>
-<span class="c">#                    for integer in value:</span>
-<span class="c">#                        idx = arch.index(integer)</span>
-<span class="c">#                        fill[idx] = integer</span>
-<span class="c">#                    groups[key] = fill</span>
-<span class="c">#    ## replace integers with actual values</span>
-<span class="c">#    for key,value in groups.iteritems():</span>
-<span class="c">#        for idx in range(len(value)):</span>
-<span class="c">#            if value[idx] is None:</span>
-<span class="c">#                continue</span>
-<span class="c">#            pull_key = key + str(value[idx])</span>
-<span class="c">#            value[idx] = query[pull_key][0]</span>
-<span class="c">#        groups[key] = [value]</span>
-<span class="c">#    ## merge the grouped and ungrouped parameters</span>
-<span class="c">#    groups.update(ungrouped)</span>
-<span class="c">#    return(groups)</span>
-<span class="c">#        </span>
-<span class="c">#def union_geoms(ugeoms,new_id=1):</span>
-<span class="c">#    if len(ugeoms) == 1:</span>
-<span class="c">#        ret = deepcopy(ugeoms)</span>
-<span class="c">#    else:</span>
-<span class="c">#        to_union = []</span>
-<span class="c">#        for dct in ugeoms:</span>
-<span class="c">#            geom = dct[&#39;geom&#39;]</span>
-<span class="c">#            if isinstance(geom,MultiPolygon):</span>
-<span class="c">#                for poly in geom:</span>
-<span class="c">#                    to_union.append(poly)</span>
-<span class="c">#            else:</span>
-<span class="c">#                to_union.append(geom)</span>
-<span class="c">#        ugeom = cascaded_union(to_union)</span>
-<span class="c">#        ret = [{&#39;ugid&#39;:new_id,&#39;geom&#39;:ugeom}]</span>
-<span class="c">#    return(ret)</span>
-<span class="c">#</span>
-<span class="c">#</span>
-<span class="c">#def get_bounded(value,bounds=None,uid=None,names={&#39;uid&#39;:&#39;uid&#39;,&#39;value&#39;:&#39;value&#39;}):</span>
-<span class="c">#    if uid is None:</span>
-<span class="c">#        uid = np.arange(1,value.shape[0]+1,dtype=int)</span>
-<span class="c">#    ret = np.empty(value.shape[0],dtype=[(names[&#39;uid&#39;],int),(names[&#39;value&#39;],value.dtype,3)])</span>
-<span class="c">#    ret[names[&#39;uid&#39;]] = uid</span>
-<span class="c">#    ref = ret[names[&#39;value&#39;]]</span>
-<span class="c">#    ref[:,1] = value</span>
-<span class="c">#    if bounds is None:</span>
-<span class="c">#        ref[:,0] = ref[:,1]</span>
-<span class="c">#        ref[:,2] = ref[:,1]</span>
-<span class="c">#    else:</span>
-<span class="c">#        ref[:,0] = bounds[:,0]</span>
-<span class="c">#        ref[:,2] = bounds[:,1]</span>
-<span class="c">#    return(ret)</span>
 
-<span class="c">#def append(arr,value):</span>
-<span class="c">#    arr.resize(arr.shape[0]+1,refcheck=False)</span>
-<span class="c">#    arr[arr.shape[0]-1] = value</span>
+<span class="k">def</span> <span class="nf">get_ordered_dicts_from_records_array</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a NumPy records array to an ordered dictionary.</span>
+
+<span class="sd">    :param arr: The records array to convert with shape (m,).</span>
+<span class="sd">    :type arr: :class:`numpy.core.multiarray.ndarray`</span>
+<span class="sd">    :rtype: list[:class:`collections.OrderedDict`]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_names</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span>
+    <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
+            <span class="n">fill</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span>
 
 <span class="k">def</span> <span class="nf">iter_array</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="n">use_mask</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">return_value</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="k">try</span><span class="p">:</span>
@@ -721,6 +609,10 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">mask</span>
+            <span class="c"># if the mask is not being used, to skip some objects, set the arr to the underlying data value after</span>
+            <span class="c"># referencing the mask.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">use_mask</span><span class="p">:</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">data</span>
         <span class="c">## array is not masked</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="k">pass</span>
@@ -1124,7 +1016,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

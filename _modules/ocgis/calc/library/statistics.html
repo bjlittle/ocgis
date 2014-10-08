@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.library.statistics &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.calc.library.statistics &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../../../index.html" />
     <link rel="up" title="ocgis" href="../../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,16 +45,138 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.library.statistics</h1><div class="highlight"><pre>
-<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">ocgis.calc.base</span> <span class="kn">import</span> <span class="n">AbstractUnivariateFunction</span><span class="p">,</span> <span class="n">AbstractParameterizedFunction</span>
+<span class="kn">from</span> <span class="nn">ocgis.calc.library.math</span> <span class="kn">import</span> <span class="n">Convolve1D</span>
+<span class="kn">from</span> <span class="nn">ocgis.util.helpers</span> <span class="kn">import</span> <span class="n">iter_array</span>
 
 
+<div class="viewcode-block" id="MovingWindow"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.MovingWindow">[docs]</a><span class="k">class</span> <span class="nc">MovingWindow</span><span class="p">(</span><span class="n">AbstractUnivariateFunction</span><span class="p">,</span> <span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;moving_window&#39;</span>
+    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;k&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s">&#39;mode&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;moving_window&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Moving Window Operation&#39;</span>
+
+    <span class="n">_potential_operations</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="s">&#39;min&#39;</span><span class="p">,</span> <span class="s">&#39;max&#39;</span><span class="p">,</span> <span class="s">&#39;median&#39;</span><span class="p">,</span> <span class="s">&#39;var&#39;</span><span class="p">,</span> <span class="s">&#39;std&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MovingWindow.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.MovingWindow.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;valid&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate ``operation`` for the set of values with window of width ``k`` centered on time coordinate `t`. The</span>
+<span class="sd">        ``mode`` may either be ``&#39;valid&#39;`` or ``&#39;same&#39;`` following the definition here: http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html.</span>
+<span class="sd">        The window width ``k`` must be an odd number and &gt;= 3. Supported operations are: mean, min, max, median, var,</span>
+<span class="sd">        and std.</span>
+
+<span class="sd">        :param values: Array containing variable values.</span>
+<span class="sd">        :type values: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        :param k: The width of the moving window. ``k`` must be odd and greater than three.</span>
+<span class="sd">        :type k: int</span>
+<span class="sd">        :param operation: The NumPy-based array operation to perform on the set of window values.</span>
+<span class="sd">        :type operation: str in (&#39;mean&#39;, &#39;min&#39;, &#39;max&#39;, &#39;median&#39;, &#39;var&#39;, &#39;std&#39;)</span>
+<span class="sd">        :param str mode: See: http://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html. The output mode</span>
+<span class="sd">         ``full`` is not supported.</span>
+<span class="sd">        :rtype: :class:`numpy.ma.core.MaskedArray`</span>
+<span class="sd">        :raises: AssertionError, NotImplementedError</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># &#39;full&#39; is not supported as this would add dates to the temporal dimension</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">mode</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;same&#39;</span><span class="p">,</span> <span class="s">&#39;valid&#39;</span><span class="p">))</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">operation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_potential_operations</span><span class="p">)</span>
+
+        <span class="n">operation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span>
+
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c"># perform the moving average on the time axis</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+        <span class="n">itrs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ie</span><span class="p">,</span> <span class="n">il</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">itrs</span><span class="p">):</span>
+            <span class="n">values_slice</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">ie</span><span class="p">,</span> <span class="p">:,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="n">build</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">for</span> <span class="n">origin</span><span class="p">,</span> <span class="n">values_kernel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_kernel_values_</span><span class="p">(</span><span class="n">values_slice</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">build</span><span class="p">:</span>
+                    <span class="c"># if only the valid region is returned, this index will determine where the start index for the</span>
+                    <span class="c"># field/fill slice is</span>
+                    <span class="n">idx_start</span> <span class="o">=</span> <span class="n">origin</span>
+                    <span class="n">build</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="n">fill</span><span class="p">[</span><span class="n">ie</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="n">il</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">operation</span><span class="p">(</span><span class="n">values_kernel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;valid&#39;</span><span class="p">:</span>
+            <span class="c"># slice the field and fill arrays</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">[:,</span> <span class="n">idx_start</span><span class="p">:</span><span class="n">origin</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="n">fill</span> <span class="o">=</span> <span class="n">fill</span><span class="p">[:,</span> <span class="n">idx_start</span><span class="p">:</span><span class="n">origin</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;same&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fill</span>
+</div>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_iter_kernel_values_</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;valid&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param values: The three-dimensional array from which to extract window values.</span>
+<span class="sd">        :type values: :class:`numpy.core.multiarray.ndarray` axes = (time, row, column)</span>
+<span class="sd">        :param int k: The width of window. Must be odd and greater than 3.</span>
+<span class="sd">        :param str mode: If ``valid``, return only values with a full window overlap. If ``same``, return all values</span>
+<span class="sd">         regardless of window overlap.</span>
+<span class="sd">        :returns: tuple(int, :class:`numpy.core.multiarray.ndarray`)</span>
+<span class="sd">        :raises: AssertionError, NotImplementedError</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="n">k</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">k</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c"># used to track the current value for the centered window.</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c"># size of one side of the window used to determine the slice for the kernel</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="c"># reference for the length of the value array</span>
+        <span class="n">shape_values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># will return only values with a full window overlap</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;valid&#39;</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">-</span> <span class="n">shift</span>
+                <span class="c"># skip slices without a full window</span>
+                <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">origin</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+                <span class="n">stop</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">+</span> <span class="n">shift</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="c"># if the end index is greater than the length of the value array end iteration</span>
+                <span class="k">if</span> <span class="n">stop</span> <span class="o">&gt;</span> <span class="n">shape_values</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">StopIteration</span>
+                <span class="k">yield</span> <span class="n">origin</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">origin</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;same&#39;</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">-</span> <span class="n">shift</span>
+                <span class="n">stop</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">+</span> <span class="n">shift</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="c"># return values regardless of window overlap. always start at the beginning of the array</span>
+                <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">yield</span> <span class="n">origin</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">origin</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c"># stop when we&#39;ve used the last array value</span>
+                <span class="k">if</span> <span class="n">origin</span> <span class="o">==</span> <span class="n">shape_values</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">StopIteration</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+
+</div>
 <div class="viewcode-block" id="FrequencyPercentile"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.FrequencyPercentile">[docs]</a><span class="k">class</span> <span class="nc">FrequencyPercentile</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;freq_perc&#39;</span>
     <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;percentile&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">}</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;The percentile value along the time axis. See: http://docs.scipy.org/doc/numpy-dev/reference/generated/numpy.percentile.html.&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;frequency_percentile&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Frequency Percentile&#39;</span>
     
 <div class="viewcode-block" id="FrequencyPercentile.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.FrequencyPercentile.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="n">percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -69,6 +191,8 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Max value for the series.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
     
 <div class="viewcode-block" id="Max.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Max.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
         <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -78,6 +202,8 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Min value for the series.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;min&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;min&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Min&#39;</span>
     
 <div class="viewcode-block" id="Min.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Min.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
         <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -87,6 +213,8 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute mean value of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;mean&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;mean&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Mean&#39;</span>
     
 <div class="viewcode-block" id="Mean.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Mean.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
         <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -96,6 +224,8 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute median value of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
     
 <div class="viewcode-block" id="Median.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Median.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
         <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
@@ -105,6 +235,8 @@
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute standard deviation of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;std&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;standard_deviation&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Standard Deviation&#39;</span>
     
 <div class="viewcode-block" id="StandardDeviation.calculate"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.StandardDeviation.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
         <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span></div></div>
@@ -135,7 +267,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

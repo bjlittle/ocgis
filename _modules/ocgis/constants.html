@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.constants &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.constants &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../index.html" />
     <link rel="up" title="ocgis" href="../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -48,6 +48,8 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="c">#: Standard bounds name used when none is available from the input data.</span>
+<span class="kn">from</span> <span class="nn">ocgis.interface.base.crs</span> <span class="kn">import</span> <span class="n">CFWGS84</span>
+
 <span class="n">ocgis_bounds</span> <span class="o">=</span> <span class="s">&#39;bounds&#39;</span>
 
 <span class="c">#: Default netCDF4 output file type</span>
@@ -68,8 +70,8 @@
 <span class="c">#: Key identifiers for output formats.</span>
 <span class="n">output_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;numpy&#39;</span><span class="p">,</span><span class="s">&#39;nc&#39;</span><span class="p">,</span><span class="s">&#39;csv&#39;</span><span class="p">,</span><span class="s">&#39;csv+&#39;</span><span class="p">,</span><span class="s">&#39;shp&#39;</span><span class="p">,</span><span class="s">&#39;geojson&#39;</span><span class="p">,</span><span class="s">&#39;meta&#39;</span><span class="p">]</span>
 
-<span class="c">#test_data_download_url_prefix = &#39;https://dl.dropboxusercontent.com/u/867854/test_data_download/&#39;</span>
-<span class="n">test_data_download_url_prefix</span> <span class="o">=</span> <span class="s">&#39;http://www.earthsystemmodeling.org/download/data/ocgis/nc/&#39;</span>
+<span class="c"># Download URL for test datasets.</span>
+<span class="n">test_data_download_url_prefix</span> <span class="o">=</span> <span class="bp">None</span>
 
 <span class="c">#: The day value to use for month centroids.</span>
 <span class="n">calc_month_centroid</span> <span class="o">=</span> <span class="mi">16</span>
@@ -92,8 +94,14 @@
 <span class="c">#: NumPy functions enabled for functions evaluated from string representations.</span>
 <span class="n">enabled_numpy_ufuncs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;exp&#39;</span><span class="p">,</span><span class="s">&#39;log&#39;</span><span class="p">,</span><span class="s">&#39;abs&#39;</span><span class="p">]</span>
 
+<span class="c">#: The default coordinate system to use if none is provided.</span>
+<span class="n">default_coordinate_system</span> <span class="o">=</span> <span class="n">CFWGS84</span><span class="p">()</span>
 
-<span class="n">test_run_long_tests</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="c">#: The value for the prime meridian to use when wrapping.</span>
+<span class="n">prime_meridian</span> <span class="o">=</span> <span class="mf">179.9999999999999</span>
+
+
+<span class="n">test_run_long_tests</span> <span class="o">=</span> <span class="bp">False</span>
 <span class="n">test_run_dev_tests</span> <span class="o">=</span> <span class="bp">False</span>
 </pre></div>
 
@@ -122,7 +130,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

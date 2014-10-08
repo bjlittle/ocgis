@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Exceptions &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>Exceptions &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="index.html" />
     <link rel="next" title="Appendix" href="appendix.html" />
     <link rel="prev" title="Constants" href="constants.html" /> 
   </head>
@@ -40,7 +40,7 @@
         <li class="right" >
           <a href="constants.html" title="Constants"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -61,6 +61,20 @@
 <dt id="ocgis.exc.CalculationException">
 <em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">CalculationException</tt><big>(</big><em>function_klass</em>, <em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#CalculationException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.CalculationException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ocgis.exc.CornersInconsistentError">
+<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">CornersInconsistentError</tt><big>(</big><em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#CornersInconsistentError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.CornersInconsistentError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ocgis.exc.RegriddingError" title="ocgis.exc.RegriddingError"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.RegriddingError</span></tt></a></p>
+<p>Raised when corners are not available on all sources and/or destination fields.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ocgis.exc.CornersUnavailable">
+<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">CornersUnavailable</tt><big>(</big><em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#CornersUnavailable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.CornersUnavailable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
+<p>Raised when grid corners may not be constructed.</p>
 </dd></dl>
 
 <dl class="exception">
@@ -156,8 +170,24 @@
 </dd></dl>
 
 <dl class="exception">
+<dt id="ocgis.exc.MultipleElementsFound">
+<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">MultipleElementsFound</tt><big>(</big><em>sdim</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#MultipleElementsFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.MultipleElementsFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
+<p>Raised when multiple elements are encountered in a <tt class="xref py py-class docutils literal"><span class="pre">ocgis.interface.base.dimension.spatial.SpatialDimension</span></tt>
+object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sdim</strong> (<tt class="xref py py-class docutils literal"><span class="pre">ocgis.interface.base.dimension.spatial.SpatialDimension</span></tt>) &#8211; The incoming spatial dimension object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="exception">
 <dt id="ocgis.exc.NoUnitsError">
-<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">NoUnitsError</tt><big>(</big><em>variable</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#NoUnitsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.NoUnitsError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">NoUnitsError</tt><big>(</big><em>variable</em>, <em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#NoUnitsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.NoUnitsError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
 <p>Raised when a <tt class="xref py py-class docutils literal"><span class="pre">cfunits.Units</span></tt> object is constructed from <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
 </dd></dl>
@@ -194,6 +224,13 @@
 </dd></dl>
 
 <dl class="exception">
+<dt id="ocgis.exc.RegriddingError">
+<em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">RegriddingError</tt><big>(</big><em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#RegriddingError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.RegriddingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
+<p>Raised for exceptions related to ESMPy-enabled regridding.</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="ocgis.exc.RequestValidationError">
 <em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">RequestValidationError</tt><big>(</big><em>keyword</em>, <em>message</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#RequestValidationError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.RequestValidationError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
@@ -216,6 +253,7 @@
 <dt id="ocgis.exc.SpatialWrappingError">
 <em class="property">exception </em><tt class="descclassname">ocgis.exc.</tt><tt class="descname">SpatialWrappingError</tt><big>(</big><em>message=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/exc.html#SpatialWrappingError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.exc.SpatialWrappingError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ocgis.exc.OcgException" title="ocgis.exc.OcgException"><tt class="xref py py-class docutils literal"><span class="pre">ocgis.exc.OcgException</span></tt></a></p>
+<p>Raised for errors related to wrapping or unwrapping a geographic coordinate system.</p>
 </dd></dl>
 
 <dl class="exception">
@@ -302,7 +340,7 @@
         <li class="right" >
           <a href="constants.html" title="Constants"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

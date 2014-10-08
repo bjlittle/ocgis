@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Examples &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>Examples &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,9 +26,9 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="index.html" />
     <link rel="next" title="Utility Functions" href="utility.html" />
-    <link rel="prev" title="Computation" href="computation.html" /> 
+    <link rel="prev" title="ESMPy Regridding" href="regrid.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,9 +38,9 @@
           <a href="utility.html" title="Utility Functions"
              accesskey="N">next</a></li>
         <li class="right" >
-          <a href="computation.html" title="Computation"
+          <a href="regrid.html" title="ESMPy Regridding"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -311,6 +311,45 @@ variables:
 </pre></div>
 </div>
 </div>
+<div class="section" id="regridding">
+<span id="id1"></span><h2>Regridding<a class="headerlink" href="#regridding" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">ocgis</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<span class="c"># global model grid with ~3 degree resolution</span>
+<span class="n">URI1</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&#39;~/climate_data/CanCM4/tas_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">)</span>
+<span class="c"># downscaled model grid covering the conterminous United States with ~1/8 degree resolution</span>
+<span class="n">URI2</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&#39;~/climate_data/maurer/bcca/obs/tasmax/1_8deg/gridded_obs.tasmax.OBS_125deg.daily.1991.nc&#39;</span><span class="p">)</span>
+<span class="n">ocgis</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">DIR_OUTPUT</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
+
+
+<span class="c">########################################################################################################################</span>
+<span class="c"># simple regridding example with a bounding box subset writing to netCDF using conservative regridding.</span>
+<span class="c">########################################################################################################################</span>
+
+<span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">104</span><span class="p">,</span> <span class="mi">36</span><span class="p">,</span> <span class="o">-</span><span class="mi">95</span><span class="p">,</span> <span class="mi">44</span><span class="p">]</span>
+<span class="c"># regrid the global dataset to the downscaled grid</span>
+<span class="n">rd_global</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">URI1</span><span class="p">)</span>
+<span class="n">rd_downscaled</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">URI2</span><span class="p">)</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd_global</span><span class="p">,</span> <span class="n">regrid_destination</span><span class="o">=</span><span class="n">rd_downscaled</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s">&#39;nc&#39;</span><span class="p">,</span>
+                          <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;with_corners&#39;</span><span class="p">)</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+<span class="c">########################################################################################################################</span>
+<span class="c"># regrid using bilinear interpolation (i.e. without corners)</span>
+<span class="c">########################################################################################################################</span>
+
+<span class="n">rd_global</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">URI1</span><span class="p">)</span>
+<span class="n">rd_downscaled</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">URI2</span><span class="p">)</span>
+<span class="n">regrid_options</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;with_corners&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">}</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd_global</span><span class="p">,</span> <span class="n">regrid_destination</span><span class="o">=</span><span class="n">rd_downscaled</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s">&#39;nc&#39;</span><span class="p">,</span>
+                          <span class="n">regrid_options</span><span class="o">=</span><span class="n">regrid_options</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;without_corners&#39;</span><span class="p">)</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -327,13 +366,14 @@ variables:
 <li><a class="reference internal" href="#simple-subsetting">Simple Subsetting</a></li>
 <li><a class="reference internal" href="#advanced-subsetting">Advanced Subsetting</a></li>
 <li><a class="reference internal" href="#subsetting-with-a-time-level-range">Subsetting with a Time/Level Range</a></li>
+<li><a class="reference internal" href="#regridding">Regridding</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="computation.html"
-                        title="previous chapter">Computation</a></p>
+  <p class="topless"><a href="regrid.html"
+                        title="previous chapter">ESMPy Regridding</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="utility.html"
                         title="next chapter">Utility Functions</a></p>
@@ -366,9 +406,9 @@ variables:
           <a href="utility.html" title="Utility Functions"
              >next</a></li>
         <li class="right" >
-          <a href="computation.html" title="Computation"
+          <a href="regrid.html" title="ESMPy Regridding"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

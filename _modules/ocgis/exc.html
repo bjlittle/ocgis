@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.exc &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.exc &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../index.html" />
     <link rel="up" title="ocgis" href="../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -52,10 +52,28 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+
+</div>
+<div class="viewcode-block" id="MultipleElementsFound"><a class="viewcode-back" href="../../exc.html#ocgis.exc.MultipleElementsFound">[docs]</a><span class="k">class</span> <span class="nc">MultipleElementsFound</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when multiple elements are encountered in a :class:`ocgis.interface.base.dimension.spatial.SpatialDimension`</span>
+<span class="sd">    object.</span>
+
+<span class="sd">    :param sdim: The incoming spatial dimension object.</span>
+<span class="sd">    :type sdim: :class:`ocgis.interface.base.dimension.spatial.SpatialDimension`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sdim</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sdim</span> <span class="o">=</span> <span class="n">sdim</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Shape of the spatial dimension object is: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sdim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span>
 
 </div>
 <div class="viewcode-block" id="CalculationException"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CalculationException">[docs]</a><span class="k">class</span> <span class="nc">CalculationException</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function_klass</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">function_klass</span> <span class="o">=</span> <span class="n">function_klass</span>
         <span class="n">OcgException</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
@@ -175,6 +193,7 @@
 
 </div>
 <div class="viewcode-block" id="SpatialWrappingError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.SpatialWrappingError">[docs]</a><span class="k">class</span> <span class="nc">SpatialWrappingError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised for errors related to wrapping or unwrapping a geographic coordinate system.&quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
 </div>
@@ -222,8 +241,9 @@
 <div class="viewcode-block" id="NoUnitsError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.NoUnitsError">[docs]</a><span class="k">class</span> <span class="nc">NoUnitsError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a :class:`cfunits.Units` object is constructed from ``None``.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variable</span> <span class="o">=</span> <span class="n">variable</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NoUnitsError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
@@ -276,6 +296,16 @@
         <span class="k">return</span> <span class="n">msg</span>
 
 </div>
+<div class="viewcode-block" id="RegriddingError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.RegriddingError">[docs]</a><span class="k">class</span> <span class="nc">RegriddingError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised for exceptions related to ESMPy-enabled regridding.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="CornersInconsistentError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CornersInconsistentError">[docs]</a><span class="k">class</span> <span class="nc">CornersInconsistentError</span><span class="p">(</span><span class="n">RegriddingError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when corners are not available on all sources and/or destination fields.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+</div>
 <div class="viewcode-block" id="RequestValidationError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.RequestValidationError">[docs]</a><span class="k">class</span> <span class="nc">RequestValidationError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when validation fails on a parameter when creating a :class:`~ocgis.RequestDataset` object.&quot;&quot;&quot;</span>
 
@@ -286,7 +316,13 @@
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">message</span> <span class="o">=</span> <span class="s">&#39;Validation failed on the keyword parameter &quot;{0}&quot; with the message: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyword</span><span class="p">,</span>
                                                                                                   <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">message</span></div>
+        <span class="k">return</span> <span class="n">message</span>
+
+</div>
+<div class="viewcode-block" id="CornersUnavailable"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CornersUnavailable">[docs]</a><span class="k">class</span> <span class="nc">CornersUnavailable</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when grid corners may not be constructed.&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
 </pre></div>
 
           </div>
@@ -314,7 +350,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

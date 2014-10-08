@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>Installation &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="index.html" />
     <link rel="next" title="Python API" href="api.html" />
     <link rel="prev" title="Important Links" href="links.html" /> 
   </head>
@@ -40,7 +40,7 @@
         <li class="right" >
           <a href="links.html" title="Important Links"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -71,8 +71,8 @@
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td>Python</td>
-<td>2.7.2</td>
-<td><a class="reference external" href="http://www.python.org/download/releases/2.7.2/">http://www.python.org/download/releases/2.7.2/</a></td>
+<td>2.7.6</td>
+<td><a class="reference external" href="http://www.python.org/download/releases/2.7.6/">http://www.python.org/download/releases/2.7.6/</a></td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">osgeo</span></tt></td>
 <td>1.9.1</td>
@@ -87,12 +87,12 @@
 <td><a class="reference external" href="https://pypi.python.org/pypi/Fiona">https://pypi.python.org/pypi/Fiona</a></td>
 </tr>
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">numpy</span></tt></td>
-<td>1.6.2</td>
-<td><a class="reference external" href="http://sourceforge.net/projects/numpy/files/NumPy/1.6.2/">http://sourceforge.net/projects/numpy/files/NumPy/1.6.2/</a></td>
+<td>1.8.2</td>
+<td><a class="reference external" href="http://sourceforge.net/projects/numpy/files/NumPy/1.8.2/">http://sourceforge.net/projects/numpy/files/NumPy/1.8.2/</a></td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">netCDF4</span></tt></td>
-<td>1.2</td>
-<td><a class="reference external" href="http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html">http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html</a></td>
+<td>1.1.1</td>
+<td><a class="reference external" href="http://unidata.github.io/netcdf4-python/">http://unidata.github.io/netcdf4-python/</a></td>
 </tr>
 </tbody>
 </table>
@@ -102,10 +102,10 @@
 <p>There are two optional dependencies. OpenClimateGIS will still operate without these libraries installed but functionality and performance may change.</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="7%" />
+<col width="6%" />
 <col width="4%" />
-<col width="21%" />
-<col width="68%" />
+<col width="26%" />
+<col width="63%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Package Name</th>
@@ -125,6 +125,11 @@
 <td><a class="reference external" href="https://code.google.com/p/cfunits-python/">https://code.google.com/p/cfunits-python/</a></td>
 <td>Allows unit transformations for <tt class="docutils literal"><span class="pre">conform_units_to</span></tt> argument to <a class="reference internal" href="api.html#ocgis.RequestDataset" title="ocgis.RequestDataset"><tt class="xref py py-class docutils literal"><span class="pre">RequestDataset</span></tt></a> or <a class="reference internal" href="api.html#ocgis.OcgOperations" title="ocgis.OcgOperations"><tt class="xref py py-class docutils literal"><span class="pre">OcgOperations</span></tt></a>.</td>
 </tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">ESMPy</span></tt></td>
+<td>6.3.0rp1</td>
+<td><a class="reference external" href="https://www.earthsystemcog.org/projects/esmpy/releases">https://www.earthsystemcog.org/projects/esmpy/releases</a></td>
+<td>Supports regridding operations.</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -134,7 +139,7 @@
 <div class="highlight-sh"><div class="highlight"><pre><span class="c">#!/bin/bash</span>
 
 sudo apt-get update
-sudo apt-get install wget libnetcdf-dev libgeos-dev libgdal-dev libspatialindex-dev libudunits2-0 libproj-dev python-pip python-dev
+sudo apt-get install wget libhdf5-dev libnetcdf-dev libgeos-dev libgdal-dev libspatialindex-dev libudunits2-0 libproj-dev python-pip python-dev
 sudo pip install numpy netCDF4 shapely fiona rtree
 
 <span class="c">###########</span>
@@ -174,6 +179,44 @@ sudo python setup.py install
 <span class="c">##  python -c &quot;import cfunits, os;print(os.path.split(cfunits.__file__)[0])&quot;</span>
 <span class="nv">CFUNITS_INSTALL_DIR</span><span class="o">=</span>/usr/local/lib/python2.7/dist-packages/cfunits
 sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="nv">$CFUNITS_INSTALL_DIR</span>
+
+<span class="c">#########</span>
+<span class="c"># ESMPy #</span>
+<span class="c">#########</span>
+
+<span class="c"># download the ESMF tarball via registration page:</span>
+<span class="c">#  http://www.earthsystemmodeling.org/download/releases.shtml</span>
+
+<span class="c"># link for building ESMF:</span>
+<span class="c">#  http://www.earthsystemmodeling.org/esmf_releases/public/ESMF_6_3_0rp1/ESMF_usrdoc/</span>
+
+<span class="c"># notes:</span>
+<span class="c">#  * will need fortran and c compiler</span>
+
+<span class="nv">ESMF_TAR</span><span class="o">=</span>esmf_6_3_0rp1_src.tar.gz
+<span class="nv">ESMF_VER</span><span class="o">=</span><span class="s1">&#39;v6.3.0rp1&#39;</span>
+<span class="nv">ESMF_SRCDIR</span><span class="o">=</span>/tmp/esmf/<span class="nv">$ESMF_VER</span>
+<span class="nv">ESMF_INSTALL_PREFIX</span><span class="o">=</span>&lt;path to esmf install directory&gt;
+
+<span class="c">## ESMF framework install ##</span>
+
+sudo apt-get install gfortran g++
+mkdir -p <span class="nv">$ESMF_SRCDIR</span>
+<span class="nb">cd</span> <span class="nv">$ESMF_SRCDIR</span>
+&lt;make sure ESMF tarball is available in the <span class="nb">source </span>directory&gt;
+tar -xzvf <span class="nv">$ESMF_TAR</span>
+<span class="nb">cd </span>esmf
+<span class="nb">export </span><span class="nv">ESMF_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
+make
+<span class="nb">export </span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>
+<span class="nb">export </span><span class="nv">ESMF_INSTALL_LIBDIR</span><span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>/lib
+sudo -E make install
+
+<span class="c">## ESMPy install ##</span>
+
+<span class="nb">cd</span> <span class="nv">$ESMF_INSTALL_PREFIX</span>/esmf/src/addon/ESMPy
+python setup.py build --ESMFMKFILE<span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>/lib/esmf.mk
+sudo python setup.py install
 </pre></div>
 </div>
 <div class="section" id="package-notes">
@@ -195,25 +238,28 @@ sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="n
 <tr class="row-odd"><td>libgeos-dev</td>
 <td><tt class="docutils literal"><span class="pre">shapely</span></tt> speedups</td>
 </tr>
-<tr class="row-even"><td>libnetcdf-dev</td>
+<tr class="row-even"><td>libhdf5-dev</td>
 <td><tt class="docutils literal"><span class="pre">netCDF4</span></tt></td>
 </tr>
-<tr class="row-odd"><td>libproj-dev</td>
+<tr class="row-odd"><td>libnetcdf-dev</td>
+<td><tt class="docutils literal"><span class="pre">netCDF4</span></tt></td>
+</tr>
+<tr class="row-even"><td>libproj-dev</td>
 <td><tt class="docutils literal"><span class="pre">osgeo</span></tt> and <tt class="docutils literal"><span class="pre">fiona</span></tt></td>
 </tr>
-<tr class="row-even"><td>libspatialindex-dev</td>
+<tr class="row-odd"><td>libspatialindex-dev</td>
 <td><tt class="docutils literal"><span class="pre">rtree</span></tt></td>
 </tr>
-<tr class="row-odd"><td>libudunits2-0</td>
+<tr class="row-even"><td>libudunits2-0</td>
 <td><tt class="docutils literal"><span class="pre">cfunits</span></tt></td>
 </tr>
-<tr class="row-even"><td>python-dev</td>
+<tr class="row-odd"><td>python-dev</td>
 <td>needed at least for <tt class="docutils literal"><span class="pre">numpy</span></tt></td>
 </tr>
-<tr class="row-odd"><td>python-pip</td>
+<tr class="row-even"><td>python-pip</td>
 <td>all <tt class="docutils literal"><span class="pre">pip</span></tt> installed Python packages</td>
 </tr>
-<tr class="row-even"><td>wget</td>
+<tr class="row-odd"><td>wget</td>
 <td><tt class="docutils literal"><span class="pre">cfunits</span></tt> installation</td>
 </tr>
 </tbody>
@@ -236,7 +282,14 @@ sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="n
 <div class="section" id="installing-openclimategis">
 <h2>Installing OpenClimateGIS<a class="headerlink" href="#installing-openclimategis" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
-<li>Download the current release: <a class="reference external" href="http://www.earthsystemmodeling.org/ocgis_releases/beta_releases/ocgis-0.08b/reg/OCGIS_Framework_Reg.html">http://www.earthsystemmodeling.org/ocgis_releases/beta_releases/ocgis-0.08b/reg/OCGIS_Framework_Reg.html</a>.</li>
+<li>Download the current release:</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://www.earthsystemmodeling.org/ocgis_releases/beta_releases/ocgis-0.08b/reg/OCGIS_Framework_Reg.html">http://www.earthsystemmodeling.org/ocgis_releases/beta_releases/ocgis-0.08b/reg/OCGIS_Framework_Reg.html</a></li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="2">
 <li>Extract the file using your favorite extraction utility.</li>
 <li>Navigate into extracted directory.</li>
 <li>Run the command:</li>
@@ -332,7 +385,7 @@ sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="n
         <li class="right" >
           <a href="links.html" title="Important Links"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

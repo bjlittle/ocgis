@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.util.large_array &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.util.large_array &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../../index.html" />
     <link rel="up" title="ocgis" href="../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -85,6 +85,16 @@
     <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">OcgOperations</span><span class="p">))</span>
     <span class="k">assert</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">calc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span>
     <span class="k">assert</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">output_format</span> <span class="o">==</span> <span class="s">&#39;nc&#39;</span><span class="p">)</span>
+
+    <span class="c">## ensure that progress is not showing 100% at first</span>
+    <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">orgcallback</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span>
+
+        <span class="k">def</span> <span class="nf">zeropercentagecallback</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+            <span class="n">orgcallback</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+
+        <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">zeropercentagecallback</span>
+    
     <span class="n">tile_dimension</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tile_dimension</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">tile_dimension</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;&quot;tile_dimension&quot; must be greater than 0&#39;</span><span class="p">))</span>
@@ -178,20 +188,32 @@
 
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="s">&#39;getting tile schema...&#39;</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="n">tile</span><span class="o">.</span><span class="n">get_tile_schema</span><span class="p">(</span><span class="n">shp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tile_dimension</span><span class="p">)</span>
+        <span class="n">lschema</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 
+        <span class="c"># Create new callbackfunction where the 0-100% range is converted to a subset corresponding to the no. of blocks to be calculated</span>
+        <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">percentageDone</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">callback</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span>
+            <span class="k">def</span> <span class="nf">newcallback</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">m</span><span class="p">):</span>
+              <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">/</span><span class="n">lschema</span><span class="p">)</span><span class="o">+</span><span class="n">percentageDone</span>
+              <span class="n">orgcallback</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">m</span><span class="p">)</span>
+            <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">newcallback</span>
+        
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39;output file is: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fill_file</span><span class="p">))</span>
-            <span class="n">lschema</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
             <span class="k">print</span><span class="p">(</span><span class="s">&#39;tile count: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lschema</span><span class="p">))</span>
 
         <span class="n">fds</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">fill_file</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                 <span class="n">progress</span> <span class="o">=</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="s">&#39;tiles progress&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">callback</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s">&quot;Initializing calculation&quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">ctr</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
                 <span class="c">## appropriate adjust the slices to account for the spatial subset</span>
                 <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="n">ii</span> <span class="o">+</span> <span class="n">row_offset</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">[</span><span class="s">&#39;row&#39;</span><span class="p">]]</span>
                 <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="n">ii</span> <span class="o">+</span> <span class="n">col_offset</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">[</span><span class="s">&#39;col&#39;</span><span class="p">]]</span>
+
                 <span class="c">## copy the operations and modify arguments</span>
                 <span class="n">ops_slice</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span>
                 <span class="n">ops_slice</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="bp">None</span>
@@ -231,6 +253,8 @@
                             <span class="n">fds</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                     <span class="n">progress</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span> <span class="o">/</span> <span class="n">lschema</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">ops</span><span class="o">.</span><span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">callback</span><span class="p">:</span>
+                    <span class="n">percentageDone</span> <span class="o">=</span> <span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span> <span class="o">/</span> <span class="n">lschema</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">fds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">finally</span><span class="p">:</span>
@@ -267,7 +291,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

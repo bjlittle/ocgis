@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.library.index.dynamic_kernel_percentile &mdash; OpenClimateGIS 0.08b documentation</title>
+    <title>ocgis.calc.library.index.dynamic_kernel_percentile &mdash; OpenClimateGIS 0.09 documentation</title>
     
     <link rel="stylesheet" href="../../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../../',
-        VERSION:     '0.08b',
+        VERSION:     '0.09',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 0.08b documentation" href="../../../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 0.09 documentation" href="../../../../../index.html" />
     <link rel="up" title="ocgis" href="../../../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,35 +45,39 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.library.index.dynamic_kernel_percentile</h1><div class="highlight"><pre>
-<span class="kn">from</span> <span class="nn">ocgis.util.logging_ocgis</span> <span class="kn">import</span> <span class="n">ocgis_lh</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">ocgis.calc.base</span> <span class="kn">import</span> <span class="n">AbstractParameterizedFunction</span><span class="p">,</span> \
-    <span class="n">AbstractUnivariateSetFunction</span>
+<span class="kn">from</span> <span class="nn">ocgis.calc.base</span> <span class="kn">import</span> <span class="n">AbstractParameterizedFunction</span><span class="p">,</span> <span class="n">AbstractUnivariateSetFunction</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">calendar</span>
 
 
-<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold">[docs]</a><span class="k">class</span> <span class="nc">DynamicDailyKernelPercentileThreshold</span><span class="p">(</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
+<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold">[docs]</a><span class="k">class</span> <span class="nc">DynamicDailyKernelPercentileThreshold</span><span class="p">(</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span> <span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;dynamic_kernel_percentile_threshold&#39;</span>
-    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;operation&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="s">&#39;percentile&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">,</span><span class="s">&#39;daily_percentile&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">,</span><span class="s">&#39;width&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">}</span>
+    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s">&#39;percentile&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s">&#39;daily_percentile&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;width&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">}</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_int</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Implementation of moving window percentile threshold calculations similar to ECA indices: http://eca.knmi.nl/documents/atbd.pdf&#39;</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;dynamice_kernel_percentile&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Dynamic Kernel Percentile&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_daily_percentile</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">AbstractUnivariateSetFunction</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="n">AbstractUnivariateSetFunction</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     
-<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">daily_percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">daily_percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param operation: One of &#39;gt&#39;, &#39;lt&#39;, &#39;lte&#39;, or &#39;gte&#39;.</span>
 <span class="sd">        :type operation: str</span>
 <span class="sd">        :param percentile: Percentile threshold to use in the `numpy.percentile` calculation.</span>
 <span class="sd">        :type percentile: int or float from 0 to 100</span>
 <span class="sd">        :param width: Width of kernel (in days) to use for the moving window percentile.</span>
 <span class="sd">        :type width: int, oddly-numbered, at least 3 or greater</span>
-<span class="sd">        :param daily_percentile: Optional structure array as returned by :meth:`~ocgis.calc.library.DynamicDailyKernelPercentileThreshold.get_daily_percentile`. </span>
+<span class="sd">        :param daily_percentile: Optional dictionary as returned by :meth:`~ocgis.calc.library.DynamicDailyKernelPercentileThreshold.get_daily_percentile`.</span>
 <span class="sd">         If this is passed, it will not be calculated internally by the object.</span>
-<span class="sd">        :type daily_percentile: `numpy.ndarray`</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        :type daily_percentile: dict</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="c">## if the daily percentile structured array is not passed, calculate it</span>
         <span class="k">if</span> <span class="n">daily_percentile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
@@ -87,21 +91,14 @@
                                                <span class="n">width</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_daily_percentile</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_curr_variable</span><span class="o">.</span><span class="n">alias</span><span class="p">:</span><span class="n">dp</span><span class="p">})</span>
                 <span class="n">daily_percentile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_daily_percentile</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_curr_variable</span><span class="o">.</span><span class="n">alias</span><span class="p">]</span>
-                
-            
+
         <span class="c">## extract the corresponding dates</span>
         <span class="n">dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">value_datetime</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_curr_group</span><span class="p">]</span>
-        
-        <span class="c">## match each date to it&#39;s percentile</span>
-        <span class="n">dp_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dates</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">date</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dates</span><span class="p">):</span>
-            <span class="n">month</span><span class="p">,</span><span class="n">day</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">date</span><span class="o">.</span><span class="n">day</span>
-            <span class="n">dp_indices</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">daily_percentile</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">daily_percentile</span><span class="p">[</span><span class="s">&#39;month&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">month</span><span class="p">,</span>
-                                                                      <span class="n">daily_percentile</span><span class="p">[</span><span class="s">&#39;day&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">day</span><span class="p">)]</span>
+
         <span class="c">## construct the the comparison array</span>
         <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-            <span class="n">b</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">daily_percentile</span><span class="p">[</span><span class="n">dp_indices</span><span class="p">[</span><span class="n">ii</span><span class="p">]][</span><span class="s">&#39;percentile&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">date</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dates</span><span class="p">):</span>
+            <span class="n">b</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">daily_percentile</span><span class="p">[</span><span class="n">date</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">date</span><span class="o">.</span><span class="n">day</span><span class="p">]</span>
         
         <span class="c">## perform requested logical operation</span>
         <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;gt&#39;</span><span class="p">:</span>
@@ -114,122 +111,178 @@
             <span class="n">ret</span> <span class="o">=</span> <span class="n">values</span> <span class="o">&lt;=</span> <span class="n">b</span>
             
         <span class="c">## we want to maintain the same mask as the input</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
         
         <span class="c">## do the temporal aggregation</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        
-<span class="c">#    @property</span>
-<span class="c">#    def daily_percentile(self):</span>
-<span class="c">#        if self._daily_percentile is None:</span>
-<span class="c">#            self._daily_percentile = self.get_daily_percentile(self.dataset.value,</span>
-<span class="c">#                                                               self.dataset.temporal.value_datetime,</span>
-<span class="c">#                                                               self.kwds[&#39;percentile&#39;],</span>
-<span class="c">#                                                               self.kwds[&#39;width&#39;])</span>
-<span class="c">#        return(self._daily_percentile)</span>
-    </div>
+        <span class="k">return</span> <span class="n">ret</span>
+</div>
     <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold.get_daily_percentile"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold.get_daily_percentile">[docs]</a>    <span class="k">def</span> <span class="nf">get_daily_percentile</span><span class="p">(</span><span class="n">all_values</span><span class="p">,</span><span class="n">temporal</span><span class="p">,</span><span class="n">percentile</span><span class="p">,</span><span class="n">width</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param all_values: Array holding all values to use for base percentile calculations.</span>
-<span class="sd">        :type all_values: numpy.MaskedArray</span>
-<span class="sd">        :param temporal: Vector holding `datetime.datetime` objects with same length as the time axis of `all_values`.</span>
-<span class="sd">        :type temporal: numpy.ndarray</span>
-<span class="sd">        :param percentile: Percentile threshold to use in the `numpy.percentile` calculation.</span>
-<span class="sd">        :type percentile: int or float from 0 to 100</span>
-<span class="sd">        :param width: Width of kernel to use for the moving window percentile.</span>
-<span class="sd">        :type width: int, oddly-number, at least 3 or greater</span>
-<span class="sd">        :returns: A structure array with four fields: month, day, index, and percentile.</span>
-<span class="sd">        :rtype: numpy.ndarray</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">all_values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>
+<div class="viewcode-block" id="DynamicDailyKernelPercentileThreshold.get_daily_percentile"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.dynamic_kernel_percentile.DynamicDailyKernelPercentileThreshold.get_daily_percentile">[docs]</a>    <span class="k">def</span> <span class="nf">get_daily_percentile</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">dt_arr</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a dictionary with keys=calendar day (month,day) and values=numpy.ndarray (2D)</span>
+<span class="sd">        Example - to get the 2D percentile array corresponding to the 15th Mai: percentile_dict[5,15]</span>
+
+<span class="sd">        :param arr: array of values</span>
+<span class="sd">        :type arr: :class:`numpy.ndarray` (3D) of float</span>
+<span class="sd">        :param dt_arr: Corresponding time steps vector (base period: usually 1961-1990).</span>
+<span class="sd">        :type dt_arr: :class:`numpy.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">        :param percentile: Percentile to compute which must be between 0 and 100 inclusive.</span>
+<span class="sd">        :type percentile: int</span>
+<span class="sd">        :param window_width: Window width - must be odd.</span>
+<span class="sd">        :type window_width: int</span>
+<span class="sd">        :param only_leap_years: Option for February 29th. If ``True``, use only leap years when computing the basis.</span>
+<span class="sd">        :type only_leap_years: bool</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># we reduce the number of dimensions</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="n">dt_arr</span> <span class="o">=</span> <span class="n">dt_arr</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
         
-        <span class="c">## collect the days and months uniquely to use for the calendar attribution</span>
-        <span class="n">dmap</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">years</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">temporal</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
-            <span class="n">day</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">year</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="p">,</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span>
-            <span class="n">years</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">year</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">month</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dmap</span><span class="p">:</span>
-                <span class="n">dmap</span><span class="p">[</span><span class="n">month</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">if</span> <span class="n">day</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dmap</span><span class="p">[</span><span class="n">month</span><span class="p">]:</span>
-                <span class="n">dmap</span><span class="p">[</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
+        <span class="c"># step1: creation of the dictionary with all calendar days:</span>
+        <span class="n">dic_caldays</span> <span class="o">=</span> <span class="n">get_dict_caldays</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">)</span>
+    
+        <span class="n">percentile_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
         
-        <span class="c">## this is the structure array storing date parts and percentile arrays</span>
-        <span class="n">cday_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dmap</span><span class="o">.</span><span class="n">itervalues</span><span class="p">()])</span>
-        <span class="n">cday</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cday_length</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s">&#39;month&#39;</span><span class="p">,</span><span class="nb">int</span><span class="p">),(</span><span class="s">&#39;day&#39;</span><span class="p">,</span><span class="nb">int</span><span class="p">),(</span><span class="s">&#39;index&#39;</span><span class="p">,</span><span class="nb">int</span><span class="p">),(</span><span class="s">&#39;percentile&#39;</span><span class="p">,</span><span class="nb">object</span><span class="p">)])</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">dmap</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">dmap</span><span class="p">[</span><span class="n">month</span><span class="p">]):</span>
-                <span class="n">cday</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span>
-                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">dt_hour</span> <span class="o">=</span> <span class="n">dt_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hour</span> <span class="c"># (we get hour of a date only one time, because usually the hour is the same for all dates in input dt_arr)</span>
         
-        <span class="c">## loop for each calendar day and calculate the percentile value for its</span>
-        <span class="c">## data window</span>
-        <span class="n">r_cday_index</span> <span class="o">=</span> <span class="n">cday</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">]</span>
-        <span class="n">r_logical_and</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span>
-        <span class="n">cday_shape</span> <span class="o">=</span> <span class="n">cday</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">target_cday_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cday_shape</span><span class="p">):</span>
-            <span class="n">select</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">all_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-            
-            <span class="c">## this function returns the calendar days part of the target calendar</span>
-            <span class="c">## day&#39;s window. these are then used to subset the calendar day structure</span>
-            <span class="c">## array.</span>
-            <span class="n">window_days</span> <span class="o">=</span> <span class="n">DynamicDailyKernelPercentileThreshold</span><span class="o">.</span><span class="n">_get_calendar_day_window_</span><span class="p">(</span><span class="n">r_cday_index</span><span class="p">,</span><span class="n">target_cday_index</span><span class="p">,</span><span class="n">width</span><span class="p">)</span>
-            <span class="n">cday_select</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">cday_shape</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">wd</span> <span class="ow">in</span> <span class="n">window_days</span><span class="p">:</span>
-                <span class="n">cday_select</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">cday_select</span><span class="p">,</span><span class="n">r_cday_index</span> <span class="o">==</span> <span class="n">wd</span><span class="p">)</span>
-            <span class="n">cday_sub</span> <span class="o">=</span> <span class="n">cday</span><span class="p">[</span><span class="n">cday_select</span><span class="p">]</span>
-            
-            <span class="c">## a tight loop used to determine if a date is a member of a particular</span>
-            <span class="c">## window.</span>
-            <span class="c">## TODO: optimize</span>
-            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">dt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">temporal</span><span class="o">.</span><span class="n">flat</span><span class="p">):</span>
-                <span class="n">r_month</span><span class="p">,</span><span class="n">r_day</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span>
-                <span class="n">dt_cday</span> <span class="o">=</span> <span class="n">cday</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">][</span><span class="n">r_logical_and</span><span class="p">(</span><span class="n">cday</span><span class="p">[</span><span class="s">&#39;day&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">r_day</span><span class="p">,</span><span class="n">cday</span><span class="p">[</span><span class="s">&#39;month&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">r_month</span><span class="p">)]</span>
-                <span class="n">select</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt_cday</span> <span class="ow">in</span> <span class="n">cday_sub</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">]</span>
-            
-            <span class="c">## calculate the percentile value for the window</span>
-            <span class="n">percentile_subset</span> <span class="o">=</span> <span class="n">all_values</span><span class="p">[:,</span><span class="n">select</span><span class="p">]</span>
-<span class="c">#            assert(percentile_subset.shape[0] == len(years)*width)</span>
-            <span class="n">cday</span><span class="p">[</span><span class="s">&#39;percentile&#39;</span><span class="p">][</span><span class="n">target_cday_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">percentile_subset</span><span class="p">,</span><span class="n">percentile</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            
-        <span class="k">return</span><span class="p">(</span><span class="n">cday</span><span class="p">)</span>        
-            </div>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_get_calendar_day_window_</span><span class="p">(</span><span class="n">cday_index</span><span class="p">,</span><span class="n">target_cday_index</span><span class="p">,</span><span class="n">width</span><span class="p">):</span>
-        <span class="n">width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">assert</span><span class="p">(</span><span class="n">width</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">)</span>
-            <span class="k">assert</span><span class="p">(</span><span class="n">width</span><span class="o">%</span><span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
-            <span class="n">ocgis_lh</span><span class="p">(</span><span class="n">exc</span><span class="o">=</span><span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Kernel widths must be &gt;= 3 and be oddly numbered.&#39;</span><span class="p">),</span><span class="n">logger</span><span class="o">=</span><span class="s">&#39;calc.library&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="n">dic_caldays</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">dic_caldays</span><span class="p">[</span><span class="n">month</span><span class="p">]:</span>
+                
+                <span class="c"># step2: we do a mask for the datetime vector for current calendar day (day/month)</span>
+                <span class="n">dt_arr_mask</span> <span class="o">=</span> <span class="n">get_mask_dt_arr</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">)</span>
+    
+                <span class="c"># step3: we are looking for the indices of non-masked dates (i.e. where dt_arr_mask==False) </span>
+                <span class="n">indices_non_masked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt_arr_mask</span><span class="o">==</span><span class="bp">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                
+                <span class="c"># step4: we subset our arr</span>
+                <span class="n">arr_subset</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">indices_non_masked</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+                
+                <span class="c"># step5: we compute the percentile for current arr_subset</span>
+                <span class="c">############## WARNING: type(arr_subset) = numpy.ndarray. Numpy.percentile does not work with masked arrays,</span>
+                <span class="c">############## so if arr_subset has aberrant values like 999999 or 1e+20, the result will be wrong.</span>
+                <span class="c">############## Check with numpy.nanpercentile (Numpy version 1.9) !!!            </span>
+                <span class="n">arr_percentille_current_calday</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">arr_subset</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                
+                <span class="c"># step6: we add to the dictionnary...</span>
+                <span class="n">percentile_dict</span><span class="p">[</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr_percentille_current_calday</span>
+                
+            <span class="c"># print &#39;Creating percentile dictionary: month &#39;, month, &#39;---&gt; OK&#39;</span>
         
-        <span class="n">stride_dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-        <span class="n">axis_length</span> <span class="o">=</span> <span class="n">cday_index</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># print &#39;Percentile dictionary is created.&#39;</span>
         
-        <span class="n">lower_idx</span> <span class="o">=</span> <span class="n">target_cday_index</span> <span class="o">-</span> <span class="n">stride_dim</span>
-        <span class="n">upper_idx</span> <span class="o">=</span> <span class="n">target_cday_index</span> <span class="o">+</span> <span class="n">stride_dim</span> <span class="o">+</span> <span class="mi">1</span>
-        
-        <span class="k">if</span> <span class="n">lower_idx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">a</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="n">lower_idx</span><span class="p">:]</span>
-            <span class="n">b</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">target_cday_index</span><span class="p">]</span>
-            <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">percentile_dict</span>
+
+</div></div>
+<span class="k">def</span> <span class="nf">get_dict_caldays</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a dictionary of calendar days, where keys=months, values=days.</span>
+
+<span class="sd">    :param dt_arr: time steps vector</span>
+<span class="sd">    :type dt_arr: :class:`numpy.core.multiarray.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dic</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">:</span>
+        <span class="n">dic</span><span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dic</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">dic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dic</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="n">dic</span>
+
+
+<span class="k">def</span> <span class="nf">get_masked</span><span class="p">(</span><span class="n">current_date</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns ``True`` if ``current_date`` is not in the window centered on the given calendar day (month-day). Returns</span>
+<span class="sd">    ``False``, if it enters in the window.</span>
+
+<span class="sd">    :param current_date: The date to check for inclusion in a given window.</span>
+<span class="sd">    :type current_date: :class:`datetime.datetime`</span>
+<span class="sd">    :param month: Month of the corresponding calendar day.</span>
+<span class="sd">    :type month: int</span>
+<span class="sd">    :param day: Day of the corresponding calendar day.</span>
+<span class="sd">    :type day: int</span>
+<span class="sd">    :param hour: Hour of the current day.</span>
+<span class="sd">    :type hour: int</span>
+<span class="sd">    :param window_width: Window width - must be odd.</span>
+<span class="sd">    :type window_width: int</span>
+<span class="sd">    :param only_leap_years: Option for February 29th. If ``True``, use only date from other leap years when constructing</span>
+<span class="sd">     the comparison basis.</span>
+<span class="sd">    :type only_leap_years: bool</span>
+<span class="sd">    :rtype: bool (if ``True``, the date will be masked)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">yyyy</span> <span class="o">=</span> <span class="n">current_date</span><span class="o">.</span><span class="n">year</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">day</span><span class="o">==</span><span class="mi">29</span> <span class="ow">and</span> <span class="n">month</span><span class="o">==</span><span class="mo">02</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">calendar</span><span class="o">.</span><span class="n">isleap</span><span class="p">(</span><span class="n">yyyy</span><span class="p">):</span>
+            <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span><span class="n">hour</span><span class="p">)</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+            <span class="n">toReturn</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">lower</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="n">lower_idx</span><span class="p">:</span><span class="n">target_cday_index</span><span class="p">]</span>
-            
-        <span class="k">if</span> <span class="n">upper_idx</span> <span class="o">&gt;</span> <span class="n">axis_length</span><span class="p">:</span>
-            <span class="n">a</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">upper_idx</span><span class="o">-</span><span class="n">axis_length</span><span class="p">]</span>
-            <span class="n">b</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="n">target_cday_index</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">upper_idx</span><span class="p">]</span>
-            <span class="n">upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">upper</span> <span class="o">=</span> <span class="n">cday_index</span><span class="p">[</span><span class="n">target_cday_index</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">upper_idx</span><span class="p">]</span>
-            
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cday_index</span><span class="p">[</span><span class="n">target_cday_index</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span><span class="n">upper</span><span class="p">))</span>
-        
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+            <span class="k">if</span> <span class="n">only_leap_years</span><span class="p">:</span>
+                <span class="n">toReturn</span><span class="o">=</span><span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="mo">02</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="n">hour</span><span class="p">)</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+                <span class="n">toReturn</span> <span class="o">=</span> <span class="p">(</span><span class="n">diff</span> <span class="o">&lt;</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">window_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+        <span class="c"># In the case the current date is in December and calendar day (day-month) is at the beginning of year.</span>
+        <span class="c"># For example we are looking for dates around January 2nd, and the current date is 31 Dec 1999,</span>
+        <span class="c"># we will compare it with 02 Jan 2000 (1999 + 1)</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+        <span class="c"># In the case the current date is in January and calendar day (day-month) is at the end of year.</span>
+        <span class="c"># For example we are looking for dates around December 31st, and the current date is 02 Jan 2003,</span>
+        <span class="c"># we will compare it with 01 Jan 2002 (2003 - 1)</span>
+        <span class="n">d3</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+        <span class="n">diff</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d2</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d3</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+        <span class="n">toReturn</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="k">return</span> <span class="n">toReturn</span>
+
+
+<span class="k">def</span> <span class="nf">get_mask_dt_arr</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a binary mask for a datetime vector for a given calendar day (month-day).</span>
+
+<span class="sd">    :param dt_arr: Time steps vector.</span>
+<span class="sd">    :type dt_arr: :class:`numpy.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">    :param month: Month of a calendar day.</span>
+<span class="sd">    :type month: int</span>
+<span class="sd">    :param day: Day of a calendar day.</span>
+<span class="sd">    :type day: int</span>
+<span class="sd">    :param window_width: Window width - must be odd.</span>
+<span class="sd">    :type window_width: int</span>
+<span class="sd">    :param only_leap_years: Option for February 29th. If ``True``, use only leap years when constructing the basis.</span>
+<span class="sd">    :type only_leap_years: bool</span>
+<span class="sd">    :rtype: :class:`numpy.ndarray` (1D)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">get_masked</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">)</span> <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">mask</span>
+
+
+<span class="k">def</span> <span class="nf">get_year_list</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Just to get a list of all years conteining in time steps vector (dt_arr).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">year_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">:</span>
+        <span class="n">year_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+
+    <span class="n">year_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">year_list</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">year_list</span>
 </pre></div>
 
           </div>
@@ -257,7 +310,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 0.08b documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 0.09 documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>
