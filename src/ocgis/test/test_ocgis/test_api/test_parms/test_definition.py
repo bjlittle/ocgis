@@ -474,6 +474,30 @@ class TestGeom(TestBase):
                 self.assertEqual(sdim.properties['COUNTRY'][0], gdict['properties']['COUNTRY'])
 
 
+class TestLevelRange(TestBase):
+    create_dir = False
+
+    def test_constructor(self):
+        LevelRange()
+
+    def test_normal_int(self):
+        lr = LevelRange([5,10])
+        self.assertEqual(lr.value,(5,10))
+
+    def test_normal_float(self):
+        value = [4.5,6.5]
+        lr = LevelRange(value)
+        self.assertEqual(tuple(value),lr.value)
+
+    def test_bad_length(self):
+        with self.assertRaises(DefinitionValidationError):
+            LevelRange([5,6,7,8])
+
+    def test_bad_ordination(self):
+        with self.assertRaises(DefinitionValidationError):
+            LevelRange([11,10])
+
+
 class TestRegridDestination(TestBase):
 
     @property
@@ -550,7 +574,6 @@ class TestRegridDestination(TestBase):
                             raise
                 self.assertIsInstance(regrid._get_meta_(), basestring)
 
-
 class TestRegridOptions(TestBase):
 
     def test_init(self):
@@ -582,29 +605,6 @@ class TestRegridOptions(TestBase):
 
         ro = RegridOptions({'value_mask': np.array([True])})
         self.assertTrue('numpy.ndarray' in ro._get_meta_())
-
-class TestLevelRange(TestBase):
-    create_dir = False
-
-    def test_constructor(self):
-        LevelRange()
-
-    def test_normal_int(self):
-        lr = LevelRange([5,10])
-        self.assertEqual(lr.value,(5,10))
-
-    def test_normal_float(self):
-        value = [4.5,6.5]
-        lr = LevelRange(value)
-        self.assertEqual(tuple(value),lr.value)
-
-    def test_bad_length(self):
-        with self.assertRaises(DefinitionValidationError):
-            LevelRange([5,6,7,8])
-
-    def test_bad_ordination(self):
-        with self.assertRaises(DefinitionValidationError):
-            LevelRange([11,10])
 
 
 class TestTimeRange(TestBase):

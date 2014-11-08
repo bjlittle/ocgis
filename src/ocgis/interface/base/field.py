@@ -15,12 +15,28 @@ from ocgis.util.logging_ocgis import ocgis_lh
         
 
 class Field(object):
-    _axis_map = {'realization':0,'temporal':1,'level':2}
-    _axes = ['R','T','Z','Y','X']
-    _value_dimension_names = ('realization','temporal','level','row','column')
-    
-    def __init__(self,variables=None,realization=None,temporal=None,level=None,
-                 spatial=None,meta=None,uid=None,name=None):
+    """
+    :param variables: A variable collection containing the values for the field.
+    :type variables: :class:`~ocgis.interface.base.variable.VariableCollection`
+    :param realization: The realization dimension.
+    :type realization: :class:`~ocgis.interface.base.dimension.base.VectorDimension`
+    :param temporal: The temporal dimension.
+    :type temporal: :class:`~ocgis.interface.base.dimension.temporal.TemporalDimension`
+    :param level: The level dimension.
+    :type level: :class:`~ocgis.interface.base.dimension.base.VectorDimension`
+    :param spatial: The spatial dimension.
+    :type spatial: :class:`~ocgis.interface.base.dimension.spatial.SpatialDimension`
+    :param dict meta: A dictionary containing additional metadata elements.
+    :param int uid: A unique identifier for the field.
+    :param str name: A string name for the field.
+    """
+
+    _axis_map = {'realization': 0, 'temporal': 1, 'level': 2}
+    _axes = ['R', 'T', 'Z', 'Y', 'X']
+    _value_dimension_names = ('realization', 'temporal', 'level', 'row', 'column')
+
+    def __init__(self, variables=None, realization=None, temporal=None, level=None, spatial=None, meta=None, uid=None,
+                 name=None):
 
         self.realization = realization
         self.temporal = temporal
@@ -28,27 +44,27 @@ class Field(object):
         self.level = level
         self.spatial = spatial
         self.meta = meta or {}
-        ## holds raw values for aggregated datasets.
+        # holds raw values for aggregated datasets.
         self._raw = None
-        ## add variables - dimensions are needed first for shape checking
+        # add variables - dimensions are needed first for shape checking
         self.variables = variables
         self._name = name
         # flag used in regridding operations. this should be updated by the driver.
         self._should_regrid = False
         # flag used in regridding to indicate if a coordinate system was assigned by the user in the driver.
         self._has_assigned_coordinate_system = False
-                        
-    def __getitem__(self,slc):
-        slc = get_formatted_slice(slc,5)
+
+    def __getitem__(self, slc):
+        slc = get_formatted_slice(slc, 5)
         ret = copy(self)
-        ret.realization = get_none_or_slice(self.realization,slc[0])
-        ret.temporal = get_none_or_slice(self.temporal,slc[1])
-        ret.level = get_none_or_slice(self.level,slc[2])
-        ret.spatial = get_none_or_slice(self.spatial,(slc[3],slc[4]))
-        
+        ret.realization = get_none_or_slice(self.realization, slc[0])
+        ret.temporal = get_none_or_slice(self.temporal, slc[1])
+        ret.level = get_none_or_slice(self.level, slc[2])
+        ret.spatial = get_none_or_slice(self.spatial, (slc[3], slc[4]))
+
         ret.variables = self.variables.get_sliced_variables(slc)
 
-        return(ret)
+        return ret
 
     @property
     def name(self):
