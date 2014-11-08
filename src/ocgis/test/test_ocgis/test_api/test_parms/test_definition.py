@@ -344,9 +344,9 @@ class TestDataset(TestBase):
             Dataset(5)
 
         # test with a Field object
-        # field = self.test_data.get_rd('cancm4_tas').get()
-        # dd = Dataset(init_value)
-        import ipdb;ipdb.set_trace()
+        field = self.test_data.get_rd('cancm4_tas').get()
+        dd = Dataset(field)
+        self.assertIsInstance(dd.value, Field)
 
 
 class TestGeom(TestBase):

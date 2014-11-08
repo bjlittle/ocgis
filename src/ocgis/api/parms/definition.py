@@ -411,12 +411,14 @@ class Dataset(base.OcgParameter):
     name = 'dataset'
     nullable = False
     default = None
-    input_types = [RequestDataset, list, tuple, RequestDatasetCollection, dict]
-    return_type = RequestDatasetCollection
+    input_types = [RequestDataset, list, tuple, RequestDatasetCollection, dict, Field]
+    return_type = [RequestDatasetCollection, Field]
 
     def __init__(self, init_value):
         if init_value is not None:
             if isinstance(init_value, RequestDatasetCollection):
+                init_value = init_value
+            elif isinstance(init_value, Field):
                 init_value = init_value
             else:
                 if isinstance(init_value, RequestDataset):
