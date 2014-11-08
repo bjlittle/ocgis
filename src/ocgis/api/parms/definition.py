@@ -411,27 +411,29 @@ class Dataset(base.OcgParameter):
     name = 'dataset'
     nullable = False
     default = None
-    input_types = [RequestDataset,list,tuple,RequestDatasetCollection,dict]
+    input_types = [RequestDataset, list, tuple, RequestDatasetCollection, dict]
     return_type = RequestDatasetCollection
-    
-    def __init__(self,arg):
-        if arg is not None:
-            if isinstance(arg,RequestDatasetCollection):
-                init_value = arg
+
+    def __init__(self, init_value):
+        if init_value is not None:
+            if isinstance(init_value, RequestDatasetCollection):
+                init_value = init_value
             else:
-                if isinstance(arg,RequestDataset):
-                    itr = [arg]
-                elif isinstance(arg,dict):
-                    itr = [arg]
+                if isinstance(init_value, RequestDataset):
+                    itr = [init_value]
+                elif isinstance(init_value, dict):
+                    itr = [init_value]
+                elif type(init_value) in [list, tuple]:
+                    itr = init_value
                 else:
-                    itr = arg
+                    raise DefinitionValidationError(self, 'Type not accepted: {0}'.format(type(init_value)))
                 rdc = RequestDatasetCollection()
                 for rd in itr:
                     rdc.update(rd)
                 init_value = rdc
         else:
-            init_value = arg
-        super(Dataset,self).__init__(init_value)
+            init_value = init_value
+        super(Dataset, self).__init__(init_value)
         
     def parse_string(self,value):
         lowered = value.strip()

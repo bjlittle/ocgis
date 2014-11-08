@@ -176,17 +176,6 @@ class Test(TestBase):
         with self.assertRaises(DefinitionValidationError):
             CalcGrouping([[1,2,3],[4,5,6],'fod'])
 
-    def test_dataset(self):
-        rd = self.test_data.get_rd('cancm4_tas')
-        dd = Dataset(rd)
-
-        with open('/tmp/dd.pkl','w') as f:
-            pickle.dump(dd,f)
-
-        uri = '/a/bad/path'
-        with self.assertRaises(ValueError):
-            rd = RequestDataset(uri,'foo')
-
 
 class TestCalc(TestBase):
     create_dir = False
@@ -313,6 +302,51 @@ class TestConformUnitsTo(TestBase):
 
         cc = ConformUnitsTo(Units('celsius'))
         self.assertTrue(cc.value.equals(Units('celsius')))
+
+
+class TestDataset(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        dd = Dataset(rd)
+
+        with open('/tmp/dd.pkl', 'w') as f:
+            pickle.dump(dd, f)
+
+        uri = '/a/bad/path'
+        with self.assertRaises(ValueError):
+            RequestDataset(uri, 'foo')
+
+        # test with a dictionary
+        v = {'uri': rd.uri, 'variable': rd.variable}
+        dd = Dataset(v)
+        self.assertEqual(dd.value[rd.variable].variable, rd.variable)
+
+        # test with a list/tuple
+        v2 = v.copy()
+        v2['alias'] = 'tas2'
+        dd = Dataset([v, v2])
+        self.assertEqual(set(dd.value.keys()), set([v['variable'], v2['alias']]))
+        dd = Dataset((v, v2))
+        self.assertEqual(set(dd.value.keys()), set([v['variable'], v2['alias']]))
+
+        # test with a request dataset
+        dd = Dataset(rd)
+        self.assertIsInstance(dd.value, RequestDatasetCollection)
+
+        # test with a request dataset collection
+        dd = Dataset(dd.value)
+        self.assertIsInstance(dd.value, RequestDatasetCollection)
+
+        # test with a bad type
+        with self.assertRaises(DefinitionValidationError):
+            Dataset(5)
+
+        # test with a Field object
+        # field = self.test_data.get_rd('cancm4_tas').get()
+        # dd = Dataset(init_value)
+        import ipdb;ipdb.set_trace()
 
 
 class TestGeom(TestBase):
