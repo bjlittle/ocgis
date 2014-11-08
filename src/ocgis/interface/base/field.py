@@ -68,38 +68,56 @@ class Field(object):
 
     @property
     def name(self):
+        """
+        :returns: The name of the field derived from its variables if not provided.
+        :rtype str:
+        """
+
         if self._name is None:
             ret = '_'.join([v.alias for v in self.variables.itervalues()])
         else:
             ret = self._name
-        return(ret)
+        return ret
     
     @property
     def shape(self):
-        shape_realization = get_default_or_apply(self.realization,len,1)
-        shape_temporal = get_default_or_apply(self.temporal,len,1)
-        shape_level = get_default_or_apply(self.level,len,1)
-        shape_spatial = get_default_or_apply(self.spatial,lambda x: x.shape,(1,1))
-        ret = (shape_realization,shape_temporal,shape_level,shape_spatial[0],shape_spatial[1])
-        return(ret)
+        """
+        :returns: The shape of the field as a five-element tuple: (realization, time, level, row, column)
+        :rtype: tuple
+        """
+
+        shape_realization = get_default_or_apply(self.realization, len, 1)
+        shape_temporal = get_default_or_apply(self.temporal, len, 1)
+        shape_level = get_default_or_apply(self.level, len, 1)
+        shape_spatial = get_default_or_apply(self.spatial, lambda x: x.shape, (1, 1))
+        ret = (shape_realization, shape_temporal, shape_level, shape_spatial[0], shape_spatial[1])
+        return ret
     
     @property
     def shape_as_dict(self):
-        return(dict(zip(self._axes,self.shape)))
-    
+        """
+        :returns: The shape of the field as a dictionary with keys corresponding to axis letter designation defined in
+         :attr:`~ocgis.interface.base.field.Field._axes` and value as the shape.
+        :rtype dict:
+        """
+
+        return dict(zip(self._axes, self.shape))
+
     @property
     def variables(self):
-        return(self._variables)
+        return self._variables
+
     @variables.setter
-    def variables(self,value):
-        if isinstance(value,Variable):
+    def variables(self, value):
+        if isinstance(value, Variable):
             value = VariableCollection(variables=[value])
-        assert_raise(isinstance(value,VariableCollection),exc=ValueError('The "variables" keyword must be a Variable object.'))
+        assert_raise(isinstance(value, VariableCollection),
+                     exc=ValueError('The "variables" keyword must be a Variable object.'))
         self._variables = value
         for v in value.itervalues():
             v._field = self
             if v._value is not None:
-                assert(v._value.shape == self.shape)
+                assert v._value.shape == self.shape
     
     def get_between(self,dim,lower,upper):
         pos = self._axis_map[dim]
