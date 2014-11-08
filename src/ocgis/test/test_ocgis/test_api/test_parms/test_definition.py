@@ -348,6 +348,17 @@ class TestDataset(TestBase):
         dd = Dataset(field)
         self.assertIsInstance(dd.value, Field)
 
+    def test_get_meta(self):
+        # test with standard request dataset collection
+        rd = self.test_data.get_rd('cancm4_tas')
+        dd = Dataset(rd)
+        self.assertIsInstance(dd.get_meta(), list)
+
+        # test passing a field object
+        dd = Dataset(rd.get())
+        ret = dd.get_meta()
+        self.assertEqual(ret, ['Field object with name: "tas"'])
+
 
 class TestGeom(TestBase):
     create_dir = False

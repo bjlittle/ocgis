@@ -446,12 +446,18 @@ class Dataset(base.OcgParameter):
         return(ret)
     
     def get_meta(self):
-        return(self.value._get_meta_rows_())
+        try:
+            ret = self.value._get_meta_rows_()
+        except AttributeError:
+            # likely a field object
+            ret = ['Field object with name: "{0}"'.format(self.value.name)]
+        return ret
     
-    def _get_meta_(self): pass
+    def _get_meta_(self):
+        pass
     
-    def _parse_string_(self,lowered):
-        raise(NotImplementedError)
+    def _parse_string_(self, lowered):
+        raise NotImplementedError
     
     
 class DirOutput(base.StringParameter):

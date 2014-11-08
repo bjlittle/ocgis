@@ -1,5 +1,6 @@
 from copy import deepcopy
 import pickle
+from ocgis.api.operations import OcgOperations
 from ocgis.conv.numpy_ import NumpyConverter
 from ocgis.exc import DimensionNotFound
 from ocgis.interface.base.crs import Spherical, CFWGS84, CFPolarStereographic
@@ -45,6 +46,15 @@ class TestSubsetOperation(TestBase):
         ops = ocgis.OcgOperations(dataset=rd, abstraction='polygon', geom='state_boundaries', select_ugid=[25])
         with self.assertRaises(ValueError):
             ops.execute()
+
+    def test_dataset_as_field(self):
+        """Test with dataset argument coming in as a field as opposed to a request dataset collection."""
+
+        dataset = self.test_data.get_rd('cancm4_tas').get()
+        ops = OcgOperations(dataset=dataset, output_format='nc')
+        ret = ops.execute()
+        raise
+        import ipdb;ipdb.set_trace()
 
     def test_geometry_dictionary(self):
         """Test geometry dictionaries come out properly as collections."""
