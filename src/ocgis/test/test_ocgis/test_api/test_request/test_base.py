@@ -561,8 +561,3 @@ class TestRequestDatasetCollection(TestBase):
         rdc = RequestDatasetCollection(dataset)
         ops = OcgOperations(dataset=rdc, geom='state_boundaries', select_ugid=[25], output_format='csv+')
         ops.execute()
-
-
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()

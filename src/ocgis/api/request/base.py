@@ -434,8 +434,9 @@ class RequestDataset(object):
 
 
 class RequestDatasetCollection(AbstractCollection):
-    '''A set of :class:`ocgis.RequestDataset` objects.
-    
+    """
+    A set of :class:`ocgis.RequestDataset` objects.
+
     >>> from ocgis import RequestDatasetCollection, RequestDataset
     >>> uris = ['http://some.opendap.dataset1', 'http://some.opendap.dataset2']
     >>> variables = ['tasmax', 'tasmin']
@@ -446,11 +447,11 @@ class RequestDatasetCollection(AbstractCollection):
     >>> rdc = RequestDatasetCollection()
     >>> for rd in request_datasets:
     ...     rdc.update(rd)
-    
+
     :param request_datasets: A sequence of :class:`ocgis.RequestDataset` objects.
     :type request_datasets: sequence of :class:`ocgis.RequestDataset` objects
-    '''
-    
+    """
+
     def __init__(self, request_datasets=None):
         super(RequestDatasetCollection, self).__init__()
 
@@ -464,19 +465,21 @@ class RequestDatasetCollection(AbstractCollection):
         ret = '{klass}(request_datasets=[{request_datasets}])'
         request_datasets = ', '.join([str(rd) for rd in self.itervalues()])
         return ret.format(klass=self.__class__.__name__, request_datasets=request_datasets)
-    
-    def update(self,request_dataset):
-        """Add a :class:`ocgis.RequestDataset` to the collection.
+
+    def update(self, request_dataset):
+        """
+        Add a :class:`ocgis.RequestDataset` to the collection.
         
         :param request_dataset: The :class:`ocgis.RequestDataset` to add.
         :type request_dataset: :class:`ocgis.RequestDataset`
         """
+
         try:
             new_key = request_dataset.name
         except AttributeError:
             request_dataset = RequestDataset(**request_dataset)
             new_key = request_dataset.name
-            
+
         if request_dataset.did is None:
             if len(self._did) == 0:
                 did = 1
@@ -486,19 +489,19 @@ class RequestDatasetCollection(AbstractCollection):
             request_dataset.did = did
         else:
             self._did.append(request_dataset.did)
-            
+
         if new_key in self._storage:
-            raise(KeyError('Name "{0}" already in collection. Attempted to add dataset with URI "{1}".'\
-                           .format(request_dataset.name,request_dataset.uri)))
+            raise (KeyError('Name "{0}" already in collection. Attempted to add dataset with URI "{1}".' \
+                            .format(request_dataset.name, request_dataset.uri)))
         else:
-            self._storage.update({request_dataset.name:request_dataset})
-            
+            self._storage.update({request_dataset.name: request_dataset})
+
     def _get_meta_rows_(self):
         rows = ['* dataset=']
         for value in self.itervalues():
             rows += value._get_meta_rows_()
             rows.append('')
-        return(rows)
+        return rows
 
 
 def get_tuple(value):
