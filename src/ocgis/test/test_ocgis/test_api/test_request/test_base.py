@@ -428,15 +428,20 @@ class TestRequestDataset(TestBase):
 class TestRequestDatasetCollection(TestBase):
 
     def test_init(self):
+        # todo: add field object to test
+        #todo: add list of field objects to test
+        # todo: add mix of request datasets and field objects to test
         rd1 = self.test_data.get_rd('cancm4_tas')
         rd2 = self.test_data.get_rd('cancm4_rhs')
 
-        keywords = dict(request_datasets=[None, rd1, [rd1], [rd1, rd2], {'uri': rd1.uri, 'variable': rd1.variable}])
+        keywords = dict(target=[
+            # None, rd1, [rd1], [rd1, rd2], {'uri': rd1.uri, 'variable': rd1.variable},
+                                rd1.get()])
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
-            rdc = RequestDatasetCollection(request_datasets=k.request_datasets)
-            if k.request_datasets is not None:
-                self.assertEqual(len(rdc), len(list(get_iter(k.request_datasets, dtype=(dict, RequestDataset)))))
+            rdc = RequestDatasetCollection(target=k.target)
+            if k.target is not None:
+                self.assertEqual(len(rdc), len(list(get_iter(k.target, dtype=(dict, RequestDataset)))))
             else:
                 self.assertEqual(len(rdc), 0)
 

@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import itertools
+from ocgis.interface.base.field import Field
 from ocgis.api.collection import AbstractCollection
 from ocgis.api.request.driver.nc import DriverNetcdf
 from ocgis.exc import RequestValidationError, NoUnitsError
@@ -458,43 +459,43 @@ class RequestDatasetCollection(AbstractCollection):
         self._did = []
 
         if target is not None:
-            for rd in get_iter(target, dtype=(dict, RequestDataset, Field)):
-                self.update(rd)
+            for element in get_iter(target, dtype=(dict, RequestDataset, Field)):
+                self.update(element)
 
     def __str__(self):
         ret = '{klass}(request_datasets=[{request_datasets}])'
         request_datasets = ', '.join([str(rd) for rd in self.itervalues()])
         return ret.format(klass=self.__class__.__name__, request_datasets=request_datasets)
 
-    def update(self, request_dataset):
+    def update(self, target):
         """
-        Add a :class:`ocgis.RequestDataset` to the collection.
+        Add an object to the collection.
         
-        :param request_dataset: The :class:`ocgis.RequestDataset` to add.
-        :type request_dataset: :class:`ocgis.RequestDataset`
+        :param target: The object to add.
+        :type target: :class:`~ocgis.RequestDataset` or :class:`~ocgis.Field`
         """
 
         try:
-            new_key = request_dataset.name
+            new_key = target.name
         except AttributeError:
-            request_dataset = RequestDataset(**request_dataset)
-            new_key = request_dataset.name
+            target = RequestDataset(**target)
+            new_key = target.name
 
-        if request_dataset.did is None:
+        if target.did is None:
             if len(self._did) == 0:
                 did = 1
             else:
                 did = max(self._did) + 1
             self._did.append(did)
-            request_dataset.did = did
+            target.did = did
         else:
-            self._did.append(request_dataset.did)
+            self._did.append(target.did)
 
         if new_key in self._storage:
             raise (KeyError('Name "{0}" already in collection. Attempted to add dataset with URI "{1}".' \
-                            .format(request_dataset.name, request_dataset.uri)))
+                            .format(target.name, target.uri)))
         else:
-            self._storage.update({request_dataset.name: request_dataset})
+            self._storage.update({target.name: target})
 
     def _get_meta_rows_(self):
         rows = ['* dataset=']
