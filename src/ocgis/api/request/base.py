@@ -448,17 +448,17 @@ class RequestDatasetCollection(AbstractCollection):
     >>> for rd in request_datasets:
     ...     rdc.update(rd)
 
-    :param request_datasets: A sequence of :class:`ocgis.RequestDataset` objects.
-    :type request_datasets: sequence of :class:`ocgis.RequestDataset` objects
+    :param target: A sequence of request dataset or field objects.
+    :type target: sequence of :class:`~ocgis.RequestDataset` or :class:`~ocgis.Field` objects
     """
 
-    def __init__(self, request_datasets=None):
+    def __init__(self, target=None):
         super(RequestDatasetCollection, self).__init__()
 
         self._did = []
 
-        if request_datasets is not None:
-            for rd in get_iter(request_datasets, dtype=(dict, RequestDataset)):
+        if target is not None:
+            for rd in get_iter(target, dtype=(dict, RequestDataset, Field)):
                 self.update(rd)
 
     def __str__(self):

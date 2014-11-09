@@ -199,6 +199,35 @@ class Test1(AbstractTestSpatialDimension):
 
 class Test2(TestBase):
 
+    def test_get_iter(self):
+        element = 'hi'
+        ret = list(get_iter(element))
+        self.assertEqual(ret, ['hi'])
+
+        element = np.array([5, 6, 7])
+        ret = list(get_iter(element))
+        self.assertNumpyAll(ret[0], np.array([5, 6, 7]))
+
+        ## test dtype ##################################################################################################
+
+        class FooIterable(object):
+
+            def __init__(self):
+                self.value = [4, 5, 6]
+
+            def __iter__(self):
+                for element in self.value:
+                    yield element
+
+        element = FooIterable()
+        ret = list(get_iter(element))
+        self.assertEqual(ret, [4, 5, 6])
+        for dtype in FooIterable, (FooIterable, list):
+            ret = list(get_iter(element, dtype=dtype))
+            self.assertIsInstance(ret, list)
+            self.assertEqual(len(ret), 1)
+            self.assertIsInstance(ret[0], FooIterable)
+
     def test_get_sorted_uris_by_time_dimension(self):
         rd_2001 = self.test_data.get_rd('cancm4_tasmax_2001')
         rd_2011 = self.test_data.get_rd('cancm4_tasmax_2011')
