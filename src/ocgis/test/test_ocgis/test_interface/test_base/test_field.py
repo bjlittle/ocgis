@@ -136,6 +136,8 @@ class TestField(AbstractTestField):
     def test_name(self):
         field = self.get_field(field_name='foo')
         self.assertEqual(field.name, 'foo')
+        field.name = 'svelt'
+        self.assertEqual(field.name, 'svelt')
 
     def test_get_iter_two_variables(self):
         field = self.get_field(with_value=True)

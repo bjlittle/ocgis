@@ -78,6 +78,10 @@ class Field(object):
         else:
             ret = self._name
         return ret
+
+    @name.setter
+    def name(self, value):
+        self._name = value
     
     @property
     def shape(self):
