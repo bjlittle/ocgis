@@ -109,35 +109,170 @@ class AbstractTestField(TestBase):
 
 class TestField(AbstractTestField):
 
-    def test_should_regrid(self):
-        field = self.get_field()
-        self.assertFalse(field._should_regrid)
+    def test_init(self):
+        for b,wv in itertools.product([True,False],[True,False]):
+            field = self.get_field(with_bounds=b,with_value=wv)
+            ref = field.shape
+            self.assertEqual(ref,(2,31,2,3,4))
+            with self.assertRaises(AttributeError):
+                field.value
+            self.assertIsInstance(field.variables,VariableCollection)
+            self.assertIsInstance(field.variables['tmax'],Variable)
+            if wv:
+                self.assertIsInstance(field.variables['tmax'].value,np.ma.MaskedArray)
+                self.assertEqual(field.variables['tmax'].value.shape,field.shape)
+            else:
+                with self.assertRaises(Exception):
+                    field.variables['tmax'].value
 
-    def test_loading_from_source_spatial_bounds(self):
-        """Test row bounds may be set to None when loading from source."""
+    def test_deepcopy(self):
+        field = self.get_field(with_value=True)
+        deepcopy(field)
 
-        field = self.test_data.get_rd('cancm4_tas').get()
-        field.spatial.grid.row.bounds
-        field.spatial.grid.row.bounds = None
-        self.assertIsNone(field.spatial.grid.row.bounds)
+    def test_fancy_indexing(self):
+        field = self.get_field(with_value=True)
+        sub = field[:,(3,5,10,15),:,:,:]
+        self.assertEqual(sub.shape,(2,4,2,3,4))
+        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,(3,5,10,15),:,:,:])
 
-    def test_name_none_one_variable(self):
-        field = self.get_field(field_name=None)
-        self.assertEqual(field.name, field.variables.values()[0].alias)
+        sub = field[:,(3,15),:,:,:]
+        self.assertEqual(sub.shape,(2,2,2,3,4))
+        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,(3,15),:,:,:])
 
-    def test_name_none_two_variables(self):
-        field = self.get_field()
-        field2 = self.get_field()
-        var2 = field2.variables['tmax']
-        var2.alias = 'tmax2'
-        field.variables.add_variable(var2, assign_new_uid=True)
-        self.assertEqual(field.name, 'tmax_tmax2')
+        sub = field[:,3:15,:,:,:]
+        self.assertEqual(sub.shape,(2,12,2,3,4))
+        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,3:15,:,:,:])
 
-    def test_name(self):
-        field = self.get_field(field_name='foo')
-        self.assertEqual(field.name, 'foo')
-        field.name = 'svelt'
-        self.assertEqual(field.name, 'svelt')
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            Field()
+
+    def test_get_aggregated_all(self):
+        for wv in [True,False]:
+            field = self.get_field(with_value=wv)
+            try:
+                agg = field.get_spatially_aggregated()
+            except NotImplementedError:
+                if not wv:
+                    continue
+                else:
+                    raise
+            self.assertNotEqual(field.spatial.grid,None)
+            self.assertEqual(agg.spatial.grid,None)
+            self.assertEqual(agg.shape,(2,31,2,1,1))
+            self.assertNumpyAll(field.variables['tmax'].value,agg._raw.variables['tmax'].value)
+            self.assertTrue(np.may_share_memory(field.variables['tmax'].value,agg._raw.variables['tmax'].value))
+
+            to_test = field.variables['tmax'].value[0,0,0,:,:].mean()
+            self.assertNumpyAll(to_test,agg.variables['tmax'].value[0,0,0,0,0])
+
+    def test_get_aggregated_irregular(self):
+        single = wkt.loads('POLYGON((-99.894355 40.230645,-98.725806 40.196774,-97.726613 40.027419,-97.032258 39.942742,-97.681452 39.626613,-97.850806 39.299194,-98.178226 39.643548,-98.844355 39.920161,-99.894355 40.230645))')
+        field = self.get_field(with_value=True)
+        for b in [True,False]:
+            try:
+                ret = field.get_clip(single,use_spatial_index=b)
+                agg = ret.get_spatially_aggregated()
+                to_test = agg.spatial.geom.polygon.value[0,0]
+                self.assertAlmostEqual(to_test.area,single.area)
+                self.assertAlmostEqual(to_test.bounds,single.bounds)
+                self.assertAlmostEqual(to_test.exterior.length,single.exterior.length)
+            except ImportError:
+                with self.assertRaises(ImportError):
+                    import_module('rtree')
+
+    def test_get_clip_single_cell(self):
+        single = wkt.loads('POLYGON((-97.997731 39.339322,-97.709012 39.292322,-97.742584 38.996888,-97.668726 38.641026,-98.158876 38.708170,-98.340165 38.916316,-98.273021 39.218463,-97.997731 39.339322))')
+        field = self.get_field(with_value=True)
+        for b in [True,False]:
+            try:
+                ret = field.get_clip(single,use_spatial_index=b)
+                self.assertEqual(ret.shape,(2,31,2,1,1))
+                self.assertEqual(ret.spatial.grid._value.sum(),-59.0)
+                self.assertTrue(ret.spatial.geom.polygon.value[0,0].almost_equals(single))
+                self.assertEqual(ret.spatial.uid,np.array([[7]]))
+
+                self.assertEqual(ret.spatial.geom.point.value.shape,ret.spatial.geom.polygon.shape)
+                ref_pt = ret.spatial.geom.point.value[0,0]
+                ref_poly = ret.spatial.geom.polygon.value[0,0]
+                self.assertTrue(ref_poly.intersects(ref_pt))
+            except ImportError:
+                with self.assertRaises(ImportError):
+                    import_module('rtree')
+
+    def test_get_clip_irregular(self):
+        for wv in [True,False]:
+            single = wkt.loads('POLYGON((-99.894355 40.230645,-98.725806 40.196774,-97.726613 40.027419,-97.032258 39.942742,-97.681452 39.626613,-97.850806 39.299194,-98.178226 39.643548,-98.844355 39.920161,-99.894355 40.230645))')
+            field = self.get_field(with_value=wv)
+            for b in [True,False]:
+                try:
+                    ret = field.get_clip(single,use_spatial_index=b)
+                    self.assertEqual(ret.shape,(2,31,2,2,4))
+                    unioned = cascaded_union([geom for geom in ret.spatial.geom.polygon.value.compressed().flat])
+                    self.assertAlmostEqual(unioned.area,single.area)
+                    self.assertAlmostEqual(unioned.bounds,single.bounds)
+                    self.assertAlmostEqual(unioned.exterior.length,single.exterior.length)
+                    self.assertAlmostEqual(ret.spatial.weights[1,2],0.064016424)
+                    self.assertAlmostEqual(ret.spatial.weights.sum(),1.776435)
+                    if not wv:
+                        with self.assertRaises(NotImplementedError):
+                            ret.variables['tmax'].value
+                except ImportError:
+                    with self.assertRaises(ImportError):
+                        import_module('rtree')
+
+    def test_get_iter(self):
+        field = self.get_field(with_value=True)
+        rows = list(field.get_iter())
+        self.assertEqual(len(rows),2*31*2*3*4)
+        rows[100]['geom'] = rows[100]['geom'].bounds
+        real = {'realization_bnds_lower': None, 'vid': 1, 'time_bnds_upper': datetime.datetime(2000, 1, 6, 0, 0), 'realization_bnds_upper': None, 'year': 2000, 'SPATIAL_uid': 5, 'level_bnds_upper': 100, 'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bnds_lower': 0, 'variable': 'tmax', 'month': 1, 'time_bnds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5, 'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1, 'time': datetime.datetime(2000, 1, 5, 12, 0), 'time_uid': 5, 'name': 'tmax'}
+        for k,v in rows[100].iteritems():
+            self.assertEqual(real[k],v)
+        self.assertEqual(set(real.keys()),set(rows[100].keys()))
+        self.assertEqual(set(field.variables['tmax'].value.flatten().tolist()),set([r['value'] for r in rows]))
+
+    def test_get_intersects_domain_polygon(self):
+        regular = make_poly((36.61,41.39),(-101.41,-95.47))
+        field = self.get_field(with_value=True)
+        for b in [True,False]:
+            try:
+                ret = field.get_intersects(regular,use_spatial_index=b)
+                self.assertNumpyAll(ret.variables['tmax'].value,field.variables['tmax'].value)
+                self.assertNumpyAll(field.spatial.grid.value,ret.spatial.grid.value)
+            except ImportError:
+                with self.assertRaises(ImportError):
+                    import_module('rtree')
+
+    def test_get_intersects_irregular_polygon(self):
+        irregular = wkt.loads('POLYGON((-100.106049 38.211305,-99.286894 38.251591,-99.286894 38.258306,-99.286894 38.258306,-99.260036 39.252035,-98.769886 39.252035,-98.722885 37.734583,-100.092620 37.714440,-100.106049 38.211305))')
+        keywords = dict(b=[True, False],
+                        with_corners=[True, False])
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            try:
+                field = self.get_field(with_value=True)
+                if k.with_corners:
+                    field.spatial.grid.corners
+                ret = field.get_intersects(irregular,use_spatial_index=k.b)
+                self.assertEqual(ret.shape,(2,31,2,2,2))
+                self.assertNumpyAll(ret.variables['tmax'].value.mask[0,2,1,:,:],np.array([[True,False],[False,False]]))
+                self.assertEqual(ret.spatial.uid.data[ret.spatial.get_mask()][0],5)
+                if k.with_corners:
+                    self.assertNumpyAll(ret.spatial.grid.corners.mask, np.array([[[[True, True, True, True], [False, False, False, False]], [[False, False, False, False], [False, False, False, False]]], [[[True, True, True, True], [False, False, False, False]], [[False, False, False, False], [False, False, False, False]]]]))
+                else:
+                    self.assertIsNone(ret.spatial.grid._corners)
+            except ImportError:
+                with self.assertRaises(ImportError):
+                    import_module('rtree')
+
+    def test_get_intersects_single_bounds_row(self):
+        field = self.get_field(with_value=True)
+        sub = field[:,0,:,0,0]
+        irregular = wkt.loads('POLYGON((-100.106049 38.211305,-99.286894 38.251591,-99.286894 38.258306,-99.286894 38.258306,-99.260036 39.252035,-98.769886 39.252035,-98.722885 37.734583,-100.092620 37.714440,-100.106049 38.211305))')
+        ## the intersects operations is empty. this was testing that contiguous
+        ## bounds check fails appropriately with a single bounds row.
+        with self.assertRaises(EmptySubsetError):
+            sub.get_intersects(irregular)
 
     def test_get_iter_two_variables(self):
         field = self.get_field(with_value=True)
@@ -156,22 +291,43 @@ class TestField(AbstractTestField):
                 self.assertTrue(row['value'] > 3)
         self.assertEqual(set(vids), set([1, 2]))
 
-    def test_get_intersects_single_bounds_row(self):
-        field = self.get_field(with_value=True)
-        sub = field[:,0,:,0,0]
-        irregular = wkt.loads('POLYGON((-100.106049 38.211305,-99.286894 38.251591,-99.286894 38.258306,-99.286894 38.258306,-99.260036 39.252035,-98.769886 39.252035,-98.722885 37.734583,-100.092620 37.714440,-100.106049 38.211305))')
-        ## the intersects operations is empty. this was testing that contiguous
-        ## bounds check fails appropriately with a single bounds row.
-        with self.assertRaises(EmptySubsetError):
-            sub.get_intersects(irregular)
-    
+    def test_name(self):
+        field = self.get_field(field_name='foo')
+        self.assertEqual(field.name, 'foo')
+        field.name = 'svelt'
+        self.assertEqual(field.name, 'svelt')
+
+    def test_name_none_one_variable(self):
+        field = self.get_field(field_name=None)
+        self.assertEqual(field.name, field.variables.values()[0].alias)
+
+    def test_name_none_two_variables(self):
+        field = self.get_field()
+        field2 = self.get_field()
+        var2 = field2.variables['tmax']
+        var2.alias = 'tmax2'
+        field.variables.add_variable(var2, assign_new_uid=True)
+        self.assertEqual(field.name, 'tmax_tmax2')
+
+    def test_loading_from_source_spatial_bounds(self):
+        """Test row bounds may be set to None when loading from source."""
+
+        field = self.test_data.get_rd('cancm4_tas').get()
+        field.spatial.grid.row.bounds
+        field.spatial.grid.row.bounds = None
+        self.assertIsNone(field.spatial.grid.row.bounds)
+
+    def test_should_regrid(self):
+        field = self.get_field()
+        self.assertFalse(field._should_regrid)
+
     def test_shape_as_dict(self):
         field = self.get_field(with_value=False)
         to_test = field.shape_as_dict
         for variable in field.variables.values():
             self.assertEqual(variable._value,None)
         self.assertEqual(to_test,{'Y': 3, 'X': 4, 'Z': 2, 'R': 2, 'T': 31})
-    
+
     def test_slicing(self):
         field = self.get_field(with_value=True)
         with self.assertRaises(IndexError):
@@ -179,11 +335,7 @@ class TestField(AbstractTestField):
         sub = field[0,0,0,0,0]
         self.assertEqual(sub.shape,(1,1,1,1,1))
         self.assertEqual(sub.variables['tmax'].value.shape,(1,1,1,1,1))
-        
-    def test_deepcopy(self):
-        field = self.get_field(with_value=True)
-        deepcopy(field)
-    
+
     def test_slicing_general(self):
         """Test slicing on different types of fields."""
 
@@ -236,153 +388,27 @@ class TestField(AbstractTestField):
             else:
                 self.assertEqual(field_slc.variables['tmax']._value, None)
                 self.assertEqual(field_slc.variables['tmax']._value, field.variables['tmax']._value)
-    
-    def test_constructor(self):
-        for b,wv in itertools.product([True,False],[True,False]):
-            field = self.get_field(with_bounds=b,with_value=wv)
-            ref = field.shape
-            self.assertEqual(ref,(2,31,2,3,4))
-            with self.assertRaises(AttributeError):
-                field.value
-            self.assertIsInstance(field.variables,VariableCollection)
-            self.assertIsInstance(field.variables['tmax'],Variable)
-            if wv:
-                self.assertIsInstance(field.variables['tmax'].value,np.ma.MaskedArray)
-                self.assertEqual(field.variables['tmax'].value.shape,field.shape)
-            else:
-                with self.assertRaises(Exception):
-                    field.variables['tmax'].value
-    
-    def test_get_iter(self):
+
+    def test_slicing_specific(self):
         field = self.get_field(with_value=True)
-        rows = list(field.get_iter())
-        self.assertEqual(len(rows),2*31*2*3*4)
-        rows[100]['geom'] = rows[100]['geom'].bounds
-        real = {'realization_bnds_lower': None, 'vid': 1, 'time_bnds_upper': datetime.datetime(2000, 1, 6, 0, 0), 'realization_bnds_upper': None, 'year': 2000, 'SPATIAL_uid': 5, 'level_bnds_upper': 100, 'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bnds_lower': 0, 'variable': 'tmax', 'month': 1, 'time_bnds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5, 'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1, 'time': datetime.datetime(2000, 1, 5, 12, 0), 'time_uid': 5, 'name': 'tmax'}
-        for k,v in rows[100].iteritems():
-            self.assertEqual(real[k],v)
-        self.assertEqual(set(real.keys()),set(rows[100].keys()))
-        self.assertEqual(set(field.variables['tmax'].value.flatten().tolist()),set([r['value'] for r in rows]))
-        
-    def test_get_intersects_domain_polygon(self):
-        regular = make_poly((36.61,41.39),(-101.41,-95.47))
-        field = self.get_field(with_value=True)
-        for b in [True,False]:
-            try:
-                ret = field.get_intersects(regular,use_spatial_index=b)
-                self.assertNumpyAll(ret.variables['tmax'].value,field.variables['tmax'].value)
-                self.assertNumpyAll(field.spatial.grid.value,ret.spatial.grid.value)
-            except ImportError:
-                with self.assertRaises(ImportError):
-                    import_module('rtree')
-    
-    def test_get_intersects_irregular_polygon(self):
-        irregular = wkt.loads('POLYGON((-100.106049 38.211305,-99.286894 38.251591,-99.286894 38.258306,-99.286894 38.258306,-99.260036 39.252035,-98.769886 39.252035,-98.722885 37.734583,-100.092620 37.714440,-100.106049 38.211305))')
-        keywords = dict(b=[True, False],
-                        with_corners=[True, False])
-        for k in itr_products_keywords(keywords, as_namedtuple=True):
-            try:
-                field = self.get_field(with_value=True)
-                if k.with_corners:
-                    field.spatial.grid.corners
-                ret = field.get_intersects(irregular,use_spatial_index=k.b)
-                self.assertEqual(ret.shape,(2,31,2,2,2))
-                self.assertNumpyAll(ret.variables['tmax'].value.mask[0,2,1,:,:],np.array([[True,False],[False,False]]))
-                self.assertEqual(ret.spatial.uid.data[ret.spatial.get_mask()][0],5)
-                if k.with_corners:
-                    self.assertNumpyAll(ret.spatial.grid.corners.mask, np.array([[[[True, True, True, True], [False, False, False, False]], [[False, False, False, False], [False, False, False, False]]], [[[True, True, True, True], [False, False, False, False]], [[False, False, False, False], [False, False, False, False]]]]))
-                else:
-                    self.assertIsNone(ret.spatial.grid._corners)
-            except ImportError:
-                with self.assertRaises(ImportError):
-                    import_module('rtree')
-        
-    def test_get_clip_single_cell(self):
-        single = wkt.loads('POLYGON((-97.997731 39.339322,-97.709012 39.292322,-97.742584 38.996888,-97.668726 38.641026,-98.158876 38.708170,-98.340165 38.916316,-98.273021 39.218463,-97.997731 39.339322))')
-        field = self.get_field(with_value=True)
-        for b in [True,False]:
-            try:
-                ret = field.get_clip(single,use_spatial_index=b)
-                self.assertEqual(ret.shape,(2,31,2,1,1))
-                self.assertEqual(ret.spatial.grid._value.sum(),-59.0)
-                self.assertTrue(ret.spatial.geom.polygon.value[0,0].almost_equals(single))
-                self.assertEqual(ret.spatial.uid,np.array([[7]]))
-                
-                self.assertEqual(ret.spatial.geom.point.value.shape,ret.spatial.geom.polygon.shape)
-                ref_pt = ret.spatial.geom.point.value[0,0]
-                ref_poly = ret.spatial.geom.polygon.value[0,0]
-                self.assertTrue(ref_poly.intersects(ref_pt))
-            except ImportError:
-                with self.assertRaises(ImportError):
-                    import_module('rtree')
-        
-    def test_get_clip_irregular(self):
-        for wv in [True,False]:
-            single = wkt.loads('POLYGON((-99.894355 40.230645,-98.725806 40.196774,-97.726613 40.027419,-97.032258 39.942742,-97.681452 39.626613,-97.850806 39.299194,-98.178226 39.643548,-98.844355 39.920161,-99.894355 40.230645))')
-            field = self.get_field(with_value=wv)
-            for b in [True,False]:
-                try:
-                    ret = field.get_clip(single,use_spatial_index=b)
-                    self.assertEqual(ret.shape,(2,31,2,2,4))
-                    unioned = cascaded_union([geom for geom in ret.spatial.geom.polygon.value.compressed().flat])
-                    self.assertAlmostEqual(unioned.area,single.area)
-                    self.assertAlmostEqual(unioned.bounds,single.bounds)
-                    self.assertAlmostEqual(unioned.exterior.length,single.exterior.length)
-                    self.assertAlmostEqual(ret.spatial.weights[1,2],0.064016424)
-                    self.assertAlmostEqual(ret.spatial.weights.sum(),1.776435)
-                    if not wv:
-                        with self.assertRaises(NotImplementedError):
-                            ret.variables['tmax'].value
-                except ImportError:
-                    with self.assertRaises(ImportError):
-                        import_module('rtree')
-                    
-    def test_get_aggregated_irregular(self):
-        single = wkt.loads('POLYGON((-99.894355 40.230645,-98.725806 40.196774,-97.726613 40.027419,-97.032258 39.942742,-97.681452 39.626613,-97.850806 39.299194,-98.178226 39.643548,-98.844355 39.920161,-99.894355 40.230645))')
-        field = self.get_field(with_value=True)
-        for b in [True,False]:
-            try:
-                ret = field.get_clip(single,use_spatial_index=b)
-                agg = ret.get_spatially_aggregated()
-                to_test = agg.spatial.geom.polygon.value[0,0]
-                self.assertAlmostEqual(to_test.area,single.area)
-                self.assertAlmostEqual(to_test.bounds,single.bounds)
-                self.assertAlmostEqual(to_test.exterior.length,single.exterior.length)
-            except ImportError:
-                with self.assertRaises(ImportError):
-                    import_module('rtree')
-            
-    def test_get_aggregated_all(self):
-        for wv in [True,False]:
-            field = self.get_field(with_value=wv)
-            try:
-                agg = field.get_spatially_aggregated()
-            except NotImplementedError:
-                if not wv:
-                    continue
-                else:
-                    raise
-            self.assertNotEqual(field.spatial.grid,None)
-            self.assertEqual(agg.spatial.grid,None)
-            self.assertEqual(agg.shape,(2,31,2,1,1))
-            self.assertNumpyAll(field.variables['tmax'].value,agg._raw.variables['tmax'].value)
-            self.assertTrue(np.may_share_memory(field.variables['tmax'].value,agg._raw.variables['tmax'].value))
-            
-            to_test = field.variables['tmax'].value[0,0,0,:,:].mean()
-            self.assertNumpyAll(to_test,agg.variables['tmax'].value[0,0,0,0,0])
-        
+        field_slc = field[:,0:2,0,:,:]
+        self.assertEqual(field_slc.shape,(2,2,1,3,4))
+        self.assertEqual(field_slc.variables['tmax'].value.shape,(2,2,1,3,4))
+        ref_field_real_slc = field.variables['tmax'].value[:,0:2,0,:,:]
+        self.assertNumpyAll(ref_field_real_slc.flatten(),field_slc.variables['tmax'].value.flatten())
+
     def test_subsetting(self):
         for wv in [True,False]:
             field = self.get_field(with_value=wv)
             self.assertNotIsInstance(field.temporal.value,np.ma.MaskedArray)
-            
+
             temporal_start = dt(2000,1,1,12)
             temporal_stop = dt(2000,1,31,12)
             ret = field.temporal.get_between(temporal_start,temporal_stop)
             self.assertIsInstance(ret,VectorDimension)
             self.assertNumpyAll(ret.value,field.temporal.value)
             self.assertNumpyAll(ret.bounds,field.temporal.bounds)
-            
+
             ret = field.get_between('temporal',temporal_start,temporal_stop)
             self.assertIsInstance(ret,Field)
             self.assertEqual(ret.shape,field.shape)
@@ -391,45 +417,19 @@ class TestField(AbstractTestField):
             else:
                 with self.assertRaises(NotImplementedError):
                     ret.variables['tmax'].value
-                    
+
             ## try empty subset
             with self.assertRaises(EmptySubsetError):
                 field.get_between('level',100000,2000000000)
-                
+
             ret = field.get_between('realization',1,1)
             self.assertEqual(ret.shape,(1, 31, 2, 3, 4))
             if wv:
                 self.assertNumpyAll(ret.variables['tmax'].value,field.variables['tmax'].value[0:1,:,:,:,:])
-                
+
             ret = field.get_between('temporal',dt(2000,1,15),dt(2000,1,30))
             self.assertEqual(ret.temporal.value[0],dt(2000,1,15,12))
             self.assertEqual(ret.temporal.value[-1],dt(2000,1,30,12))
-    
-    def test_empty(self):
-        with self.assertRaises(ValueError):
-            Field()
-    
-    def test_slicing_specific(self):
-        field = self.get_field(with_value=True)
-        field_slc = field[:,0:2,0,:,:]
-        self.assertEqual(field_slc.shape,(2,2,1,3,4))
-        self.assertEqual(field_slc.variables['tmax'].value.shape,(2,2,1,3,4))
-        ref_field_real_slc = field.variables['tmax'].value[:,0:2,0,:,:]
-        self.assertNumpyAll(ref_field_real_slc.flatten(),field_slc.variables['tmax'].value.flatten())
-        
-    def test_fancy_indexing(self):
-        field = self.get_field(with_value=True)
-        sub = field[:,(3,5,10,15),:,:,:]
-        self.assertEqual(sub.shape,(2,4,2,3,4))
-        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,(3,5,10,15),:,:,:])
-        
-        sub = field[:,(3,15),:,:,:]
-        self.assertEqual(sub.shape,(2,2,2,3,4))
-        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,(3,15),:,:,:])
-        
-        sub = field[:,3:15,:,:,:]
-        self.assertEqual(sub.shape,(2,12,2,3,4))
-        self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,3:15,:,:,:])
 
 
 class TestDerivedField(AbstractTestField):
