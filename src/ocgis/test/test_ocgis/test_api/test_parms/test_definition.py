@@ -501,12 +501,6 @@ class TestLevelRange(TestBase):
 class TestRegridDestination(TestBase):
 
     @property
-    def possible_values(self):
-        rd = self.get_rd()
-        possible = [None, 'tas', rd, rd.get(), rd.get().spatial]
-        return possible
-
-    @property
     def possible_datasets(self):
         # one dataset to be regridded
         dataset1 = [self.get_rd(regrid_source=True)]
@@ -533,6 +527,12 @@ class TestRegridDestination(TestBase):
         datasets = {ii: d for ii, d in enumerate(datasets, start=1)}
 
         return datasets
+
+    @property
+    def possible_values(self):
+        rd = self.get_rd()
+        possible = [None, 'tas', rd, rd.get(), rd.get().spatial]
+        return possible
 
     def get_rd(self, **kwargs):
         rd = self.test_data.get_rd('cancm4_tas', kwds=kwargs)
@@ -573,6 +573,7 @@ class TestRegridDestination(TestBase):
                         else:
                             raise
                 self.assertIsInstance(regrid._get_meta_(), basestring)
+
 
 class TestRegridOptions(TestBase):
 
