@@ -529,6 +529,28 @@ class TestRequestDatasetCollection(TestBase):
         self.assertTrue(ss.startswith('RequestDatasetCollection'))
         self.assertGreater(len(ss), 900)
 
+    def test_update(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        rd.did = 10
+        field = rd.get()
+        self.assertEqual(field.uid, 10)
+        field.uid = 20
+
+        rdc = RequestDatasetCollection()
+        rdc.update(rd)
+        # name is already in collection and should yield a key error
+        with self.assertRaises(KeyError):
+            rdc.update(field)
+        field.name = 'tas2'
+        rdc.update(field)
+
+        # add another object and check the increment
+        field2 = deepcopy(field)
+        field2.name = 'hanzel'
+        field2.uid = None
+        rdc.update(field2)
+        self.assertEqual(field2.uid, 21)
+
     def test_with_overloads(self):
         rd = self.test_data.get_rd('cancm4_tas')
         field = rd.get()

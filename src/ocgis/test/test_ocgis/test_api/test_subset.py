@@ -53,7 +53,7 @@ class TestSubsetOperation(TestBase):
         dataset = self.test_data.get_rd('cancm4_tas').get()
         ops = OcgOperations(dataset=dataset, output_format='nc')
         ret = ops.execute()
-        import ipdb;ipdb.set_trace()
+        raise
 
     def test_geometry_dictionary(self):
         """Test geometry dictionaries come out properly as collections."""

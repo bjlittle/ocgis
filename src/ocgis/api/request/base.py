@@ -436,7 +436,7 @@ class RequestDataset(object):
 
 class RequestDatasetCollection(AbstractCollection):
     """
-    A set of :class:`ocgis.RequestDataset` objects.
+    A set of :class:`ocgis.RequestDataset` and/or :class:`~ocgis.Field` objects.
 
     >>> from ocgis import RequestDatasetCollection, RequestDataset
     >>> uris = ['http://some.opendap.dataset1', 'http://some.opendap.dataset2']
@@ -450,7 +450,7 @@ class RequestDatasetCollection(AbstractCollection):
     ...     rdc.update(rd)
 
     :param target: A sequence of request dataset or field objects.
-    :type target: sequence of :class:`~ocgis.RequestDataset` or :class:`~ocgis.Field` objects
+    :type target: sequence[:class:`~ocgis.RequestDataset` and/or :class:`~ocgis.Field` objects, ...]
     """
 
     def __init__(self, target=None):
@@ -491,12 +491,10 @@ class RequestDatasetCollection(AbstractCollection):
             self._unique_id_store.append(unique_id)
             self._set_unique_id_(target, unique_id)
         else:
-            self._unique_id_store.append(target.did)
+            self._unique_id_store.append(unique_id)
 
         if new_key in self._storage:
-            raise KeyError(
-                'Name "{0}" already in collection. Attempted to add dataset with URI "{1}".'.format(target.name,
-                                                                                                    target.uri))
+            raise KeyError('Name "{0}" already in collection. Names must be unique'.format(target.name))
         else:
             self._storage.update({target.name: target})
 

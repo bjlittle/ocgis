@@ -346,7 +346,7 @@ class TestDataset(TestBase):
         # test with a Field object
         field = self.test_data.get_rd('cancm4_tas').get()
         dd = Dataset(field)
-        self.assertIsInstance(dd.value, Field)
+        self.assertIsInstance(dd.value, RequestDatasetCollection)
 
     def test_get_meta(self):
         # test with standard request dataset collection
@@ -357,7 +357,7 @@ class TestDataset(TestBase):
         # test passing a field object
         dd = Dataset(rd.get())
         ret = dd.get_meta()
-        self.assertEqual(ret, ['Field object with name: "tas"'])
+        self.assertEqual(ret, ['* dataset=', 'NcField(name=tas, ...)', ''])
 
 
 class TestGeom(TestBase):
