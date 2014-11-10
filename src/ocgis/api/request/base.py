@@ -456,7 +456,7 @@ class RequestDatasetCollection(AbstractCollection):
     def __init__(self, target=None):
         super(RequestDatasetCollection, self).__init__()
 
-        self._did = []
+        self._unique_id_store = []
 
         if target is not None:
             for element in get_iter(target, dtype=(dict, RequestDataset, Field)):
@@ -481,28 +481,71 @@ class RequestDatasetCollection(AbstractCollection):
             target = RequestDataset(**target)
             new_key = target.name
 
-        if target.did is None:
-            if len(self._did) == 0:
-                did = 1
+        unique_id = self._get_unique_id_(target)
+
+        if unique_id is None:
+            if len(self._unique_id_store) == 0:
+                unique_id = 1
             else:
-                did = max(self._did) + 1
-            self._did.append(did)
-            target.did = did
+                unique_id = max(self._unique_id_store) + 1
+            self._unique_id_store.append(unique_id)
+            self._set_unique_id_(target, unique_id)
         else:
-            self._did.append(target.did)
+            self._unique_id_store.append(target.did)
 
         if new_key in self._storage:
-            raise (KeyError('Name "{0}" already in collection. Attempted to add dataset with URI "{1}".' \
-                            .format(target.name, target.uri)))
+            raise KeyError(
+                'Name "{0}" already in collection. Attempted to add dataset with URI "{1}".'.format(target.name,
+                                                                                                    target.uri))
         else:
             self._storage.update({target.name: target})
 
     def _get_meta_rows_(self):
+        """
+        :returns: A list of strings containing metadata on the collection objects.
+        :rtype: list[str, ...]
+        """
+
         rows = ['* dataset=']
         for value in self.itervalues():
-            rows += value._get_meta_rows_()
+            try:
+                rows += value._get_meta_rows_()
+            except AttributeError:
+                # likely a field object
+                msg = '{klass}(name={name}, ...)'.format(klass=value.__class__.__name__, name=value.name)
+                rows.append(msg)
             rows.append('')
+
         return rows
+
+    @staticmethod
+    def _get_unique_id_(target):
+        """
+        :param target: The object to retrieve the unique identifier from.
+        :type target: :class:`~ocgis.RequestDataset` or :class:`~ocgis.Field`
+        :returns: The unique identifier of the object if available. ``None`` will be returned if no unique can be found.
+        :rtype: int or ``None``
+        """
+
+        try:
+            ret = target.did
+        except AttributeError:
+            ret = target.uid
+
+        return ret
+
+    @staticmethod
+    def _set_unique_id_(target, uid):
+        """
+        :param target: The target object for setting the unique identifier.
+        :type target: :class:`~ocgis.RequestDataset` or :class:`~ocgis.Field`
+        :param int target: The unique identifier.
+        """
+
+        if isinstance(target, RequestDataset):
+            target.did = uid
+        elif isinstance(target, Field):
+            target.uid = uid
 
 
 def get_tuple(value):
