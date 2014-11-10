@@ -106,8 +106,20 @@ class SubsetOperation(object):
 
         ## process the data collections
         for rds in itr_rd:
-            msg = 'Processing URI(s): {0}'.format([rd.uri for rd in rds])
-            ocgis_lh(msg=msg,logger=self._subset_log)
+
+            try:
+                msg = 'Processing URI(s): {0}'.format([rd.uri for rd in rds])
+            except AttributeError:
+                # field objects do not have uris associated with them
+                msg = []
+                for rd in rds:
+                    try:
+                        msg.append(rd.uri)
+                    except AttributeError:
+                        # likely a field object
+                        msg.append(rd.name)
+                msg = 'Processing URI(s) / field names: {0}'.format(msg)
+            ocgis_lh(msg=msg, logger=self._subset_log)
 
             for coll in self._process_subsettables_(rds):
                 ## if there are calculations, do those now and return a new type of collection
@@ -181,12 +193,25 @@ class SubsetOperation(object):
         ocgis_lh('processing...',self._subset_log,alias=alias,level=logging.DEBUG)
         ## return the field object
         try:
-            ## look for field optimizations
+            # look for field optimizations
             if self.ops.optimizations is not None and 'fields' in self.ops.optimizations:
                 field = [self.ops.optimizations['fields'][rd.alias] for rd in rds]
+            # no field optimizations, extract the target data from the dataset collection
             else:
-                field = [rd.get(format_time=self.ops.format_time,
-                                interpolate_spatial_bounds=self.ops.interpolate_spatial_bounds) for rd in rds]
+                len_rds = len(rds)
+                field = [None]*len_rds
+                for ii in range(len_rds):
+                    rds_element = rds[ii]
+                    try:
+                        field_object = rds_element.get(format_time=self.ops.format_time,
+                                                       interpolate_spatial_bounds=self.ops.interpolate_spatial_bounds)
+                    except AttributeError:
+                        # likely a field object which does not need to be loaded from source
+                        if not self.ops.format_time or self.ops.interpolate_spatial_bounds:
+                            raise NotImplementedError
+                        field_object = rds_element
+                    field[ii] = field_object
+
             # update the spatial abstraction to match the operations value. sfield will be none if the operation returns
             # empty and it is allowed to have empty returns.
             for f in field:

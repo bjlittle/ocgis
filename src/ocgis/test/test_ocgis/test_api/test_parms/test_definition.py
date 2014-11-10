@@ -1,5 +1,6 @@
 import unittest
 from cfunits import Units
+from ocgis import env
 from ocgis.api.parms.definition import *
 from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension
 from ocgis.util.helpers import make_poly
@@ -136,45 +137,38 @@ class Test(TestBase):
         pp.value = ' Old__man '
         self.assertEqual(pp.value,'Old__man')
 
-    def test_calc_grouping(self):
-        cg = CalcGrouping(['day','month'])
-        self.assertEqual(cg.value,('day','month'))
+
+class TestAbstraction(TestBase):
+    create_dir = False
+
+    def test_init_(self):
+        K = Abstraction
+
+        k = K()
+        self.assertEqual(k.value,None)
+        self.assertEqual(str(k),'abstraction="None"')
+
+        k = K('point')
+        self.assertEqual(k.value,'point')
+
         with self.assertRaises(DefinitionValidationError):
-            cg.value = ['d','foo']
+            K('pt')
 
-    def test_calc_grouping_all(self):
-        cg = CalcGrouping('all')
-        self.assertEqual(cg.value,'all')
 
-    def test_calc_grouping_seasonal_aggregation(self):
-        cg = CalcGrouping([[1,2,3],[4,5,6]])
-        self.assertEqual(cg.value,([1,2,3],[4,5,6]))
+class TestAggregate(TestBase):
+    create_dir = False
 
-        ## element groups must be composed of unique elements
-        with self.assertRaises(DefinitionValidationError):
-            CalcGrouping([[1,2,3],[4,4,6]])
+    def test_init(self):
+        A = Aggregate
 
-        ## element groups must have an empty intersection
-        with self.assertRaises(DefinitionValidationError):
-            CalcGrouping([[1,2,3],[1,4,6]])
+        a = A(True)
+        self.assertEqual(a.value,True)
 
-        ## months must be between 1 and 12
-        with self.assertRaises(DefinitionValidationError):
-            CalcGrouping([[1,2,3],[4,5,66]])
+        a = A(False)
+        self.assertEqual(a.value,False)
 
-    def test_calc_grouping_seasonal_aggregation_with_year(self):
-        cg = CalcGrouping([[1,2,3],[4,5,6],'year'])
-        self.assertEqual(cg.value,([1,2,3],[4,5,6],'year'))
-
-    def test_calc_grouping_seasonal_aggregation_with_unique(self):
-        cg = CalcGrouping([[1,2,3],[4,5,6],'unique'])
-        self.assertEqual(cg.value,([1,2,3],[4,5,6],'unique'))
-
-    def test_calc_grouping_seasonal_aggregation_with_bad_flag(self):
-        with self.assertRaises(DefinitionValidationError):
-            CalcGrouping([[1,2,3],[4,5,6],'foo'])
-        with self.assertRaises(DefinitionValidationError):
-            CalcGrouping([[1,2,3],[4,5,6],'fod'])
+        a = A('True')
+        self.assertEqual(a.value,True)
 
 
 class TestCalc(TestBase):
@@ -287,6 +281,50 @@ class TestCalc(TestBase):
             Calc(calc)
 
 
+class TestCalcGrouping(TestBase):
+    create_dir = False
+
+    def init(self):
+        cg = CalcGrouping(['day', 'month'])
+        self.assertEqual(cg.value, ('day', 'month'))
+        with self.assertRaises(DefinitionValidationError):
+            cg.value = ['d', 'foo']
+
+    def test_all(self):
+        cg = CalcGrouping('all')
+        self.assertEqual(cg.value, 'all')
+
+    def test_seasonal_aggregation(self):
+        cg = CalcGrouping([[1, 2, 3], [4, 5, 6]])
+        self.assertEqual(cg.value, ([1, 2, 3], [4, 5, 6]))
+
+        # # element groups must be composed of unique elements
+        with self.assertRaises(DefinitionValidationError):
+            CalcGrouping([[1, 2, 3], [4, 4, 6]])
+
+        ## element groups must have an empty intersection
+        with self.assertRaises(DefinitionValidationError):
+            CalcGrouping([[1, 2, 3], [1, 4, 6]])
+
+        ## months must be between 1 and 12
+        with self.assertRaises(DefinitionValidationError):
+            CalcGrouping([[1, 2, 3], [4, 5, 66]])
+
+    def test_seasonal_aggregation_with_year(self):
+        cg = CalcGrouping([[1, 2, 3], [4, 5, 6], 'year'])
+        self.assertEqual(cg.value, ([1, 2, 3], [4, 5, 6], 'year'))
+
+    def test_seasonal_aggregation_with_unique(self):
+        cg = CalcGrouping([[1, 2, 3], [4, 5, 6], 'unique'])
+        self.assertEqual(cg.value, ([1, 2, 3], [4, 5, 6], 'unique'))
+
+    def test_seasonal_aggregation_with_bad_flag(self):
+        with self.assertRaises(DefinitionValidationError):
+            CalcGrouping([[1, 2, 3], [4, 5, 6], 'foo'])
+        with self.assertRaises(DefinitionValidationError):
+            CalcGrouping([[1, 2, 3], [4, 5, 6], 'fod'])
+
+
 class TestConformUnitsTo(TestBase):
     create_dir = False
 
@@ -302,6 +340,25 @@ class TestConformUnitsTo(TestBase):
 
         cc = ConformUnitsTo(Units('celsius'))
         self.assertTrue(cc.value.equals(Units('celsius')))
+
+
+class TestHeaders(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        headers = ['did', 'value']
+        for htype in [list, tuple]:
+            hvalue = htype(headers)
+            hh = Headers(hvalue)
+            self.assertEqual(hh.value, tuple(constants.required_headers + ['value']))
+
+        headers = ['foo']
+        with self.assertRaises(DefinitionValidationError):
+            Headers(headers)
+
+        headers = []
+        hh = Headers(headers)
+        self.assertEqual(hh.value, tuple(constants.required_headers))
 
 
 class TestDataset(TestBase):
@@ -347,6 +404,17 @@ class TestDataset(TestBase):
         field = self.test_data.get_rd('cancm4_tas').get()
         dd = Dataset(field)
         self.assertIsInstance(dd.value, RequestDatasetCollection)
+
+        # test loading dataset directly from uri with some overloads
+        reference_rd = self.test_data.get_rd('cancm4_tas')
+        rd = RequestDataset(reference_rd.uri, reference_rd.variable)
+        ds = Dataset(rd)
+        self.assertEqual(ds.value, RequestDatasetCollection([rd]))
+        dsa = {'uri': reference_rd.uri, 'variable': reference_rd.variable}
+        Dataset(dsa)
+        reference_rd2 = self.test_data.get_rd('narccap_crcm')
+        dsb = [dsa, {'uri': reference_rd2.uri, 'variable': reference_rd2.variable, 'alias': 'knight'}]
+        Dataset(dsb)
 
     def test_get_meta(self):
         # test with standard request dataset collection
@@ -606,6 +674,18 @@ class TestRegridOptions(TestBase):
 
         ro = RegridOptions({'value_mask': np.array([True])})
         self.assertTrue('numpy.ndarray' in ro._get_meta_())
+
+
+class TestSpatialOperation(TestBase):
+
+    def test_init(self):
+        values = (None, 'clip', 'intersects')
+        ast = ('intersects', 'clip', 'intersects')
+
+        klass = SpatialOperation
+        for v, a in zip(values, ast):
+            obj = klass(v)
+            self.assertEqual(obj.value, a)
 
 
 class TestTimeRange(TestBase):

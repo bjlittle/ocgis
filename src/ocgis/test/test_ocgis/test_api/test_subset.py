@@ -52,11 +52,16 @@ class TestSubsetOperation(TestBase):
 
         #todo: field not loaded from file
         #todo: test writing to all output formats and inspecting them
+        #todo: test interpolate spatial bounds with a field object that only has points
+        #todo: test with a subset
+        #todo: test with a calculation
+        #todo: test with a time range and time region
+        #todo: test with mix of fields and request datasets
 
         dataset = self.test_data.get_rd('cancm4_tas').get()
-        ops = OcgOperations(dataset=dataset, output_format='nc')
+        ops = OcgOperations(dataset=dataset, snippet=True)
         ret = ops.execute()
-        raise
+        import ipdb;ipdb.set_trace()
 
     def test_geometry_dictionary(self):
         """Test geometry dictionaries come out properly as collections."""
