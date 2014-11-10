@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime as dt
+from ocgis.interface.base.crs import WGS84
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
 import datetime
@@ -110,20 +111,28 @@ class AbstractTestField(TestBase):
 class TestField(AbstractTestField):
 
     def test_init(self):
-        for b,wv in itertools.product([True,False],[True,False]):
-            field = self.get_field(with_bounds=b,with_value=wv)
+        for b, wv in itertools.product([True, False], [True, False]):
+            field = self.get_field(with_bounds=b, with_value=wv)
+            self.assertFalse(field.regrid_destination)
             ref = field.shape
-            self.assertEqual(ref,(2,31,2,3,4))
+            self.assertEqual(ref, (2, 31, 2, 3, 4))
             with self.assertRaises(AttributeError):
                 field.value
-            self.assertIsInstance(field.variables,VariableCollection)
-            self.assertIsInstance(field.variables['tmax'],Variable)
+            self.assertIsInstance(field.variables, VariableCollection)
+            self.assertIsInstance(field.variables['tmax'], Variable)
             if wv:
-                self.assertIsInstance(field.variables['tmax'].value,np.ma.MaskedArray)
-                self.assertEqual(field.variables['tmax'].value.shape,field.shape)
+                self.assertIsInstance(field.variables['tmax'].value, np.ma.MaskedArray)
+                self.assertEqual(field.variables['tmax'].value.shape, field.shape)
             else:
                 with self.assertRaises(Exception):
                     field.variables['tmax'].value
+
+    def test_crs(self):
+        field = self.get_field(with_value=True)
+        self.assertIsNone(field.spatial.crs)
+        self.assertIsNone(field.crs)
+        field.spatial.crs = WGS84()
+        self.assertEqual(field.crs, WGS84())
 
     def test_deepcopy(self):
         field = self.get_field(with_value=True)

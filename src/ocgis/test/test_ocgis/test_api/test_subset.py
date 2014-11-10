@@ -50,6 +50,9 @@ class TestSubsetOperation(TestBase):
     def test_dataset_as_field(self):
         """Test with dataset argument coming in as a field as opposed to a request dataset collection."""
 
+        #todo: field not loaded from file
+        #todo: test writing to all output formats and inspecting them
+
         dataset = self.test_data.get_rd('cancm4_tas').get()
         ops = OcgOperations(dataset=dataset, output_format='nc')
         ret = ops.execute()

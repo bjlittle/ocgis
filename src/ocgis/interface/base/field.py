@@ -29,6 +29,7 @@ class Field(object):
     :param dict meta: A dictionary containing additional metadata elements.
     :param int uid: A unique identifier for the field.
     :param str name: A string name for the field.
+    :param bool regrid_destination: If ``True``, this field should be used as a regrid destination target.
     """
 
     _axis_map = {'realization': 0, 'temporal': 1, 'level': 2}
@@ -36,7 +37,7 @@ class Field(object):
     _value_dimension_names = ('realization', 'temporal', 'level', 'row', 'column')
 
     def __init__(self, variables=None, realization=None, temporal=None, level=None, spatial=None, meta=None, uid=None,
-                 name=None):
+                 name=None, regrid_destination=False):
 
         self.realization = realization
         self.temporal = temporal
@@ -44,11 +45,13 @@ class Field(object):
         self.level = level
         self.spatial = spatial
         self.meta = meta or {}
+        self.regrid_destination = regrid_destination
         # holds raw values for aggregated datasets.
         self._raw = None
         # add variables - dimensions are needed first for shape checking
         self.variables = variables
         self._name = name
+
         # flag used in regridding operations. this should be updated by the driver.
         self._should_regrid = False
         # flag used in regridding to indicate if a coordinate system was assigned by the user in the driver.
@@ -65,6 +68,10 @@ class Field(object):
         ret.variables = self.variables.get_sliced_variables(slc)
 
         return ret
+
+    @property
+    def crs(self):
+        return self.spatial.crs
 
     @property
     def name(self):
