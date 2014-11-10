@@ -1,10 +1,15 @@
 from copy import deepcopy
 import pickle
+import datetime
+from ocgis.interface.base.field import Field
+from ocgis.interface.base.variable import Variable
 from ocgis.api.operations import OcgOperations
 from ocgis.conv.numpy_ import NumpyConverter
 from ocgis.exc import DimensionNotFound
 from ocgis.interface.base.crs import Spherical, CFWGS84, CFPolarStereographic
-from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension
+from ocgis.interface.base.dimension.base import VectorDimension
+from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension, SpatialGridDimension
+from ocgis.interface.base.dimension.temporal import TemporalDimension
 from ocgis.test.base import TestBase
 import ocgis
 from ocgis.api.subset import SubsetOperation
@@ -48,20 +53,39 @@ class TestSubsetOperation(TestBase):
             ops.execute()
 
     def test_dataset_as_field(self):
-        """Test with dataset argument coming in as a field as opposed to a request dataset collection."""
+        """Test with dataset as field not loaded from file - hence, no metadata."""
 
-        #todo: field not loaded from file
         #todo: test writing to all output formats and inspecting them
         #todo: test interpolate spatial bounds with a field object that only has points
-        #todo: test with a subset
         #todo: test with a calculation
         #todo: test with a time range and time region
         #todo: test with mix of fields and request datasets
 
-        dataset = self.test_data.get_rd('cancm4_tas').get()
-        ops = OcgOperations(dataset=dataset, snippet=True)
+        field = self.get_field()
+
+        ops = OcgOperations(dataset=field)
+        ret = ops.execute()
+        self.assertNumpyAll(ret.gvu(1, 'foo'), field.variables['foo'].value)
+
+        ops = OcgOperations(dataset=field, output_format='nc')
         ret = ops.execute()
         import ipdb;ipdb.set_trace()
+
+    def test_dataset_as_field_from_file(self):
+        """Test with dataset argument coming in as a field as opposed to a request dataset collection."""
+
+        rd = self.test_data.get_rd('cancm4_tas')
+        geom = 'state_boundaries'
+        select_ugid = [23]
+        field = rd.get()
+        ops = OcgOperations(dataset=field, snippet=True, geom=geom, select_ugid=select_ugid)
+        ret = ops.execute()
+        field_out_from_field = ret[23]['tas']
+        self.assertEqual(field_out_from_field.shape, (1, 1, 1, 4, 3))
+        ops = OcgOperations(dataset=rd, snippet=True, geom=geom, select_ugid=select_ugid)
+        ret = ops.execute()
+        field_out_from_rd = ret[23]['tas']
+        self.assertNumpyAll(field_out_from_field.variables['tas'].value, field_out_from_rd.variables['tas'].value)
 
     def test_geometry_dictionary(self):
         """Test geometry dictionaries come out properly as collections."""

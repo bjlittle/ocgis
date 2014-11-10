@@ -2,18 +2,20 @@ import unittest
 import abc
 import tempfile
 import datetime
+from ocgis.interface.base.field import Field
+from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis import env
 import shutil
 from copy import deepcopy, copy
 import os
 from collections import OrderedDict
-import subprocess
 import ocgis
-from warnings import warn
-from subprocess import CalledProcessError
 import numpy as np
 from ocgis.api.request.base import RequestDataset
 import netCDF4 as nc
+from ocgis.interface.base.dimension.base import VectorDimension
+from ocgis.interface.base.dimension.temporal import TemporalDimension
+from ocgis.interface.base.variable import Variable
 from ocgis.util.helpers import get_iter
 
 
@@ -236,6 +238,22 @@ class TestBase(unittest.TestCase):
             pass
         else:
             raise AssertionError('Arrays are equivalent within precision.')
+
+    def get_field(self):
+        """
+        :returns: A small field object for testing.
+        :rtype: `~ocgis.Field`
+        """
+
+        np.random.seed(1)
+        row = VectorDimension(value=[4., 5.])
+        col = VectorDimension(value=[40., 50.])
+        grid = SpatialGridDimension(row=row, col=col)
+        sdim = SpatialDimension(grid=grid)
+        temporal = TemporalDimension(value=[datetime.datetime(2000, 1, 1), datetime.datetime(2000, 2, 1)])
+        variable = Variable(name='foo', value=np.random.rand(1, 2, 1, 2, 2))
+        field = Field(spatial=sdim, temporal=temporal, variables=variable)
+        return field
 
     def get_temporary_output_directory(self):
         """

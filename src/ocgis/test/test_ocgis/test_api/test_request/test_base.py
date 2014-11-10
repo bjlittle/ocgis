@@ -506,6 +506,16 @@ class TestRequestDatasetCollection(TestBase):
                 except AttributeError:
                     self.assertIsNone(element.uid)
 
+    def test_iter_request_datasets(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        field = rd.get()
+        field.name = 'foo'
+        rdc = RequestDatasetCollection(target=[rd, field])
+        tt = list(rdc.iter_request_datasets())
+        self.assertEqual(len(tt), 1)
+        self.assertEqual(len(rdc), 2)
+        self.assertIsInstance(tt[0], RequestDataset)
+
     def test_name_attribute_used_for_keys(self):
         rd = self.test_data.get_rd('cancm4_tas')
         rd.name = 'hi_there'

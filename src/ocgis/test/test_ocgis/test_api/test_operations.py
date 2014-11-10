@@ -356,3 +356,9 @@ class TestOcgOperations(TestBase):
 
         self.assertTrue(len(app) > 15)
         self.assertEqual(app[-1][0],100.0)
+
+    def test_validate(self):
+        # snippets should be allowed for field objects
+        field = self.test_data.get_rd('cancm4_tas').get()
+        ops = OcgOperations(dataset=field, snippet=True)
+        self.assertTrue(ops.snippet)

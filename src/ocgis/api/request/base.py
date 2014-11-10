@@ -467,6 +467,19 @@ class RequestDatasetCollection(AbstractCollection):
         request_datasets = ', '.join([str(rd) for rd in self.itervalues()])
         return ret.format(klass=self.__class__.__name__, request_datasets=request_datasets)
 
+    def iter_request_datasets(self):
+        """
+        :returns: An iterator over only the request dataset objects contained in the collection. Field objects are
+         excluded.
+        :rtype: `~ocgis.RequestDataset`
+        """
+
+        for value in self.itervalues():
+            if isinstance(value, Field):
+                continue
+            else:
+                yield value
+
     def update(self, target):
         """
         Add an object to the collection.

@@ -444,7 +444,7 @@ class OcgOperations(object):
         if self.snippet:
             if self.calc is not None:
                 _raise_('Snippets are not implemented for calculations. Apply a limiting time range for faster responses.',obj=Snippet)
-            for rd in self.dataset.itervalues():
+            for rd in self.dataset.iter_request_datasets():
                 if rd.time_region is not None:
                     _raise_('Snippets are not implemented for time regions.',obj=Snippet)
         

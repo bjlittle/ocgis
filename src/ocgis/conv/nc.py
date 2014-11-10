@@ -17,26 +17,29 @@ class NcConverter(AbstractConverter):
     def _build_(self,coll):
         ds = nc.Dataset(self.path,'w',format=self._get_file_format_())
         return(ds)
-        
+
     def _get_file_format_(self):
         file_format = set()
-        ## if no operations are present, use the default data model
+        # if no operations are present, use the default data model
         if self.ops is None:
             ret = constants.netCDF_default_data_model
         else:
-            for rd in self.ops.dataset.itervalues():
+            for rd in self.ops.dataset.iter_request_datasets():
                 rr = rd.source_metadata['file_format']
-                if isinstance(rr,basestring):
+                if isinstance(rr, basestring):
                     tu = [rr]
                 else:
                     tu = rr
                 file_format.update(tu)
             if len(file_format) > 1:
-                exc = ValueError('Multiple file formats found: {0}'.format(file_format))
-                ocgis_lh(exc=exc,logger='conv.nc')
+                raise ValueError('Multiple file formats found: {0}'.format(file_format))
             else:
-                ret = list(file_format)[0]
-        return(ret)
+                try:
+                    ret = list(file_format)[0]
+                except IndexError:
+                    # likely all field objects in the dataset. use the default netcdf data model
+                    ret = constants.netCDF_default_data_model
+        return ret
     
     def _write_coll_(self,ds,coll):
         
