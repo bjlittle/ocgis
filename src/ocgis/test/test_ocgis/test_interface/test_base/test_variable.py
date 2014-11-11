@@ -1,8 +1,9 @@
 from numpy.ma import MaskedArray
 from cfunits import Units
 from ocgis.exc import VariableInCollectionError, NoUnitsError
+from ocgis.interface.base.attributes import Attributes
 from ocgis.test.base import TestBase
-from ocgis.interface.base.variable import Variable, VariableCollection
+from ocgis.interface.base.variable import Variable, VariableCollection, AbstractSourcedVariable
 import numpy as np
 from ocgis.util.helpers import get_iter
 from ocgis.util.itester import itr_products_keywords
@@ -10,29 +11,38 @@ from ocgis.util.itester import itr_products_keywords
 
 class TestVariable(TestBase):
 
-    def test_init_without_value_dtype_fill_value(self):
-        var = Variable(data='foo')
-        with self.assertRaises(ValueError):
-            var.dtype
-        with self.assertRaises(ValueError):
-            var.fill_value
-            
-    def test_init_without_value_with_dtype_fill_value(self):
-        var = Variable(data='foo',dtype=np.float,fill_value=9)
-        self.assertEqual(var.dtype,np.float)
-        self.assertEqual(var.fill_value,9)
-        
+    def test_init(self):
+        var = Variable(value=np.array([5]))
+        self.assertIsInstance(var, AbstractSourcedVariable)
+        self.assertIsInstance(var, Attributes)
+
+        # test passing attributes
+        var = Variable(attrs={'a': 6}, value=np.array([5]))
+        self.assertEqual(var.attrs['a'], 6)
+
     def test_init_with_value_with_dtype_fill_value(self):
         var = Variable(data='foo',dtype=np.float,fill_value=9,value=np.array([1,2,3,4]))
         self.assertEqual(var.dtype,np.float)
         self.assertEqual(var.fill_value,9)
-        
+
     def test_init_with_value_without_dtype_fill_value(self):
         value = np.array([1,2,3,4])
         value = np.ma.array(value)
         var = Variable(data='foo',value=value)
         self.assertEqual(var.dtype,value.dtype)
         self.assertEqual(var.fill_value,value.fill_value)
+
+    def test_init_without_value_dtype_fill_value(self):
+        var = Variable(data='foo')
+        with self.assertRaises(ValueError):
+            var.dtype
+        with self.assertRaises(ValueError):
+            var.fill_value
+
+    def test_init_without_value_with_dtype_fill_value(self):
+        var = Variable(data='foo',dtype=np.float,fill_value=9)
+        self.assertEqual(var.dtype,np.float)
+        self.assertEqual(var.fill_value,9)
 
     def test_conform_units_to(self):
         """Test using the conform_units_to keyword argument."""

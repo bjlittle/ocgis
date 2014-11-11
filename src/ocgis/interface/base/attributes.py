@@ -17,11 +17,10 @@ class Attributes(object):
 
     @attrs.setter
     def attrs(self, value):
-        try:
-            self._attrs = OrderedDict(value)
-        except TypeError:
-            # likely a nonetype
+        if value is None:
             self._attrs = OrderedDict()
+        else:
+            self._attrs = OrderedDict(value)
 
     def write_attributes_to_netcdf_object(self, target):
         """

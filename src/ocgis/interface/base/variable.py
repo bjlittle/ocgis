@@ -1,4 +1,5 @@
 from ocgis.api.collection import AbstractCollection
+from ocgis.interface.base.attributes import Attributes
 from ocgis.util.logging_ocgis import ocgis_lh
 import abc
 from collections import OrderedDict
@@ -180,8 +181,8 @@ class AbstractSourcedVariable(AbstractValueVariable):
     def _set_value_from_source_(self): pass
 
 
-class Variable(AbstractSourcedVariable):
-    '''
+class Variable(AbstractSourcedVariable, Attributes):
+    """
     :param name: Representative name for the variable.
     :type name: str
     :param alias: Optional unique name for the variable.
@@ -205,18 +206,18 @@ class Variable(AbstractSourcedVariable):
     :type fill_value: int or float
     :param conform_units_to: Target units for conversion.
     :type conform_units_to: str convertible to :class:`cfunits.Units`
-    '''
-    
-    def __init__(self,name=None,alias=None,units=None,meta=None,uid=None,
-                 value=None,did=None,data=None,debug=False,conform_units_to=None,
-                 dtype=None,fill_value=None):
+    :param dict attrs: A dictionary of arbitrary key-value attributes.
+    """
+
+    def __init__(self, name=None, alias=None, units=None, meta=None, uid=None, value=None, did=None, data=None,
+                 debug=False, conform_units_to=None, dtype=None, fill_value=None, attrs=None):
         self.alias = alias or name
         self.meta = meta or {}
         self.uid = uid
 
-        super(Variable,self).__init__(value=value,data=data,debug=debug,did=did,
-                                      units=units,dtype=dtype,fill_value=fill_value,
-                                      name=name,conform_units_to=conform_units_to)
+        Attributes.__init__(self, attrs=attrs)
+        AbstractSourcedVariable.__init__(self, value=value, data=data, debug=debug, did=did, units=units, dtype=dtype,
+                                         fill_value=fill_value, name=name, conform_units_to=conform_units_to)
         
     def __getitem__(self,slc):
         ret = copy(self)
