@@ -138,6 +138,8 @@ class VectorDimension(AbstractSourcedVariable,AbstractUidValueDimension):
     _ndims = 1
     
     def __init__(self, *args, **kwargs):
+        self._name_bounds = None
+
         bounds = kwargs.pop('bounds', None)
         self.name_bounds = kwargs.pop('name_bounds', None)
         self._axis = kwargs.pop('axis', None)
@@ -189,14 +191,15 @@ class VectorDimension(AbstractSourcedVariable,AbstractUidValueDimension):
         else:
             target = self.bounds
         return target.min(), target.max()
-    
+
     @property
     def name_bounds(self):
         if self._name_bounds is None:
-            self._name_bounds = '{0}_bnds'.format(self.name_value)
-        return(self._name_bounds)
+            self._name_bounds = '{0}_bounds'.format(self.name_value)
+        return self._name_bounds
+
     @name_bounds.setter
-    def name_bounds(self,value):
+    def name_bounds(self, value):
         self._name_bounds = value
     
     @property

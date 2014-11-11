@@ -12,6 +12,13 @@ from ocgis.util.helpers import get_bounds_from_1d
 class TestVectorDimension(TestBase):
     create_dir = False
 
+    def test_init(self):
+        vd = VectorDimension(value=[4, 5])
+        self.assertIsNone(vd.name)
+        self.assertIsNone(vd.name_value)
+        self.assertEqual(vd.name_uid, 'None_uid')
+        self.assertEqual(vd.name_bounds, 'None_bounds')
+
     def test_bad_dtypes(self):
         vd = VectorDimension(value=181.5,bounds=[181,182])
         self.assertEqual(vd.value.dtype,vd.bounds.dtype)
@@ -54,17 +61,18 @@ class TestVectorDimension(TestBase):
             VectorDimension()
 
     def test_get_iter(self):
-        vdim = VectorDimension(value=[10,20,30,40,50])
+        vdim = VectorDimension(value=[10, 20, 30, 40, 50])
         with self.assertRaises(ValueError):
             list(vdim.get_iter())
 
-        vdim = VectorDimension(value=[10,20,30,40,50],name='foo')
+        vdim = VectorDimension(value=[10, 20, 30, 40, 50], name='foo')
         tt = list(vdim.get_iter())
-        self.assertEqual(tt[3],(3, {'foo_uid': 4, 'foo': 40, 'foo_bnds_lower': None, 'foo_bnds_upper': None}))
+        self.assertEqual(tt[3], (3, {'foo_uid': 4, 'foo': 40, 'foo_bounds_lower': None, 'foo_bounds_upper': None}))
 
-        vdim = VectorDimension(value=[10,20,30,40,50],bounds=[(ii-5,ii+5) for ii in [10,20,30,40,50]],name='foo',name_uid='hi')
+        vdim = VectorDimension(value=[10, 20, 30, 40, 50], bounds=[(ii - 5, ii + 5) for ii in [10, 20, 30, 40, 50]],
+                               name='foo', name_uid='hi')
         tt = list(vdim.get_iter())
-        self.assertEqual(tt[3],(3, {'hi': 4, 'foo': 40, 'foo_bnds_lower': 35, 'foo_bnds_upper': 45}))
+        self.assertEqual(tt[3], (3, {'hi': 4, 'foo': 40, 'foo_bounds_lower': 35, 'foo_bounds_upper': 45}))
 
     def test_interpolate_bounds(self):
         value = [10,20,30,40,50]
@@ -84,6 +92,10 @@ class TestVectorDimension(TestBase):
             vdim.value
         with self.assertRaises(NotImplementedError):
             vdim.resolution
+
+    def test_name_bounds(self):
+        vd = VectorDimension(value=[5, 6], name='hello')
+        self.assertEqual(vd.name_bounds, 'hello_bounds')
 
     def test_one_value(self):
         """Test passing a single value."""
