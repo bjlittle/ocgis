@@ -1,8 +1,11 @@
+from collections import OrderedDict
 import unittest
 import numpy as np
+from ocgis.interface.base.attributes import Attributes
+from ocgis.interface.base.variable import AbstractSourcedVariable
 from ocgis import constants
 from ocgis.exc import EmptySubsetError, ResolutionError
-from ocgis.interface.base.dimension.base import VectorDimension
+from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension
 from copy import deepcopy
 from cfunits.cfunits import Units
 from ocgis.test.base import TestBase
@@ -14,10 +17,19 @@ class TestVectorDimension(TestBase):
 
     def test_init(self):
         vd = VectorDimension(value=[4, 5])
+        self.assertIsInstance(vd, AbstractSourcedVariable)
+        self.assertIsInstance(vd, AbstractUidValueDimension)
+        self.assertIsInstance(vd, Attributes)
+        self.assertIsInstance(vd.attrs, OrderedDict)
         self.assertIsNone(vd.name)
         self.assertIsNone(vd.name_value)
         self.assertEqual(vd.name_uid, 'None_uid')
         self.assertEqual(vd.name_bounds, 'None_bounds')
+
+        # test passing attributes to the constructor
+        attrs = {'something': 'underground'}
+        vd = VectorDimension(value=[4, 5], attrs=attrs)
+        self.assertEqual(vd.attrs, attrs)
 
     def test_bad_dtypes(self):
         vd = VectorDimension(value=181.5,bounds=[181,182])

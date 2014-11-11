@@ -23,7 +23,7 @@ class Attributes(object):
             # likely a nonetype
             self._attrs = OrderedDict()
 
-    def write_to_netcdf_object(self, target):
+    def write_attributes_to_netcdf_object(self, target):
         """
         :param target: A netCDF data object to write attributes to.
         :type target: :class:`netCDF4.Variable` or :class:`netCDF4.Dataset`

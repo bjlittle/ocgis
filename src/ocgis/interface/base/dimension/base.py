@@ -1,6 +1,7 @@
 import abc
 import numpy as np
 from ocgis import constants
+from ocgis.interface.base.attributes import Attributes
 from ocgis.util.helpers import get_none_or_1d, get_none_or_2d, get_none_or_slice,\
     get_formatted_slice, assert_raise, get_bounds_from_1d
 from copy import copy, deepcopy
@@ -132,7 +133,7 @@ class AbstractUidValueDimension(AbstractValueDimension,AbstractUidDimension):
         AbstractUidDimension.__init__(self,*args,**kwds_uid)
 
 
-class VectorDimension(AbstractSourcedVariable,AbstractUidValueDimension):
+class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attributes):
     _axis = None
     _attrs_slice = ('uid', '_value', '_src_idx')
     _ndims = 1
@@ -145,7 +146,8 @@ class VectorDimension(AbstractSourcedVariable,AbstractUidValueDimension):
         self._interpolate_bounds = kwargs.pop('interpolate_bounds', False)
         # if True, bounds were interpolated. if False, they were loaded from source data
         self._has_interpolated_bounds = False
-        
+
+        Attributes.__init__(self, attrs=kwargs.pop('attrs', None))
         AbstractSourcedVariable.__init__(self, kwargs.pop('data', None), src_idx=kwargs.pop('src_idx', None),
                                          value=kwargs.get('value'), dtype=kwargs.get('dtype'))
         AbstractUidValueDimension.__init__(self, *args, **kwargs)

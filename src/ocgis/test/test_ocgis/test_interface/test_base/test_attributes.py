@@ -27,7 +27,7 @@ class TestAttributes(TestBase):
 
         # write to dataset object
         with nc_scope(path, 'w') as ds:
-            a.write_to_netcdf_object(ds)
+            a.write_attributes_to_netcdf_object(ds)
         with nc_scope(path, 'r') as ds:
             self.assertDictEqual(ds.__dict__, a.attrs)
 
@@ -35,7 +35,7 @@ class TestAttributes(TestBase):
         with nc_scope(path, 'w') as ds:
             ds.createDimension('foo')
             var = ds.createVariable('foo', int, dimensions=('foo',))
-            a.write_to_netcdf_object(var)
+            a.write_attributes_to_netcdf_object(var)
         with nc_scope(path, 'r') as ds:
             var = ds.variables['foo']
             self.assertDictEqual(var.__dict__, a.attrs)
