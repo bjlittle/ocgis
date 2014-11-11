@@ -56,6 +56,8 @@ class TestNcConverter(AbstractTestConverter):
             self.assertEqual(file_format, ds.file_format)
 
     def test_write_coll(self):
+        # todo: test with level
+        # todo: test with bounds
         # use a field as the input dataset
         coll = self.get_spatial_collection(field=self.get_field())
         conv = NcConverter([coll], self.current_dir_output, 'foo')
