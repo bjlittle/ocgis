@@ -97,6 +97,10 @@ class TestVectorDimension(TestBase):
         vd = VectorDimension(value=[5, 6], name='hello')
         self.assertEqual(vd.name_bounds, 'hello_bounds')
 
+        vd = VectorDimension(value=[5, 6], name_bounds='hello')
+        self.assertEqual(vd.name_bounds, 'hello')
+        self.assertIsNone(vd.name)
+
     def test_one_value(self):
         """Test passing a single value."""
 

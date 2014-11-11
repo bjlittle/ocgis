@@ -138,10 +138,8 @@ class VectorDimension(AbstractSourcedVariable,AbstractUidValueDimension):
     _ndims = 1
     
     def __init__(self, *args, **kwargs):
-        self._name_bounds = None
-
         bounds = kwargs.pop('bounds', None)
-        self.name_bounds = kwargs.pop('name_bounds', None)
+        self._name_bounds = kwargs.pop('name_bounds', None)
         self._axis = kwargs.pop('axis', None)
         # if True, an attempt will be made to interpolate bounds if None are provided.
         self._interpolate_bounds = kwargs.pop('interpolate_bounds', False)
