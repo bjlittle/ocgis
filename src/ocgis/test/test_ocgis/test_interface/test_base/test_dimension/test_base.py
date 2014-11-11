@@ -232,4 +232,3 @@ class TestVectorDimension(TestBase):
         ret = vdim.get_between(3,4.5,use_bounds=False)
         self.assertNumpyAll(ret.value,np.array([3.]))
         self.assertNumpyAll(ret.bounds,np.array([[2.,4.]]))
-)
