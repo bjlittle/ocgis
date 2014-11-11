@@ -796,64 +796,7 @@ def make_poly(rtup,ctup):
                     (ctup[0],rtup[1]),
                     (ctup[1],rtup[1]),
                     (ctup[1],rtup[0])))
-    
-#def get_sub_range(a):
-#    """
-#    >>> vec = np.array([2,5,9])
-#    >>> sub_range(vec)
-#    array([2, 3, 4, 5, 6, 7, 8, 9])
-#    """
-#    a = np.array(a)
-##    ## for the special case of the array with one element
-##    if len(a) == 1:
-##        ret = np.arange(a[0],a[0]+1)
-##    else:
-#    ret = np.arange(a.min(),a.max()+1)
-#    return(ret)
-#
-#def bounding_coords(polygon):
-#    min_x,min_y,max_x,max_y = polygon.bounds
-#    Bounds = namedtuple('Bounds',['min_x','min_y','max_x','max_y'])
-#    return(Bounds(min_x=min_x,
-#                  max_x=max_x,
-#                  min_y=min_y,
-#                  max_y=max_y))
-#    
-#def shapely_to_shp(obj,path,srs=None):
-#    from osgeo import osr, ogr
-#    
-##    path = os.path.join('/tmp',outname+'.shp')
-#    if srs is None:
-#        srs = osr.SpatialReference()
-#        srs.ImportFromEPSG(4326)
-#        
-#    if isinstance(obj,MultiPoint):
-#        test = ogr.CreateGeometryFromWkb(obj[0].wkb)
-#        ogr_geom = test.GetGeometryType()
-#    else:
-#        ogr_geom = 3
-#    
-#    dr = ogr.GetDriverByName('ESRI Shapefile')
-#    ds = dr.CreateDataSource(path)
-#    try:
-#        if ds is None:
-#            raise IOError('Could not create file on disk. Does it already exist?')
-#            
-#        layer = ds.CreateLayer('lyr',srs=srs,geom_type=ogr_geom)
-#        try:
-#            feature_def = layer.GetLayerDefn()
-#        except:
-#            import ipdb;ipdb.set_trace()
-#        feat = ogr.Feature(feature_def)
-#        try:
-#            iterator = iter(obj)
-#        except TypeError:
-#            iterator = iter([obj])
-#        for geom in iterator:
-#            feat.SetGeometry(ogr.CreateGeometryFromWkb(geom.wkb))
-#            layer.CreateFeature(feat)
-#    finally:
-#        ds.Destroy()
+
 
 def get_temp_path(suffix='',name=None,nest=False,only_dir=False,wd=None,dir_prefix=None):
     """Return absolute path to a temporary file."""

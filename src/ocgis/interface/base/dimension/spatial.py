@@ -1089,10 +1089,7 @@ class SpatialGeometryPointDimension(base.AbstractUidValueDimension):
         with fiona.open(path,'w',driver=driver,crs=crs,schema=schema) as f:
             for (ii,jj),geom in iter_array(self.value,return_value=True):
                 geom = ref_prep(geom)
-                try:
-                    uid = int(ref_uid[ii,jj])
-                except Exception as e:
-                    import ipdb;ipdb.set_trace()
+                uid = int(ref_uid[ii,jj])
                 feature = {'properties':{'UGID':uid},'geometry':mapping(geom)}
                 f.write(feature)
 

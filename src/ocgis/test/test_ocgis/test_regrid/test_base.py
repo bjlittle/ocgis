@@ -70,7 +70,7 @@ class TestRegrid(TestSimpleBase):
         mpoly_updated = deepcopy(odd.spatial.geom.polygon.value[0, 0])
         mpoly_updated_coords = get_coords(mpoly_updated)
 
-        import ipdb;ipdb.set_trace()
+        raise
 
     def atest_to_spherical(self):
         rd = self.test_data.get_rd('cancm4_tas')
@@ -100,7 +100,7 @@ class TestRegrid(TestSimpleBase):
         # grid_new = field.spatial.grid.value.copy()
         field.spatial.write_fiona('/tmp/wgs84.shp', target=target)
         # diff = np.abs(grid_original[0].data - grid_new[0].data).mean()
-        import ipdb;ipdb.set_trace()
+        raise
 
     def test_check_fields_for_regridding(self):
 

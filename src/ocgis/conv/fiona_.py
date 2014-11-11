@@ -147,10 +147,7 @@ class FionaConverter(AbstractConverter):
         fiona_object = f['fiona_object']
         for geom, properties in coll.get_iter_dict(use_upper_keys=True, conversion_map=f['fiona_conversion']):
             to_write = {'geometry': mapping(geom), 'properties': properties}
-            try:
-                fiona_object.write(to_write)
-            except Exception as e:
-                import ipdb;ipdb.set_trace()
+            fiona_object.write(to_write)
 
 
 class ShpConverter(FionaConverter):

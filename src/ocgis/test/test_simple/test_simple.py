@@ -1501,7 +1501,6 @@ class TestSimple360(TestSimpleBase):
                     # field = rd.get()
                     # field.spatial.write_fiona('/tmp/touch.shp')
                     # write_geom_dict({1:g},path='/tmp/should_touch.shp')
-                    # import ipdb;ipdb.set_trace()
                     raise
                 
     def test_spatial(self):
