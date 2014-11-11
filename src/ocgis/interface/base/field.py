@@ -1,3 +1,4 @@
+from ocgis.interface.base.attributes import Attributes
 from ocgis.util.helpers import get_default_or_apply, get_none_or_slice,\
     get_formatted_slice, get_reduced_slice, assert_raise
 import numpy as np
@@ -14,7 +15,7 @@ import logging
 from ocgis.util.logging_ocgis import ocgis_lh
         
 
-class Field(object):
+class Field(Attributes):
     """
     :param variables: A variable collection containing the values for the field.
     :type variables: :class:`~ocgis.interface.base.variable.VariableCollection`
@@ -30,6 +31,7 @@ class Field(object):
     :param int uid: A unique identifier for the field.
     :param str name: A string name for the field.
     :param bool regrid_destination: If ``True``, this field should be used as a regrid destination target.
+    :param dict attrs: A dictionary of arbitrary key-value attributes.
     """
 
     _axis_map = {'realization': 0, 'temporal': 1, 'level': 2}
@@ -37,7 +39,9 @@ class Field(object):
     _value_dimension_names = ('realization', 'temporal', 'level', 'row', 'column')
 
     def __init__(self, variables=None, realization=None, temporal=None, level=None, spatial=None, meta=None, uid=None,
-                 name=None, regrid_destination=False):
+                 name=None, regrid_destination=False, attrs=None):
+
+        Attributes.__init__(self, attrs=attrs)
 
         self.realization = realization
         self.temporal = temporal

@@ -1,6 +1,8 @@
 from collections import OrderedDict
+import os
 import unittest
 import numpy as np
+from ocgis.util.inspect import Inspect
 from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.variable import AbstractSourcedVariable
 from ocgis import constants
@@ -9,11 +11,12 @@ from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValu
 from copy import deepcopy
 from cfunits.cfunits import Units
 from ocgis.test.base import TestBase
+from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_bounds_from_1d
+from ocgis.util.itester import itr_products_keywords
 
 
 class TestVectorDimension(TestBase):
-    create_dir = False
 
     def test_init(self):
         vd = VectorDimension(value=[4, 5])
@@ -197,6 +200,73 @@ class TestVectorDimension(TestBase):
         vdim = VectorDimension(value=[5.,10.,15.],units='celsius',interpolate_bounds=True)
         vdim.cfunits_conform(Units('kelvin'))
         self.assertNumpyAll(vdim.bounds,np.array([[275.65,280.65],[280.65,285.65],[285.65,290.65]]))
+
+    def test_write_to_netcdf_dataset(self):
+        #todo: test temporal dimension explicitly
+        #todo: what about climatology?
+
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+
+        other_bounds_name = 'bnds'
+        keywords = dict(with_bounds=[True, False],
+                        with_attrs=[True, False],
+                        unlimited=[False, True],
+                        kwargs=[{}, {'zlib': True}],
+                        bounds_dimension_name=[None, other_bounds_name],
+                        rewrite=[False, True])
+
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            if k.with_attrs:
+                attrs = {'a': 5, 'b': np.array([5, 6])}
+            else:
+                attrs = None
+            vd = VectorDimension(value=[2., 4.], attrs=attrs, name='temporal', name_bounds='time_bounds',
+                                 name_value='time')
+            if k.with_bounds:
+                vd.set_extrapolated_bounds()
+            with nc_scope(path, 'w') as ds:
+                vd.write_to_netcdf_dataset(ds, unlimited=k.unlimited, bounds_dimension_name=k.bounds_dimension_name,
+                                           **k.kwargs)
+
+            with nc_scope(path, 'r') as ds:
+                try:
+                    self.assertIn(constants.ocgis_bounds, ds.dimensions)
+                except AssertionError:
+                    try:
+                        self.assertFalse(k.with_bounds)
+                    except AssertionError:
+                        self.assertEqual(k.bounds_dimension_name, other_bounds_name)
+                try:
+                    self.assertFalse(ds.dimensions[vd.name].isunlimited())
+                except AssertionError:
+                    self.assertTrue(k.unlimited)
+                variable = ds.variables['time']
+                try:
+                    self.assertEqual(variable.a, attrs['a'])
+                    self.assertNumpyAll(variable.b, attrs['b'])
+                except AttributeError:
+                    self.assertFalse(k.with_attrs)
+                try:
+                    self.assertEqual(variable.bounds, vd.name_bounds)
+                    self.assertNumpyAll(vd.bounds, ds.variables[vd.name_bounds][:])
+                except (AttributeError, KeyError):
+                    self.assertFalse(k.with_bounds)
+                self.assertEqual(variable._name, vd.name_value)
+                self.assertEqual(variable.dimensions, (vd.name,))
+                self.assertNumpyAll(vd.value, variable[:])
+
+    def test_write_to_netcdf_dataset_bounds_dimension_exists(self):
+        """Test writing with bounds when the bounds dimension has already been created."""
+
+        vd = VectorDimension(value=[3., 7.], name='one')
+        vd.set_extrapolated_bounds()
+        vd2 = VectorDimension(value=[5., 6.], name='two')
+        vd2.set_extrapolated_bounds()
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            vd.write_to_netcdf_dataset(ds)
+            vd2.write_to_netcdf_dataset(ds)
+            self.assertEqual(ds.variables.keys(), ['one', 'one_bounds', 'two', 'two_bounds'])
 
     def test_get_between(self):
         vdim = VectorDimension(value=[0])

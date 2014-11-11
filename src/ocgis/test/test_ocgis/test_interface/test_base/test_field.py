@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime as dt
+from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.crs import WGS84
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
@@ -18,6 +19,7 @@ from ocgis.interface.base.dimension.temporal import TemporalDimension
 from copy import deepcopy
 from importlib import import_module
 from ocgis.util.itester import itr_products_keywords
+from collections import OrderedDict
 
 
 class AbstractTestField(TestBase):
@@ -113,6 +115,8 @@ class TestField(AbstractTestField):
     def test_init(self):
         for b, wv in itertools.product([True, False], [True, False]):
             field = self.get_field(with_bounds=b, with_value=wv)
+            self.assertIsInstance(field, Attributes)
+            self.assertEqual(field.attrs, OrderedDict())
             self.assertFalse(field.regrid_destination)
             ref = field.shape
             self.assertEqual(ref, (2, 31, 2, 3, 4))

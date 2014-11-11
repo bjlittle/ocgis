@@ -338,6 +338,43 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
 
         self.bounds = get_bounds_from_1d(self.value)
 
+    def write_to_netcdf_dataset(self, dataset, unlimited=False, bounds_dimension_name=None, **kwargs):
+        """
+        Write the dimension and its associated value and bounds to an open netCDF dataset object.
+
+        :param dataset: An open dataset object.
+        :type dataset: :class:`netCDF4.Dataset`
+        :param bool unlimited: If ``True``, create the dimension on the netCDF object with ``size=None``. See
+         http://unidata.github.io/netcdf4-python/netCDF4.Dataset-class.html#createDimension.
+        :param str bounds_dimension_name: If ``None``, default to :attrs:`ocgis.constants.ocgis_bounds`.
+        :param kwargs: Extra keyword arguments in addition to ``dimensions`` to pass to ``createVariable``. See
+         http://unidata.github.io/netcdf4-python/netCDF4.Dataset-class.html#createVariable
+        """
+
+        bounds_dimension_name = bounds_dimension_name or constants.ocgis_bounds
+
+        if unlimited:
+            size = None
+        else:
+            size = self.shape[0]
+        dataset.createDimension(self.name, size=size)
+        kwargs['dimensions'] = (self.name,)
+        variable = dataset.createVariable(self.name_value, self.value.dtype, **kwargs)
+        variable[:] = self.value
+        self.write_attributes_to_netcdf_object(variable)
+
+        if self.bounds is not None:
+            try:
+                dataset.createDimension(bounds_dimension_name, size=2)
+            except RuntimeError:
+                # bounds dimension likely created previously. check for it, then move on
+                if bounds_dimension_name not in dataset.dimensions:
+                    raise
+            kwargs['dimensions'] = (self.name, bounds_dimension_name)
+            bounds_variable = dataset.createVariable(self.name_bounds, self.bounds.dtype, **kwargs)
+            bounds_variable[:] = self.bounds
+            variable.bounds = self.name_bounds
+
     def _format_private_value_(self,value):
         return(self._get_none_or_array_(value,masked=False))
     
