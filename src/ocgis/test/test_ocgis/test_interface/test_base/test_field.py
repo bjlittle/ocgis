@@ -237,13 +237,18 @@ class TestField(AbstractTestField):
     def test_get_iter(self):
         field = self.get_field(with_value=True)
         rows = list(field.get_iter())
-        self.assertEqual(len(rows),2*31*2*3*4)
+        self.assertEqual(len(rows), 2 * 31 * 2 * 3 * 4)
         rows[100]['geom'] = rows[100]['geom'].bounds
-        real = {'realization_bnds_lower': None, 'vid': 1, 'time_bnds_upper': datetime.datetime(2000, 1, 6, 0, 0), 'realization_bnds_upper': None, 'year': 2000, 'SPATIAL_uid': 5, 'level_bnds_upper': 100, 'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bnds_lower': 0, 'variable': 'tmax', 'month': 1, 'time_bnds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5, 'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1, 'time': datetime.datetime(2000, 1, 5, 12, 0), 'time_uid': 5, 'name': 'tmax'}
-        for k,v in rows[100].iteritems():
-            self.assertEqual(real[k],v)
-        self.assertEqual(set(real.keys()),set(rows[100].keys()))
-        self.assertEqual(set(field.variables['tmax'].value.flatten().tolist()),set([r['value'] for r in rows]))
+        real = {'realization_bounds_lower': None, 'vid': 1, 'time_bounds_upper': datetime.datetime(2000, 1, 6, 0, 0),
+                'realization_bounds_upper': None, 'year': 2000, 'SPATIAL_uid': 5, 'level_bounds_upper': 100,
+                'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bounds_lower': 0,
+                'variable': 'tmax', 'month': 1, 'time_bounds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5,
+                'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1,
+                'time': datetime.datetime(2000, 1, 5, 12, 0), 'time_uid': 5, 'name': 'tmax'}
+        for k, v in rows[100].iteritems():
+            self.assertEqual(real[k], v)
+        self.assertEqual(set(real.keys()), set(rows[100].keys()))
+        self.assertEqual(set(field.variables['tmax'].value.flatten().tolist()), set([r['value'] for r in rows]))
 
     def test_get_intersects_domain_polygon(self):
         regular = make_poly((36.61,41.39),(-101.41,-95.47))

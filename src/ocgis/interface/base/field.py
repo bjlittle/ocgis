@@ -228,27 +228,6 @@ class Field(Attributes):
     def get_shallow_copy(self):
         return(copy(self))
     
-    def get_time_region(self,time_region):
-        ret = copy(self)
-        ret.temporal,indices = self.temporal.get_time_region(time_region,return_indices=True)
-        slc = [slice(None),indices,slice(None),slice(None),slice(None)]
-        variables = self.variables.get_sliced_variables(slc)
-        ret.variables = variables
-        return(ret)
-    
-    def _get_spatial_operation_(self, attr, polygon, use_spatial_index=True, select_nearest=False):
-        ref = getattr(self.spatial, attr)
-        ret = copy(self)
-        ret.spatial, slc = ref(polygon, return_indices=True, use_spatial_index=use_spatial_index,
-                               select_nearest=select_nearest)
-        slc = [slice(None), slice(None), slice(None)] + list(slc)
-        ret.variables = self.variables.get_sliced_variables(slc)
-
-        ## we need to update the value mask with the geometry mask
-        self._set_new_value_mask_(ret, ret.spatial.get_mask())
-        
-        return(ret)
-    
     def get_spatially_aggregated(self,new_spatial_uid=None):
 
         def _get_geometry_union_(value):
@@ -261,15 +240,15 @@ class Field(Attributes):
                 else:
                     processed_to_union.append(geom)
             unioned = cascaded_union(processed_to_union)
-            
+
             ## convert any unioned points to MultiPoint
             if isinstance(unioned,Point):
                 unioned = MultiPoint([unioned])
-            
+
             ret = np.ma.array([[None]],mask=False,dtype=object)
             ret[0,0] = unioned
             return(ret)
-        
+
         ret = copy(self)
         ## the spatial dimension needs to be deep copied so the grid may be
         ## dereferenced.
@@ -281,7 +260,7 @@ class Field(Attributes):
             unioned = _get_geometry_union_(ret.spatial.geom.point.value)
             ret.spatial.geom.point._value = unioned
             ret.spatial.geom.point.uid = new_spatial_uid
-            
+
         try:
             if ret.spatial.geom.polygon is not None:
                 unioned = _get_geometry_union_(ret.spatial.geom.polygon.value)
@@ -290,7 +269,7 @@ class Field(Attributes):
         except ImproperPolygonBoundsError:
             msg = 'No polygon representation to aggregate.'
             ocgis_lh(msg=msg,logger='field',level=logging.WARN)
-        
+
         ## update the spatial uid
         ret.spatial.uid = new_spatial_uid
         ## there are no grid objects for aggregated spatial dimensions.
@@ -303,7 +282,7 @@ class Field(Attributes):
         itrs = [range(dim) for dim in shp[0:3]]
         weights = self.spatial.weights
         ref_average = np.ma.average
-        
+
         ## old values for the variables will be stored in the _raw container, but
         ## to avoid reference issues, we need to copy the variables
         new_variables = []
@@ -316,19 +295,52 @@ class Field(Attributes):
             new_variable._value = fill
             new_variables.append(new_variable)
         ret.variables = VariableCollection(variables=new_variables)
-        
+
         ## the geometry type of the point dimension is now MultiPoint
         ret.spatial.geom.point._geom_type = 'MultiPoint'
-        
+
         ## we want to keep a copy of the raw data around for later calculations.
         ret._raw = copy(self)
-                
+
         return(ret)
 
-    def _get_value_from_source_(self,*args,**kwds):
-        raise(NotImplementedError)
-        ## TODO: remember to apply the geometry mask to fresh values!!
+    def get_time_region(self,time_region):
+        ret = copy(self)
+        ret.temporal,indices = self.temporal.get_time_region(time_region,return_indices=True)
+        slc = [slice(None),indices,slice(None),slice(None),slice(None)]
+        variables = self.variables.get_sliced_variables(slc)
+        ret.variables = variables
+        return(ret)
 
+    def _get_spatial_operation_(self, attr, polygon, use_spatial_index=True, select_nearest=False):
+        ref = getattr(self.spatial, attr)
+        ret = copy(self)
+        ret.spatial, slc = ref(polygon, return_indices=True, use_spatial_index=use_spatial_index,
+                               select_nearest=select_nearest)
+        slc = [slice(None), slice(None), slice(None)] + list(slc)
+        ret.variables = self.variables.get_sliced_variables(slc)
+
+        ## we need to update the value mask with the geometry mask
+        self._set_new_value_mask_(ret, ret.spatial.get_mask())
+
+        return(ret)
+
+    def _get_value_from_source_(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _get_variable_iter_yield_(self, variable):
+        """
+        Retrieve variable-level information. Overloaded by derived fields.
+
+        :param variable: The variable containing attributes to extract.
+        :type variable: :class:`~ocgis.Variable`
+        :returns: A dictionary containing variable field values mapped to keys.
+        :rtype: dict
+        """
+
+        yld = {'did': self.uid, 'variable': variable.name, 'alias': variable.alias, 'vid': variable.uid}
+        return yld
+                    
     @staticmethod
     def _set_new_value_mask_(field,mask):
         ret_shp = field.shape
@@ -336,21 +348,13 @@ class Field(Attributes):
         rng_temporal = range(ret_shp[1])
         rng_level = range(ret_shp[2])
         ref_logical_or = np.logical_or
-        
+
         for var in field.variables.itervalues():
             if var._value is not None:
                 v = var._value
                 for idx_r,idx_t,idx_l in itertools.product(rng_realization,rng_temporal,rng_level):
                     ref = v[idx_r,idx_t,idx_l]
                     ref.mask = ref_logical_or(ref.mask,mask)
-                    
-    def _get_variable_iter_yield_(self,variable):
-        yld = {}
-        yld['did'] = self.uid
-        yld['variable'] = variable.name
-        yld['alias'] = variable.alias
-        yld['vid'] = variable.uid
-        return(yld)
 
 
 class DerivedField(Field):

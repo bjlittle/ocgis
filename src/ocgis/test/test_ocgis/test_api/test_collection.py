@@ -152,6 +152,7 @@ class TestSpatialCollection(AbstractTestField):
         kwds.pop('_variables')
         kwds.pop('_should_regrid')
         kwds.pop('_has_assigned_coordinate_system')
+        kwds.pop('_attrs')
         kwds['name'] = kwds.pop('_name')
         kwds['temporal'] = tgd
         kwds['variables'] = ret
@@ -192,6 +193,7 @@ class TestSpatialCollection(AbstractTestField):
         kwds.pop('_variables')
         kwds.pop('_should_regrid')
         kwds.pop('_has_assigned_coordinate_system')
+        kwds.pop('_attrs')
         kwds['name'] = kwds.pop('_name')
         kwds['temporal'] = tgd
         kwds['variables'] = ret
