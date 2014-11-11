@@ -236,8 +236,8 @@ class SubsetOperation(object):
         # this error is related to subsetting by time or level. spatial subsetting occurs below.
         except EmptySubsetError as e:
             if self.ops.allow_empty:
-                ocgis_lh(msg='time or level subset empty but empty returns allowed',
-                         logger=self._subset_log,level=logging.WARN)
+                ocgis_lh(msg='time or level subset empty but empty returns allowed', logger=self._subset_log,
+                         level=logging.WARN)
                 coll = SpatialCollection(headers=headers)
                 coll.add_field(1, None, None, name='_'.join([rd.name for rd in rds]))
                 try:
@@ -245,7 +245,7 @@ class SubsetOperation(object):
                 finally:
                     return
             else:
-                ocgis_lh(exc=ExtentError(message=str(e)),alias=rd.alias,logger=self._subset_log)
+                ocgis_lh(exc=ExtentError(message=str(e)), alias=str([rd.name for rd in rds]), logger=self._subset_log)
 
         ## set iterator based on presence of slice. slice always overrides geometry.
         if self.ops.slice is not None:
