@@ -1,3 +1,4 @@
+import os
 from ocgis import constants
 from ocgis.test.base import TestBase
 from datetime import datetime as dt
@@ -5,6 +6,7 @@ from ocgis.interface.base.dimension.temporal import TemporalDimension,\
     get_is_interannual, get_sorted_seasons, get_time_regions,\
     iter_boolean_groups_from_time_regions
 import numpy as np
+from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list
 import datetime
 from collections import deque

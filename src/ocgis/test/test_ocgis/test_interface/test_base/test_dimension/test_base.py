@@ -202,7 +202,6 @@ class TestVectorDimension(TestBase):
         self.assertNumpyAll(vdim.bounds,np.array([[275.65,280.65],[280.65,285.65],[285.65,290.65]]))
 
     def test_write_to_netcdf_dataset(self):
-        #todo: test temporal dimension explicitly
         #todo: what about climatology?
 
         path = os.path.join(self.current_dir_output, 'foo.nc')

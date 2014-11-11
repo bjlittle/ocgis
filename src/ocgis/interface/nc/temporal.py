@@ -85,6 +85,23 @@ class NcTemporalDimension(NcVectorDimension,TemporalDimension):
             else:
                 raise
         return(ret)
+
+    def write_to_netcdf_dataset(self, dataset, **kwargs):
+        """
+        Calls superclass write method then adds ``calendar`` and ``units`` attributes to time variable and time bounds
+        variable. See documentation for :meth:`~ocgis.interface.base.dimension.base.VectorDimension#write_to_netcdf_dataset`.
+        """
+
+        TemporalDimension.write_to_netcdf_dataset(self, dataset, **kwargs)
+        for name in [self.name_value, self.name_bounds]:
+            try:
+                variable = dataset.variables[name]
+            except KeyError:
+                # bounds are likely missing
+                if self.bounds is not None:
+                    raise
+            variable.calendar = self.calendar
+            variable.units = self.units
     
     def _format_slice_state_(self,state,slc):
         state = NcVectorDimension._format_slice_state_(self,state,slc)
@@ -137,14 +154,25 @@ class NcTemporalDimension(NcVectorDimension,TemporalDimension):
     
     
 class NcTemporalGroupDimension(NcTemporalDimension):
-    
-    def __init__(self,*args,**kwds):
-        self.grouping = kwds.pop('grouping')
-        self.dgroups = kwds.pop('dgroups')
-        self.date_parts = kwds.pop('date_parts')
-                
-        NcTemporalDimension.__init__(self,*args,**kwds)
-        
+
+    def __init__(self, *args, **kwargs):
+        self.grouping = kwargs.pop('grouping')
+        self.dgroups = kwargs.pop('dgroups')
+        self.date_parts = kwargs.pop('date_parts')
+
+        NcTemporalDimension.__init__(self, *args, **kwargs)
+
+    def write_to_netcdf_dataset(self, *args, **kwargs):
+        """
+        For CF-compliance, ensures climatology bounds are correctly attributed.
+        """
+
+        previous_name_bounds = self.name_bounds
+        self.name_bounds = 'climatology_bounds'
+        try:
+            super(NcTemporalGroupDimension, self).write_to_netcdf_dataset(*args, **kwargs)
+        finally:
+            self.name_bounds = previous_name_bounds
         
 def get_origin_datetime_from_months_units(units):
     '''

@@ -1,13 +1,38 @@
 import netCDF4 as nc
+import os
+from ocgis import Inspect
 from ocgis.test.base import TestBase
 from ocgis.interface.nc.temporal import NcTemporalDimension, \
     get_origin_datetime_from_months_units, get_datetime_from_months_time_units, \
-    get_difference_in_months, get_num_from_months_time_units
+    get_difference_in_months, get_num_from_months_time_units, NcTemporalGroupDimension
 import datetime
 import numpy as np
+from ocgis.test.test_simple.test_simple import nc_scope
 
 
 class TestNcTemporalDimension(TestBase):
+
+    def test_write_to_netcdf_dataset(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+
+        for with_bounds in [True, False]:
+            field = rd.get()
+            td = field.temporal
+            if not with_bounds:
+                td.bounds
+                td.bounds = None
+                self.assertIsNone(td.bounds)
+            with nc_scope(path, 'w') as ds:
+                td.write_to_netcdf_dataset(ds)
+                for name in [td.name_value, td.name_bounds]:
+                    try:
+                        variable = ds.variables[name]
+                    except KeyError:
+                        self.assertFalse(with_bounds)
+                    self.assertEqual(variable.calendar, td.calendar)
+                    self.assertEqual(variable.units, td.units)
+
     def test_360_day_calendar(self):
         months = range(1, 13)
         days = range(1, 31)
@@ -93,3 +118,32 @@ class TestNcTemporalDimension(TestBase):
         value = np.array([31])
         td = NcTemporalDimension(value=value, units=units, calendar='standard')
         self.assertFalse(td._has_months_units)
+
+
+class TestNcTemporalGroupDimension(TestBase):
+
+    def get_tgd(self):
+        td = self.test_data.get_rd('cancm4_tas').get().temporal
+        tgd = td.get_grouping(['month'])
+        return tgd
+
+    def test_init(self):
+        tgd = self.get_tgd()
+        self.assertIsInstance(tgd, NcTemporalGroupDimension)
+        self.assertIsInstance(tgd, NcTemporalDimension)
+
+    def test_write_to_netcdf_dataset(self):
+        tgd = self.get_tgd()
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            tgd.write_to_netcdf_dataset(ds)
+            self.assertIn('climatology_bounds', ds.variables)
+            self.assertEqual(ds.variables[tgd.name_value].bounds, 'climatology_bounds')
+
+        # test failure and make sure original bounds name is preserved
+        self.assertNotEqual(tgd.name_bounds, 'climatology_bounds')
+        with nc_scope(path, 'w') as ds:
+            try:
+                tgd.write_to_netcdf_dataset(ds, darkness='forever')
+            except TypeError:
+                self.assertNotEqual(tgd.name_bounds, 'climatology_bounds')
