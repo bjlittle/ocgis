@@ -41,8 +41,16 @@ class NcConverter(AbstractConverter):
                     ret = constants.netCDF_default_data_model
         return ret
     
-    def _write_coll_(self,ds,coll):
-        
+    def _write_coll_(self, ds, coll):
+        """
+        Write a spatial collection to an open netCDF4 dataset object.
+
+        :param ds: An open dataset object.
+        :type ds: :class:`netCDF4.Dataset`
+        :param coll: The collection containing data to write.
+        :type coll: :class:`~ocgis.SpatialCollection`
+        """
+
         ## get the target field from the collection
         arch = coll._archetype_field
         

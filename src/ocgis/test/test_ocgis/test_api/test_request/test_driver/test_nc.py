@@ -410,7 +410,3 @@ class Test(TestBase):
             self.assertTrue('lat_bnds' in list(ocgis_lh.duplicates)[0])
         finally:
             ocgis_lh.shutdown()
-
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()

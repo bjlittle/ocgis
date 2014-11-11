@@ -54,3 +54,11 @@ class TestNcConverter(AbstractTestConverter):
         file_format = conv._get_file_format_()
         with nc_scope(rd.uri) as ds:
             self.assertEqual(file_format, ds.file_format)
+
+    def test_write_coll(self):
+        # use a field as the input dataset
+        coll = self.get_spatial_collection(field=self.get_field())
+        conv = NcConverter([coll], self.current_dir_output, 'foo')
+
+        with nc_scope(conv.path, 'w') as ds:
+            conv._write_coll_(ds, coll)
