@@ -26,7 +26,7 @@ class Attributes(object):
     def write_to_netcdf_object(self, target):
         """
         :param target: A netCDF data object to write attributes to.
-        :type variable: :class:`netCDF4.Variable` or :class:`netCDF4.Dataset`
+        :type target: :class:`netCDF4.Variable` or :class:`netCDF4.Dataset`
         """
 
         for k, v in self.attrs.iteritems():
