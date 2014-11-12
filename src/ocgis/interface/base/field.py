@@ -1,6 +1,6 @@
 from ocgis.interface.base.attributes import Attributes
-from ocgis.util.helpers import get_default_or_apply, get_none_or_slice,\
-    get_formatted_slice, get_reduced_slice, assert_raise
+from ocgis.util.helpers import get_default_or_apply, get_none_or_slice, get_formatted_slice, get_reduced_slice, \
+    assert_raise
 import numpy as np
 from copy import copy, deepcopy
 from collections import deque
@@ -311,6 +311,11 @@ class Field(Attributes):
         variables = self.variables.get_sliced_variables(slc)
         ret.variables = variables
         return(ret)
+
+    def write_to_netcdf_dataset(self, dataset, **kwargs):
+        #todo: doc
+
+        import ipdb;ipdb.set_trace()
 
     def _get_spatial_operation_(self, attr, polygon, use_spatial_index=True, select_nearest=False):
         ref = getattr(self.spatial, attr)

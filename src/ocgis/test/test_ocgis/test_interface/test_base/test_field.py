@@ -5,8 +5,7 @@ from ocgis.interface.base.crs import WGS84
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
 import datetime
-from ocgis.interface.base.dimension.spatial import SpatialGridDimension,\
-    SpatialDimension
+from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.field import Field, DerivedField
 import numpy as np
 import itertools
@@ -449,6 +448,11 @@ class TestField(AbstractTestField):
             self.assertEqual(ret.temporal.value[0],dt(2000,1,15,12))
             self.assertEqual(ret.temporal.value[-1],dt(2000,1,30,12))
 
+    def test_write_to_netcdf_dataset(self):
+        #todo: write with multiple variables
+        #todo: write with level
+        #todo: write with realization axis
+        import ipdb;ipdb.set_trace()
 
 class TestDerivedField(AbstractTestField):
     
