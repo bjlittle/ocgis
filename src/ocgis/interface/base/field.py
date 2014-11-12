@@ -315,7 +315,13 @@ class Field(Attributes):
     def write_to_netcdf_dataset(self, dataset, **kwargs):
         #todo: doc
 
-        import ipdb;ipdb.set_trace()
+        vector_dimension = [self.realization, self.temporal, self.level, self.spatial.grid.row, self.spatial.grid.col]
+        for vd in vector_dimension:
+            if vd is not None:
+                try:
+                    vd.write_to_netcdf_dataset(dataset, **kwargs)
+                except Exception as e:
+                    import ipdb;ipdb.set_trace()
 
     def _get_spatial_operation_(self, attr, polygon, use_spatial_index=True, select_nearest=False):
         ref = getattr(self.spatial, attr)

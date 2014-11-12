@@ -1,7 +1,9 @@
+import os
 import unittest
 from datetime import datetime as dt
 from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.crs import WGS84
+from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
 import datetime
@@ -450,9 +452,16 @@ class TestField(AbstractTestField):
 
     def test_write_to_netcdf_dataset(self):
         #todo: write with multiple variables
-        #todo: write with level
-        #todo: write with realization axis
-        import ipdb;ipdb.set_trace()
+        #todo: raise exception with realizatio axis
+        #todo: test with field attributes
+        #todo: test without row and column
+
+        field = self.get_field(with_value=True, with_realization=False)
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+            import ipdb;ipdb.set_trace()
+            pass
 
 class TestDerivedField(AbstractTestField):
     
