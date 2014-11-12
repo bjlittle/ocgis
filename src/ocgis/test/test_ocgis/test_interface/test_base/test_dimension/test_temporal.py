@@ -2,16 +2,15 @@ import os
 from ocgis import constants
 from ocgis.test.base import TestBase
 from datetime import datetime as dt
-from ocgis.interface.base.dimension.temporal import TemporalDimension,\
-    get_is_interannual, get_sorted_seasons, get_time_regions,\
-    iter_boolean_groups_from_time_regions
+from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_interannual, get_sorted_seasons, \
+    get_time_regions, iter_boolean_groups_from_time_regions
 import numpy as np
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list
 import datetime
 from collections import deque
 import itertools
 from ocgis.exc import IncompleteSeasonError
+from ocgis.interface.base.dimension.base import VectorDimension
 
 
 class Test(TestBase):
@@ -52,6 +51,12 @@ class TestTemporalDimension(TestBase):
             bounds = None
         td = TemporalDimension(value=dates,bounds=bounds)
         return(td)
+
+    def test_init(self):
+        td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)])
+        self.assertEqual(td.calendar, 'standard')
+        self.assertEqual(td.units, 'days since 0000-01-01 00:00:00')
+        self.assertIsInstance(td, VectorDimension)
 
     def test_get_grouping(self):
         td = self.get_temporal_dimension()

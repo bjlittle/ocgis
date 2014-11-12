@@ -7,20 +7,19 @@ from ocgis.util.helpers import iter_array, get_none_or_slice
 from ocgis import constants
 
 
-class NcTemporalDimension(NcVectorDimension,TemporalDimension):
+class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     _attrs_slice = ('uid','_value','_src_idx','_value_datetime')
     
-    def __init__(self,*args,**kwds):
-        self.calendar = kwds.pop('calendar')
+    def __init__(self, *args, **kwds):
         self.format_time = kwds.pop('format_time',True)
         self._value_datetime = kwds.pop('value_datetime',None)
         self._bounds_datetime = kwds.pop('bounds_datetime',None)
 
-        NcVectorDimension.__init__(self,*args,**kwds)
+        TemporalDimension.__init__(self, *args, **kwds)
         
         assert(self.units != None)
         assert(self.calendar != None)
-        
+
         ## test if the units are the special case with months in the time units
         if self.units.startswith('months'):
             self._has_months_units = True
@@ -49,7 +48,7 @@ class NcTemporalDimension(NcVectorDimension,TemporalDimension):
     def value_datetime(self):
         if self._value_datetime is None:
             self._value_datetime = np.atleast_1d(self.get_datetime(self.value))
-        return(self._value_datetime)
+        return self._value_datetime
     
     def get_between(self,lower,upper,return_indices=False):
         lower,upper = tuple(self.get_nc_time([lower,upper]))

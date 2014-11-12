@@ -13,6 +13,11 @@ from copy import deepcopy
 class TemporalDimension(base.VectorDimension):
     _date_parts = ('year','month','day','hour','minute','second')
     _axis = 'T'
+
+    def __init__(self, *args, **kwargs):
+        self.calendar = kwargs.pop('calendar', 'standard')
+        super(TemporalDimension, self).__init__(*args, **kwargs)
+        self.units = self.units or 'days since 0000-01-01 00:00:00'
     
     def get_grouping(self,grouping):
         ## there is no need to go through the process of breaking out datetime
@@ -33,6 +38,68 @@ class TemporalDimension(base.VectorDimension):
         
         return(tgd)
     
+    def get_iter(self,*args,**kwds):
+        r_name_value = self.name_value
+        r_set_date_parts = self._set_date_parts_
+        for ii,yld in super(TemporalDimension,self).get_iter(*args,**kwds):
+            r_value = yld[r_name_value]
+            r_set_date_parts(yld,r_value)
+            yield(ii,yld)
+    
+    def get_time_region(self,time_region,return_indices=False):
+        assert(isinstance(time_region,dict))
+
+        ## return the values to use for the temporal region subsetting.
+        value = self._get_datetime_value_()
+        bounds = self._get_datetime_bounds_()
+
+        ## switch to indicate if bounds or centroid datetimes are to be used.
+        use_bounds = False if bounds is None else True
+
+        ## remove any none values in the time_region dictionary. this will save
+        ## time in iteration.
+        time_region = time_region.copy()
+        time_region = {k:v for k,v in time_region.iteritems() if v is not None}
+        assert(len(time_region) > 0)
+
+        ## this is the boolean selection array.
+        select = np.zeros(self.shape[0],dtype=bool)
+
+        ## for each row, determine if the date criterion are met updating the
+        ## select matrix accordingly.
+        row_check = np.zeros(len(time_region),dtype=bool)
+
+        for idx_row in range(select.shape[0]):
+            ## do the comparison for each time_region element.
+            if use_bounds:
+                row = bounds[idx_row,:]
+            else:
+                row = value[idx_row]
+            for ii,(k,v) in enumerate(time_region.iteritems()):
+                if use_bounds:
+                    to_include = []
+                    for element in v:
+                        kwds = {k:element}
+                        to_include.append(get_is_date_between(row[0],row[1],**kwds))
+                    fill = any(to_include)
+                else:
+                    part = getattr(row,k)
+                    fill = True if part in v else False
+                row_check[ii] = fill
+            if row_check.all():
+                select[idx_row] = True
+
+        if not select.any():
+            ocgis_lh(logger='nc.temporal',exc=EmptySubsetError(origin='temporal'))
+
+        ret = self[select]
+
+        if return_indices:
+            raw_idx = np.arange(0,self.shape[0])[select]
+            ret = (ret,raw_idx)
+
+        return(ret)
+
     def _get_grouping_seasonal_unique_(self, grouping):
         """
         :param list grouping: A seasonal list containing the unique flag.
@@ -65,12 +132,12 @@ class TemporalDimension(base.VectorDimension):
         date_parts = None
 
         return new_bounds, date_parts, repr_dt, dgroups
-    
+
     def _get_grouping_all_(self):
         '''
         Applied when the grouping is 'all'.
         '''
-        
+
         value = self._get_datetime_value_()
         bounds = self._get_datetime_bounds_()
         try:
@@ -80,7 +147,7 @@ class TemporalDimension(base.VectorDimension):
         except AttributeError:
             lower = value.min()
             upper = value.max()
-        
+
         ## new bounds are simply the minimum and maximum values chosen either from
         ## the value or bounds array. bounds are given preference.
         new_bounds = np.array([lower,upper]).reshape(-1,2)
@@ -90,27 +157,27 @@ class TemporalDimension(base.VectorDimension):
         dgroups = [slice(None)]
         ## the representative datetime is the center of the value array.
         repr_dt = np.array([value[int((self.value.shape[0]/2)-1)]])
-        
+
         return(new_bounds,date_parts,repr_dt,dgroups)
-    
+
     def _get_grouping_other_(self,grouping):
         '''
         Applied to groups other than 'all'.
         '''
-        
+
         ## map date parts to index positions in date part storage array and flip
         ## they key-value pairs
         group_map = dict(zip(range(0,len(self._date_parts)),self._date_parts,))
         group_map_rev = dict(zip(self._date_parts,range(0,len(self._date_parts)),))
-        
+
         ## this array will hold the value data constructed differently depending
         ## on if temporal bounds are present
         value = np.empty((self.value.shape[0],3),dtype=object)
-        
+
         ## reference the value and bounds datetime object arrays
         value_datetime = self._get_datetime_value_()
         value_datetime_bounds = self._get_datetime_bounds_()
-        
+
         ## populate the value array depending on the presence of bounds
         if self.bounds is None:
             value[:,:] = value_datetime.reshape(-1,1)
@@ -119,15 +186,15 @@ class TemporalDimension(base.VectorDimension):
             value[:,0] = value_datetime_bounds[:,0]
             value[:,1] = value_datetime
             value[:,2] = value_datetime_bounds[:,1]
-        
+
         def _get_attrs_(dt):
             return([dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second])
-        
+
         ## extract the date parts
         parts = np.empty((len(self.value),len(self._date_parts)),dtype=int)
         for row in range(parts.shape[0]):
             parts[row,:] = _get_attrs_(value[row,1])
-        
+
         ## grouping is different for date part combinations v. seasonal
         ## aggregation.
         if all([isinstance(ii,basestring) for ii in grouping]):
@@ -138,16 +205,16 @@ class TemporalDimension(base.VectorDimension):
                 else:
                     fill = [None]
                 unique.append(fill)
-    
+
             select = deque()
             idx2_seq = range(len(self._date_parts))
             for idx in itertools.product(*[range(len(u)) for u in unique]):
                 select.append([unique[idx2][idx[idx2]] for idx2 in idx2_seq])
             select = np.array(select)
             dgroups = deque()
-            
+
             idx_cmp = [group_map_rev[group] for group in grouping]
-                
+
             keep_select = []
             for idx in range(select.shape[0]):
                 match = select[idx,idx_cmp] == parts[:,idx_cmp]
@@ -157,7 +224,7 @@ class TemporalDimension(base.VectorDimension):
                     dgroups.append(dgrp)
             select = select[keep_select,:]
             assert(len(dgroups) == select.shape[0])
-            
+
             dtype = [(dp,object) for dp in self._date_parts]
         ## this is for seasonal aggregations
         else:
@@ -174,7 +241,7 @@ class TemporalDimension(base.VectorDimension):
             else:
                 has_year = False
                 years = [None]
-            
+
             dgroups = deque()
             grouping_season = deque()
 
@@ -195,11 +262,11 @@ class TemporalDimension(base.VectorDimension):
                 grouping_season.append([season,year])
             dtype = [('months',object),('year',int)]
             grouping = grouping_season
-        
+
         ## init arrays to hold values and bounds for the grouped data
         new_value = np.empty((len(dgroups),),dtype=dtype)
         new_bounds = np.empty((len(dgroups),2),dtype=object)
-        
+
         for idx,dgrp in enumerate(dgroups):
             ## tuple conversion is required for structure arrays: http://docs.scipy.org/doc/numpy/user/basics.rec.html#filling-structured-arrays
             try:
@@ -214,79 +281,17 @@ class TemporalDimension(base.VectorDimension):
                     new_value[idx]['months'] = grouping[idx][0]
             sel = value[dgrp][:,(0,2)]
             new_bounds[idx,:] = [sel.min(),sel.max()]
-        
+
         new_bounds = np.atleast_2d(new_bounds).reshape(-1,2)
         date_parts = np.atleast_1d(new_value)
         ## this is the representative center time for the temporal group
         repr_dt = self._get_grouping_representative_datetime_(grouping,new_bounds,date_parts)
-        
+
         return(new_bounds,date_parts,repr_dt,dgroups)
-        
-    def get_iter(self,*args,**kwds):
-        r_name_value = self.name_value
-        r_set_date_parts = self._set_date_parts_
-        for ii,yld in super(TemporalDimension,self).get_iter(*args,**kwds):
-            r_value = yld[r_name_value]
-            r_set_date_parts(yld,r_value)
-            yield(ii,yld)
-            
+
     def _set_date_parts_(self,yld,value):
         yld['year'],yld['month'],yld['day'] = value.year,value.month,value.day
-        
-    def get_time_region(self,time_region,return_indices=False):
-        assert(isinstance(time_region,dict))
-        
-        ## return the values to use for the temporal region subsetting.
-        value = self._get_datetime_value_()
-        bounds = self._get_datetime_bounds_()
-        
-        ## switch to indicate if bounds or centroid datetimes are to be used.
-        use_bounds = False if bounds is None else True
-        
-        ## remove any none values in the time_region dictionary. this will save
-        ## time in iteration.
-        time_region = time_region.copy()
-        time_region = {k:v for k,v in time_region.iteritems() if v is not None}
-        assert(len(time_region) > 0)
-        
-        ## this is the boolean selection array.
-        select = np.zeros(self.shape[0],dtype=bool)
-        
-        ## for each row, determine if the date criterion are met updating the
-        ## select matrix accordingly.
-        row_check = np.zeros(len(time_region),dtype=bool)
-        
-        for idx_row in range(select.shape[0]):
-            ## do the comparison for each time_region element.
-            if use_bounds:
-                row = bounds[idx_row,:]
-            else:
-                row = value[idx_row]
-            for ii,(k,v) in enumerate(time_region.iteritems()):
-                if use_bounds:
-                    to_include = []
-                    for element in v:
-                        kwds = {k:element}
-                        to_include.append(get_is_date_between(row[0],row[1],**kwds))
-                    fill = any(to_include)
-                else:
-                    part = getattr(row,k)
-                    fill = True if part in v else False
-                row_check[ii] = fill
-            if row_check.all():
-                select[idx_row] = True
-                
-        if not select.any():
-            ocgis_lh(logger='nc.temporal',exc=EmptySubsetError(origin='temporal'))
 
-        ret = self[select]
-        
-        if return_indices:
-            raw_idx = np.arange(0,self.shape[0])[select]
-            ret = (ret,raw_idx)
-        
-        return(ret)
-    
     def _get_datetime_bounds_(self):
         '''Intended for subclasses to overload the method for accessing the datetime
         value. For example, netCDF times are floats that must be converted.'''

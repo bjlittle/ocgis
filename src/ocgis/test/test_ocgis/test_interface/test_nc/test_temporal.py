@@ -2,36 +2,15 @@ import netCDF4 as nc
 import os
 from ocgis import Inspect
 from ocgis.test.base import TestBase
-from ocgis.interface.nc.temporal import NcTemporalDimension, \
-    get_origin_datetime_from_months_units, get_datetime_from_months_time_units, \
-    get_difference_in_months, get_num_from_months_time_units, NcTemporalGroupDimension
+from ocgis.interface.nc.temporal import NcTemporalDimension, get_origin_datetime_from_months_units, \
+    get_datetime_from_months_time_units, get_difference_in_months, get_num_from_months_time_units, \
+    NcTemporalGroupDimension
 import datetime
 import numpy as np
 from ocgis.test.test_simple.test_simple import nc_scope
 
 
 class TestNcTemporalDimension(TestBase):
-
-    def test_write_to_netcdf_dataset(self):
-        rd = self.test_data.get_rd('cancm4_tas')
-        path = os.path.join(self.current_dir_output, 'foo.nc')
-
-        for with_bounds in [True, False]:
-            field = rd.get()
-            td = field.temporal
-            if not with_bounds:
-                td.bounds
-                td.bounds = None
-                self.assertIsNone(td.bounds)
-            with nc_scope(path, 'w') as ds:
-                td.write_to_netcdf_dataset(ds)
-                for name in [td.name_value, td.name_bounds]:
-                    try:
-                        variable = ds.variables[name]
-                    except KeyError:
-                        self.assertFalse(with_bounds)
-                    self.assertEqual(variable.calendar, td.calendar)
-                    self.assertEqual(variable.units, td.units)
 
     def test_360_day_calendar(self):
         months = range(1, 13)
@@ -43,12 +22,6 @@ class TestNcTemporalDimension(TestBase):
         num = nc.date2num(vec, 'days since 1900-01-01', calendar='360_day')
         td = NcTemporalDimension(value=num, calendar='360_day', units='days since 1900-01-01')
         self.assertNumpyAll(np.array(vec), td.value_datetime)
-
-    def test_get_origin_datetime_from_months_units(self):
-        units = "months since 1978-12"
-        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1978, 12, 1))
-        units = "months since 1979-1-1 0"
-        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1979, 1, 1))
 
     def test_get_datetime_from_months_time_units(self):
         units = "months since 1978-12"
@@ -90,12 +63,11 @@ class TestNcTemporalDimension(TestBase):
         self.assertNumpyAll(num, np.array(vec,dtype=np.int32))
         self.assertEqual(num.dtype, np.int32)
 
-    def test_months_in_time_units_are_bad_netcdftime(self):
+    def test_get_origin_datetime_from_months_units(self):
         units = "months since 1978-12"
-        vec = range(0, 36)
-        calendar = "standard"
-        with self.assertRaises(ValueError):
-            nc.num2date(vec, units, calendar=calendar)
+        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1978, 12, 1))
+        units = "months since 1979-1-1 0"
+        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1979, 1, 1))
 
     def test_months_in_time_units(self):
         units = "months since 1978-12"
@@ -104,6 +76,13 @@ class TestNcTemporalDimension(TestBase):
         td = NcTemporalDimension(value=vec, units=units, calendar='standard')
         self.assertTrue(td._has_months_units)
         self.assertNumpyAll(td.value_datetime, datetimes)
+
+    def test_months_in_time_units_are_bad_netcdftime(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        calendar = "standard"
+        with self.assertRaises(ValueError):
+            nc.num2date(vec, units, calendar=calendar)
 
     def test_months_in_time_units_between(self):
         units = "months since 1978-12"
@@ -118,6 +97,27 @@ class TestNcTemporalDimension(TestBase):
         value = np.array([31])
         td = NcTemporalDimension(value=value, units=units, calendar='standard')
         self.assertFalse(td._has_months_units)
+
+    def test_write_to_netcdf_dataset(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+
+        for with_bounds in [True, False]:
+            field = rd.get()
+            td = field.temporal
+            if not with_bounds:
+                td.bounds
+                td.bounds = None
+                self.assertIsNone(td.bounds)
+            with nc_scope(path, 'w') as ds:
+                td.write_to_netcdf_dataset(ds)
+                for name in [td.name_value, td.name_bounds]:
+                    try:
+                        variable = ds.variables[name]
+                    except KeyError:
+                        self.assertFalse(with_bounds)
+                    self.assertEqual(variable.calendar, td.calendar)
+                    self.assertEqual(variable.units, td.units)
 
 
 class TestNcTemporalGroupDimension(TestBase):
