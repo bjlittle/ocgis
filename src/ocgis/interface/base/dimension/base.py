@@ -66,22 +66,29 @@ class AbstractDimension(object):
             raise(NotImplementedError)
         else:
             return(None)
-    
-    
-class AbstractValueDimension(AbstractValueVariable):
-    '''
-    +
-    :param str name_value:
-    '''
-    __metaclass__ = abc.ABCMeta
-    
-    def __init__(self,*args,**kwds):
-        self.name_value = kwds.pop('name_value',None)
-        
-        AbstractValueVariable.__init__(self,*args,**kwds)
 
-        if self.name_value is None:
-            self.name_value = self.name
+
+class AbstractValueDimension(AbstractValueVariable):
+    """
+    :keyword str name_value: (``=None``) The name of the value for the dimension.
+    """
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, *args, **kwargs):
+        self.name_value = kwargs.pop('name_value', None)
+        AbstractValueVariable.__init__(self, *args, **kwargs)
+
+    @property
+    def name_value(self):
+        if self._name_value is None:
+            ret = self.name
+        else:
+            ret = self._name_value
+        return ret
+
+    @name_value.setter
+    def name_value(self, value):
+        self._name_value = value
     
     
 class AbstractUidDimension(AbstractDimension):
@@ -195,8 +202,10 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
     @property
     def name_bounds(self):
         if self._name_bounds is None:
-            self._name_bounds = '{0}_bounds'.format(self.name_value)
-        return self._name_bounds
+            ret = '{0}_bounds'.format(self.name)
+        else:
+            ret = self._name_bounds
+        return ret
 
     @name_bounds.setter
     def name_bounds(self, value):

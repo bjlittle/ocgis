@@ -4,16 +4,34 @@ import unittest
 import numpy as np
 from ocgis.util.inspect import Inspect
 from ocgis.interface.base.attributes import Attributes
-from ocgis.interface.base.variable import AbstractSourcedVariable
+from ocgis.interface.base.variable import AbstractSourcedVariable, AbstractValueVariable
 from ocgis import constants
 from ocgis.exc import EmptySubsetError, ResolutionError
-from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension
+from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension, AbstractValueDimension
 from copy import deepcopy
 from cfunits.cfunits import Units
 from ocgis.test.base import TestBase
 from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_bounds_from_1d
 from ocgis.util.itester import itr_products_keywords
+
+
+class TestAbstractValueDimension(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        avd = AbstractValueDimension()
+        self.assertIsInstance(avd, AbstractValueVariable)
+
+    def test_name_value(self):
+        name_value = 'foo'
+        avd = AbstractValueDimension(name_value=name_value)
+        self.assertEqual(avd.name_value, name_value)
+
+        name = 'foobar'
+        avd = AbstractValueDimension(name=name)
+        self.assertEqual(avd.name_value, name)
+        self.assertIsNone(avd._name_value)
 
 
 class TestVectorDimension(TestBase):
@@ -111,9 +129,11 @@ class TestVectorDimension(TestBase):
     def test_name_bounds(self):
         vd = VectorDimension(value=[5, 6], name='hello')
         self.assertEqual(vd.name_bounds, 'hello_bounds')
+        self.assertIsNone(vd._name_bounds)
 
         vd = VectorDimension(value=[5, 6], name_bounds='hello')
         self.assertEqual(vd.name_bounds, 'hello')
+        self.assertEqual(vd._name_bounds, 'hello')
         self.assertIsNone(vd.name)
 
     def test_one_value(self):

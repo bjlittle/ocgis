@@ -1,8 +1,11 @@
+from netCDF4 import date2num
 import os
 import unittest
 from datetime import datetime as dt
+from ocgis import Inspect, RequestDataset
 from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.crs import WGS84
+from ocgis.interface.nc.temporal import NcTemporalDimension
 from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
@@ -451,17 +454,79 @@ class TestField(AbstractTestField):
             self.assertEqual(ret.temporal.value[-1],dt(2000,1,30,12))
 
     def test_write_to_netcdf_dataset(self):
-        #todo: write with multiple variables
-        #todo: raise exception with realizatio axis
-        #todo: test with field attributes
-        #todo: test without row and column
-
-        field = self.get_field(with_value=True, with_realization=False)
+        keywords = dict(file_only=[False, True],
+                        second_variable_alias=[None, 'tmin_alias'],
+                        with_row_column=[True, False],
+                        with_realization=[False, True],
+                        remove_dimension_names=[False, True])
         path = os.path.join(self.current_dir_output, 'foo.nc')
-        with nc_scope(path, 'w') as ds:
-            field.write_to_netcdf_dataset(ds)
-            import ipdb;ipdb.set_trace()
-            pass
+
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            field = self.get_field(with_value=True, with_realization=k.with_realization)
+
+            if k.remove_dimension_names:
+                field.level.name = None
+                field.temporal.name = None
+                field.spatial.grid.row.name = None
+                field.spatial.grid.col.name = None
+
+            if not k.with_row_column:
+                field.spatial.grid.value
+                field.spatial.grid.row = None
+                field.spatial.grid.col = None
+
+            # update the temporal dimension to an nctemporaldimension
+            value = date2num(field.temporal.value, 'days since 0000-01-01 00:00:00', calendar='standard')
+            bounds = date2num(field.temporal.bounds, 'days since 0000-01-01 00:00:00', calendar='standard')
+            field.temporal = NcTemporalDimension(value=value, bounds=bounds)
+            self.assertIsInstance(field.temporal, NcTemporalDimension)
+
+            # add another variable
+            value = np.random.rand(*field.shape)
+            second_variable_name = 'tmin'
+            second_variable_alias = k.second_variable_alias or second_variable_name
+            variable = Variable(value=value, name=second_variable_name, alias=k.second_variable_alias)
+            variable.attrs['open'] = 'up'
+            field.variables.add_variable(variable, assign_new_uid=True)
+
+            # add some attributes
+            field.attrs['foo'] = 'some information'
+            field.attrs['another'] = 'some more information'
+
+            with nc_scope(path, 'w') as ds:
+                try:
+                    field.write_to_netcdf_dataset(ds, file_only=k.file_only)
+                except ValueError:
+                    try:
+                        self.assertTrue(k.with_realization)
+                        self.assertIsNotNone(field.realization)
+                    except AssertionError:
+                        self.assertFalse(k.with_row_column)
+                        self.assertIsNone(field.spatial.grid.row)
+                        self.assertIsNone(field.spatial.grid.col)
+                    continue
+            with nc_scope(path) as ds:
+                self.assertEqual(ds.another, 'some more information')
+                try:
+                    self.assertEqual(set(ds.variables.keys()), set(['time', 'time_bounds', 'level', 'level_bounds', 'latitude', 'latitude_bounds', 'longitude', 'longitude_bounds', 'tmax', second_variable_alias]))
+                    self.assertEqual(set(ds.dimensions.keys()), set(['time', 'bounds', 'level', 'latitude', 'longitude']))
+                except AssertionError:
+                    self.assertTrue(k.remove_dimension_names)
+                    self.assertEqual(set(ds.variables.keys()), set(['time', 'time_bounds', 'level', 'level_bounds', 'yc', 'yc_bounds', 'xc', 'xc_bounds', 'tmax', second_variable_alias]))
+                    self.assertEqual(set(ds.dimensions.keys()), set(['time', 'bounds', 'level', 'yc', 'xc']))
+                nc_second_variable = ds.variables[second_variable_alias]
+                self.assertEqual(nc_second_variable.open, 'up')
+                try:
+                    self.assertNumpyAll(nc_second_variable[:], value.squeeze())
+                except AssertionError:
+                    self.assertTrue(k.file_only)
+                    self.assertTrue(nc_second_variable[:].mask.all())
+                self.assertEqual(ds.variables['tmax'].units, field.variables['tmax'].units)
+                self.assertEqual(nc_second_variable.units, '')
+            new_field = RequestDataset(path).get()
+            self.assertEqual(new_field.variables.keys(), ['tmax', second_variable_alias])
+            self.assertEqual(new_field.shape, (1, 31, 2, 3, 4))
+
 
 class TestDerivedField(AbstractTestField):
     

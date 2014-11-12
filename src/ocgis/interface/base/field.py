@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from ocgis.interface.base.attributes import Attributes
 from ocgis.util.helpers import get_default_or_apply, get_none_or_slice, get_formatted_slice, get_reduced_slice, \
     assert_raise
@@ -312,16 +313,70 @@ class Field(Attributes):
         ret.variables = variables
         return(ret)
 
-    def write_to_netcdf_dataset(self, dataset, **kwargs):
-        #todo: doc
+    def write_to_netcdf_dataset(self, dataset, file_only=False, **kwargs):
+        """
+        Write the field object to an open netCDF dataset object.
 
-        vector_dimension = [self.realization, self.temporal, self.level, self.spatial.grid.row, self.spatial.grid.col]
-        for vd in vector_dimension:
-            if vd is not None:
-                try:
-                    vd.write_to_netcdf_dataset(dataset, **kwargs)
-                except Exception as e:
-                    import ipdb;ipdb.set_trace()
+        :param dataset: The open dataset object.
+        :type dataset: :class:`netCDF4.Dataset`
+        :param bool file_only: If ``True``, we are not filling the value variables. Only the file schema and dimension
+         values will be written.
+        :param kwargs: Extra keyword arguments in addition to ``dimensions`` to pass to ``createVariable``. See
+         http://unidata.github.io/netcdf4-python/netCDF4.Dataset-class.html#createVariable
+        :raises: ValueError
+        """
+
+        if self.realization is not None:
+            msg = 'Fields with a realization dimension may not be written to netCDF.'
+            raise ValueError(msg)
+
+        @contextmanager
+        def name_scope(target, name):
+            previous_name = target.name
+            try:
+                if target.name is None:
+                    target.name = name
+                yield target
+            finally:
+                target.name = previous_name
+
+        value_dimensions = []
+        with name_scope(self.temporal, 'time'):
+            self.temporal.write_to_netcdf_dataset(dataset, **kwargs)
+            value_dimensions.append(self.temporal.name)
+        with name_scope(self.level, 'level'):
+            self.level.write_to_netcdf_dataset(dataset, **kwargs)
+            if self.level is not None:
+                value_dimensions.append(self.level.name)
+        try:
+            with name_scope(self.spatial.grid.row, 'yc'):
+                self.spatial.grid.row.write_to_netcdf_dataset(dataset, **kwargs)
+                value_dimensions.append(self.spatial.grid.row.name)
+            with name_scope(self.spatial.grid.col, 'xc'):
+                self.spatial.grid.col.write_to_netcdf_dataset(dataset, **kwargs)
+                value_dimensions.append(self.spatial.grid.col.name)
+        except AttributeError:
+            if self.spatial.grid.row is None or self.spatial.grid.col is None:
+                msg = 'Row and/or column dimensions are required on the grid to write to netCDF.'
+                raise ValueError(msg)
+
+        kwargs['dimensions'] = value_dimensions
+        for variable in self.variables.itervalues():
+            kwargs['fill_value'] = variable.fill_value
+            nc_variable = dataset.createVariable(variable.alias, variable.dtype, **kwargs)
+            if not file_only:
+                nc_variable[:] = variable.value
+            variable.write_attributes_to_netcdf_object(nc_variable)
+            try:
+                nc_variable.units = variable.units
+            except TypeError:
+                # likely none for the units
+                if variable.units is None:
+                    nc_variable.units = ''
+                else:
+                    raise
+
+        self.write_attributes_to_netcdf_object(dataset)
 
     def _get_spatial_operation_(self, attr, polygon, use_spatial_index=True, select_nearest=False):
         ref = getattr(self.spatial, attr)
