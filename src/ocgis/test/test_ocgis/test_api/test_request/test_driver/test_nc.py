@@ -401,6 +401,16 @@ class TestDriverNetcdf(TestBase):
         res = DriverNetcdf._get_name_bounds_suffix_(source_metadata)
         self.assertIsNone(res)
 
+        # now remove the bounds key completely
+        for value in source_metadata['dim_map'].itervalues():
+            try:
+                value.pop('bounds')
+            except AttributeError:
+                if value is not None:
+                    raise
+        res = DriverNetcdf._get_name_bounds_suffix_(source_metadata)
+        self.assertIsNone(res)
+
 
 class Test(TestBase):
 

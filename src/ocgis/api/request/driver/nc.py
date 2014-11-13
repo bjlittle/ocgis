@@ -247,9 +247,14 @@ class DriverNetcdf(AbstractDriver):
         name_bounds_suffix = None
         for v2 in source_metadata['dim_map'].itervalues():
             # it is possible the dimension itself is none
-            if v2 is not None and v2['bounds'] is not None:
-                name_bounds_suffix = source_metadata['variables'][v2['bounds']]['dimensions'][1]
-                break
+            try:
+                if v2 is not None and v2['bounds'] is not None:
+                    name_bounds_suffix = source_metadata['variables'][v2['bounds']]['dimensions'][1]
+                    break
+            except KeyError:
+                # bounds key is likely just not there
+                if 'bounds' in v2:
+                    raise
         return name_bounds_suffix
 
 
