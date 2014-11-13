@@ -97,13 +97,13 @@ class DriverNetcdf(AbstractDriver):
 
         ## parameters for the loading loop
         to_load = {'temporal': {'cls': NcTemporalDimension, 'adds': _get_temporal_adds_, 'axis': 'T', 'name_uid': 'tid',
-                                'name_value': 'time'},
+                                'name': 'time'},
                    'level': {'cls': NcVectorDimension, 'adds': None, 'axis': 'Z', 'name_uid': 'lid',
-                             'name_value': 'level'},
-                   'row': {'cls': NcVectorDimension, 'adds': adds_row_col, 'axis': 'Y', 'name_uid': 'row_id',
-                           'name_value': 'row'},
-                   'col': {'cls': NcVectorDimension, 'adds': adds_row_col, 'axis': 'X', 'name_uid': 'col_id',
-                           'name_value': 'col'},
+                             'name': 'level'},
+                   'row': {'cls': NcVectorDimension, 'adds': adds_row_col, 'axis': 'Y', 'name_uid': 'yc_id',
+                           'name': 'yc'},
+                   'col': {'cls': NcVectorDimension, 'adds': adds_row_col, 'axis': 'X', 'name_uid': 'xc_id',
+                           'name': 'xc'},
                    'realization': {'cls': NcVectorDimension, 'adds': None, 'axis': 'R', 'name_uid': 'rlz_id',
                                    'name_value': 'rlz'}}
         loaded = {}
@@ -147,9 +147,8 @@ class DriverNetcdf(AbstractDriver):
 
                 ## assemble parameters for creating the dimension class then initialize
                 ## the class.
-                kwds = dict(name_uid=v['name_uid'], name_value=v['name_value'], src_idx=src_idx,
-                            data=self.rd, meta=ref_variable, axis=axis_value, name=ref_variable.get('name'),
-                            dtype=dtype)
+                kwds = dict(name_uid=v['name_uid'], src_idx=src_idx, data=self.rd, meta=ref_variable, axis=axis_value,
+                            name=ref_variable.get('name'), dtype=dtype)
 
                 ## there may be additional parameters for each dimension.
                 if v['adds'] is not None:
@@ -159,7 +158,6 @@ class DriverNetcdf(AbstractDriver):
                     ## dictionary.
                     except TypeError:
                         kwds.update(v['adds'])
-                kwds.update({'name': ref_variable.get('name')})
                 fill = v['cls'](**kwds)
 
             loaded[k] = fill
@@ -169,16 +167,6 @@ class DriverNetcdf(AbstractDriver):
                      exc=ValueError('Target variable must at least have temporal, row, and column dimensions.'))
 
         grid = SpatialGridDimension(row=loaded['row'], col=loaded['col'])
-
-        # crs = None
-        # if rd.crs is not None:
-        #     crs = rd.crs
-        # else:
-        #     crs = rd._get_crs_(rd._variable[0])
-        # if crs is None:
-        #     ocgis_lh('No "grid_mapping" attribute available assuming WGS84: {0}'.format(rd.uri),
-        #              'request', logging.WARN)
-        #     crs = CFWGS84()
 
         spatial = SpatialDimension(name_uid='gid', grid=grid, crs=self.rd.crs, abstraction=self.rd.s_abstraction)
 

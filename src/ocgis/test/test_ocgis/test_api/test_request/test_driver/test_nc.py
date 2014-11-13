@@ -86,6 +86,20 @@ class TestDriverNetcdf(TestBase):
         uri = self.test_data.get_uri('cancm4_tas')
         rd = RequestDataset(variable=ref_test['variable'],uri=uri)
         field = rd.get()
+
+        # test names are correctly set when creating the field
+        self.assertEqual(field.temporal.name, 'time')
+        self.assertEqual(field.temporal.name_value, 'time')
+        self.assertEqual(field.temporal.name_bounds, 'time_bounds')
+        row = field.spatial.grid.row
+        self.assertEqual(row.name, 'lat')
+        self.assertEqual(row.name_value, 'lat')
+        self.assertEqual(row.name_bounds, 'lat_bounds')
+        col = field.spatial.grid.col
+        self.assertEqual(col.name, 'lon')
+        self.assertEqual(col.name_value, 'lon')
+        self.assertEqual(col.name_bounds, 'lon_bounds')
+
         ds = nc.Dataset(uri,'r')
 
         self.assertEqual(field.level,None)
