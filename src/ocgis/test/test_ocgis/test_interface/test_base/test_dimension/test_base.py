@@ -226,8 +226,6 @@ class TestVectorDimension(TestBase):
         self.assertNumpyAll(vdim.bounds,np.array([[275.65,280.65],[280.65,285.65],[285.65,290.65]]))
 
     def test_write_to_netcdf_dataset(self):
-        #todo: what about climatology?
-
         path = os.path.join(self.current_dir_output, 'foo.nc')
 
         other_bounds_name = 'bnds'
@@ -236,7 +234,7 @@ class TestVectorDimension(TestBase):
                         unlimited=[False, True],
                         kwargs=[{}, {'zlib': True}],
                         bounds_dimension_name=[None, other_bounds_name],
-                        rewrite=[False, True])
+                        name_bounds_suffix=[None, 'asuffix'])
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             if k.with_attrs:
@@ -244,7 +242,7 @@ class TestVectorDimension(TestBase):
             else:
                 attrs = None
             vd = VectorDimension(value=[2., 4.], attrs=attrs, name='temporal', name_bounds='time_bounds',
-                                 name_value='time')
+                                 name_value='time', name_bounds_suffix=k.name_bounds_suffix)
             if k.with_bounds:
                 vd.set_extrapolated_bounds()
             with nc_scope(path, 'w') as ds:
@@ -258,7 +256,12 @@ class TestVectorDimension(TestBase):
                     try:
                         self.assertFalse(k.with_bounds)
                     except AssertionError:
-                        self.assertEqual(k.bounds_dimension_name, other_bounds_name)
+                        try:
+                            self.assertEqual(k.bounds_dimension_name, other_bounds_name)
+                        except AssertionError:
+                            self.assertIsNotNone(k.name_bounds_suffix)
+                            self.assertIsNone(k.bounds_dimension_name)
+                            self.assertIn(k.name_bounds_suffix, ds.dimensions)
                 try:
                     self.assertFalse(ds.dimensions[vd.name].isunlimited())
                 except AssertionError:

@@ -147,7 +147,8 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
     
     def __init__(self, *args, **kwargs):
         bounds = kwargs.pop('bounds', None)
-        self.name_bounds_suffix = kwargs.pop('name_bounds_suffix', constants.ocgis_bounds)
+        # used for creating name_bounds as well as the name of the bounds dimension in netCDF
+        self.name_bounds_suffix = kwargs.pop('name_bounds_suffix', None) or constants.ocgis_bounds
         self._name_bounds = kwargs.pop('name_bounds', None)
         self._axis = kwargs.pop('axis', None)
         # if True, an attempt will be made to interpolate bounds if None are provided.
@@ -361,7 +362,7 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
          http://unidata.github.io/netcdf4-python/netCDF4.Dataset-class.html#createVariable
         """
 
-        bounds_dimension_name = bounds_dimension_name or constants.ocgis_bounds
+        bounds_dimension_name = bounds_dimension_name or self.name_bounds_suffix
 
         if unlimited:
             size = None
