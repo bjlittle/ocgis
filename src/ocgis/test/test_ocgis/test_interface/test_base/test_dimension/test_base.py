@@ -46,6 +46,7 @@ class TestVectorDimension(TestBase):
         self.assertIsNone(vd.name_value)
         self.assertEqual(vd.name_uid, 'None_uid')
         self.assertEqual(vd.name_bounds, 'None_bounds')
+        self.assertEqual(vd.name_bounds_suffix, constants.ocgis_bounds)
 
         # test passing attributes to the constructor
         attrs = {'something': 'underground'}
@@ -130,6 +131,9 @@ class TestVectorDimension(TestBase):
         vd = VectorDimension(value=[5, 6], name='hello')
         self.assertEqual(vd.name_bounds, 'hello_bounds')
         self.assertIsNone(vd._name_bounds)
+
+        vd = VectorDimension(value=[5, 6], name='hello', name_bounds_suffix='suffit')
+        self.assertEqual(vd.name_bounds, 'hello_suffit')
 
         vd = VectorDimension(value=[5, 6], name_bounds='hello')
         self.assertEqual(vd.name_bounds, 'hello')

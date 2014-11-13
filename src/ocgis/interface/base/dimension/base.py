@@ -147,6 +147,7 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
     
     def __init__(self, *args, **kwargs):
         bounds = kwargs.pop('bounds', None)
+        self.name_bounds_suffix = kwargs.pop('name_bounds_suffix', constants.ocgis_bounds)
         self._name_bounds = kwargs.pop('name_bounds', None)
         self._axis = kwargs.pop('axis', None)
         # if True, an attempt will be made to interpolate bounds if None are provided.
@@ -202,7 +203,7 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
     @property
     def name_bounds(self):
         if self._name_bounds is None:
-            ret = '{0}_bounds'.format(self.name)
+            ret = '{0}_{1}'.format(self.name, self.name_bounds_suffix)
         else:
             ret = self._name_bounds
         return ret
