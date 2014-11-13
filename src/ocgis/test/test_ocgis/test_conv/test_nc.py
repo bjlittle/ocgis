@@ -58,9 +58,10 @@ class TestNcConverter(AbstractTestConverter):
     def test_write_coll(self):
         # todo: test with level
         # todo: test with bounds
+        # todo: test from file
         # use a field as the input dataset
         coll = self.get_spatial_collection(field=self.get_field())
         conv = NcConverter([coll], self.current_dir_output, 'foo')
-
+        import ipdb;ipdb.set_trace()
         with nc_scope(conv.path, 'w') as ds:
             conv._write_coll_(ds, coll)
