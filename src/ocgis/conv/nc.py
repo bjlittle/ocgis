@@ -51,9 +51,19 @@ class NcConverter(AbstractConverter):
         :type coll: :class:`~ocgis.SpatialCollection`
         """
 
-        ## get the target field from the collection
+        # get the target field from the collection
         arch = coll._archetype_field
-        
+        """:type arch: :class:`ocgis.Field`"""
+
+        # # get from operations if this is file only.
+        # try:
+        #     is_file_only = self.ops.file_only
+        # except AttributeError:
+        #     # no operations object available
+        #     is_file_only = False
+        #
+        # arch.write_to_netcdf_dataset(ds, file_only=is_file_only)
+
         ## reference the interfaces
         grid = arch.spatial.grid
         temporal = arch.temporal
