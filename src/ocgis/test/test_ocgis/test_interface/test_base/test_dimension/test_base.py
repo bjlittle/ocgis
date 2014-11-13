@@ -261,7 +261,7 @@ class TestVectorDimension(TestBase):
                         except AssertionError:
                             self.assertIsNotNone(k.name_bounds_suffix)
                             self.assertIsNone(k.bounds_dimension_name)
-                            self.assertIn(k.name_bounds_suffix, ds.dimensions)
+                            self.assertIn(k.name_bounds_suffix, ds.variables[vd.name_bounds].dimensions)
                 try:
                     self.assertFalse(ds.dimensions[vd.name].isunlimited())
                 except AssertionError:
