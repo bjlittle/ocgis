@@ -90,15 +90,15 @@ class TestDriverNetcdf(TestBase):
         # test names are correctly set when creating the field
         self.assertEqual(field.temporal.name, 'time')
         self.assertEqual(field.temporal.name_value, 'time')
-        self.assertEqual(field.temporal.name_bounds, 'time_bounds')
+        self.assertEqual(field.temporal.name_bounds, 'time_bnds')
         row = field.spatial.grid.row
         self.assertEqual(row.name, 'lat')
         self.assertEqual(row.name_value, 'lat')
-        self.assertEqual(row.name_bounds, 'lat_bounds')
+        self.assertEqual(row.name_bounds, 'lat_bnds')
         col = field.spatial.grid.col
         self.assertEqual(col.name, 'lon')
         self.assertEqual(col.name_value, 'lon')
-        self.assertEqual(col.name_bounds, 'lon_bounds')
+        self.assertEqual(col.name_bounds, 'lon_bnds')
 
         ds = nc.Dataset(uri,'r')
 
@@ -383,6 +383,23 @@ class TestDriverNetcdf(TestBase):
         rd = RequestDataset(uri=ret,variable='mean')
         field = rd.get()
         self.assertNotEqual(field.temporal.bounds,None)
+
+    def test_get_name_bounds_suffix(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        source_metadata = rd.source_metadata
+        res = DriverNetcdf._get_name_bounds_suffix_(source_metadata)
+        self.assertEqual(res, 'bnds')
+
+        # remove any mention of bounds from the dimension map and try again
+        for value in source_metadata['dim_map'].itervalues():
+            try:
+                value['bounds'] = None
+            except TypeError:
+                # likely a nonetype
+                if value is not None:
+                    raise
+        res = DriverNetcdf._get_name_bounds_suffix_(source_metadata)
+        self.assertIsNone(res)
 
 
 class Test(TestBase):

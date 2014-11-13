@@ -82,20 +82,20 @@ class DriverNetcdf(AbstractDriver):
         :raises ValueError:
         """
 
+        # reference the request dataset's source metadata
+        source_metadata = self.rd.source_metadata
+
         def _get_temporal_adds_(ref_attrs):
             ## calendar should default to standard if it is not present and the
             ## t_calendar overload is not used.
             calendar = self.rd.t_calendar or ref_attrs.get('calendar', None) or 'standard'
 
-            return ({'units': self.rd.t_units or ref_attrs['units'],
-                     'calendar': calendar,
-                     'format_time': format_time})
+            return {'units': self.rd.t_units or ref_attrs['units'], 'calendar': calendar, 'format_time': format_time}
 
-        ## this dictionary contains additional keyword arguments for the row
-        ## and column dimensions.
+        # this dictionary contains additional keyword arguments for the row and column dimensions.
         adds_row_col = {'interpolate_bounds': interpolate_spatial_bounds}
 
-        ## parameters for the loading loop
+        # parameters for the loading loop
         to_load = {'temporal': {'cls': NcTemporalDimension, 'adds': _get_temporal_adds_, 'axis': 'T', 'name_uid': 'tid',
                                 'name': 'time'},
                    'level': {'cls': NcVectorDimension, 'adds': None, 'axis': 'Z', 'name_uid': 'lid',
@@ -109,60 +109,62 @@ class DriverNetcdf(AbstractDriver):
         loaded = {}
 
         for k, v in to_load.iteritems():
-            ## this is the string axis representation
+            # this is the string axis representation
             axis_value = v['axis'] or v['cls']._axis
-            ## pull the axis information out of the dimension map
-            ref_axis = self.rd.source_metadata['dim_map'].get(axis_value)
-            ref_axis = self.rd.source_metadata['dim_map'].get(axis_value)
-            ## if the axis is not represented, fill it with none. this happens
-            ## when a dataset does not have a vertical level or projection axis
-            ## for example.
+            # pull the axis information out of the dimension map
+            ref_axis = source_metadata['dim_map'].get(axis_value)
+            ref_axis = source_metadata['dim_map'].get(axis_value)
+            # if the axis is not represented, fill it with none. this happens when a dataset does not have a vertical
+            # level or projection axis for example.
             if ref_axis is None:
                 fill = None
             else:
-                ref_variable = self.rd.source_metadata['variables'].get(ref_axis['variable'])
+                ref_variable = source_metadata['variables'].get(ref_axis['variable'])
 
-                ## for data with a projection/realization axis there may be no
-                ## associated variable.
+                # for data with a projection/realization axis there may be no associated variable.
                 try:
                     ref_variable['axis'] = ref_axis
                 except TypeError:
                     if axis_value == 'R' and ref_variable is None:
                         ref_variable = {'axis': ref_axis, 'name': ref_axis['dimension'], 'attrs': {}}
 
-                ## extract the data length to use when creating the source index
-                ## arrays.
-                length = self.rd.source_metadata['dimensions'][ref_axis['dimension']]['len']
+                # extract the data length to use when creating the source index arrays.
+                length = source_metadata['dimensions'][ref_axis['dimension']]['len']
                 src_idx = np.arange(0, length, dtype=constants.np_int)
 
-                ## get the target data type for the dimension
+                # get the target data type for the dimension
                 try:
                     dtype = np.dtype(ref_variable['dtype'])
-                ## the realization dimension may not be a associated with a variable
+                # the realization dimension may not be a associated with a variable
                 except KeyError:
                     if k == 'realization' and ref_variable['axis']['variable'] is None:
                         dtype = None
                     else:
                         raise
 
-                ## assemble parameters for creating the dimension class then initialize
-                ## the class.
+                # assemble parameters for creating the dimension class then initialize the class.
                 kwds = dict(name_uid=v['name_uid'], src_idx=src_idx, data=self.rd, meta=ref_variable, axis=axis_value,
                             name=ref_variable.get('name'), dtype=dtype)
 
-                ## there may be additional parameters for each dimension.
+                # there may be additional parameters for each dimension.
                 if v['adds'] is not None:
                     try:
                         kwds.update(v['adds'](ref_variable['attrs']))
-                    ## adds may not be a callable object. assume they are a
-                    ## dictionary.
+                    # adds may not be a callable object. assume they are a dictionary.
                     except TypeError:
                         kwds.update(v['adds'])
+
+                # check for the name of the bounds dimension in the source metadata. loop through the dimension map,
+                # look for a bounds variable, and choose the bounds dimension if possible
+                name_bounds_suffix = self._get_name_bounds_suffix_(source_metadata)
+                kwds['name_bounds_suffix'] = name_bounds_suffix
+
+                # create instance of the dimension
                 fill = v['cls'](**kwds)
 
             loaded[k] = fill
 
-        assert_raise(set(('temporal', 'row', 'col')).issubset(set([k for k, v in loaded.iteritems() if v != None])),
+        assert_raise({'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v != None])),
                      logger='request',
                      exc=ValueError('Target variable must at least have temporal, row, and column dimensions.'))
 
@@ -232,6 +234,23 @@ class DriverNetcdf(AbstractDriver):
         except TypeError:
             ret = nc.MFDataset(self.rd.uri)
         return ret
+
+    @staticmethod
+    def _get_name_bounds_suffix_(source_metadata):
+        """
+        :param dict source_metadata: Metadata dictionary as returned from :attr:`~ocgis.RequestDataset.source_metadata`.
+        :returns: The name of the bounds suffix to use when creating dimensions. If no bounds are found in the source
+         metadata return ``None``.
+        :rtype: str or None
+        """
+
+        name_bounds_suffix = None
+        for v2 in source_metadata['dim_map'].itervalues():
+            # it is possible the dimension itself is none
+            if v2 is not None and v2['bounds'] is not None:
+                name_bounds_suffix = source_metadata['variables'][v2['bounds']]['dimensions'][1]
+                break
+        return name_bounds_suffix
 
 
 def get_axis(dimvar, dims, dim):
