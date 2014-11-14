@@ -6,45 +6,107 @@ import datetime
 from ocgis import constants
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.exc import EmptySubsetError, IncompleteSeasonError
-from ocgis.util.helpers import get_is_date_between
+from ocgis.util.helpers import get_is_date_between, iter_array
 from copy import deepcopy
+import netCDF4 as nc
 
 
 class TemporalDimension(base.VectorDimension):
-    _date_parts = ('year','month','day','hour','minute','second')
+    """
+    .. note:: Accepts all arguments to :class:`~ocgis.interface.base.dimension.base.VectorDimension`.
+
+    :keyword str calendar: (``='standard'``) The calendar to use when converting from float to datetime objects. Any of
+     the netCDF-CF calendar tyes: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
+    :keyword str units: (``='days since 0000-01-01 00:00:00'``) The units string to use when converting from float to
+     datetime objects. See: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
+    :keyword value_datetime: (``=None``) A vector array containing datetime objects.
+    :type value_datetime: :class:`numpy.ndarray`
+
+    >>> value_datetime = [datetime.datetime(2000, 1, 1), datetime.datetime(2000, 2, 1)]
+
+    :keyword bounds_datetime: (``=None``) A *m x 2* array containing upper and lower datetime bounds for
+     ``value_datetime``.
+    :type bounds_datetime: :class:`numpy.ndarray`
+    :keyword bool format_time: (``=True``) If ``False``, do not attempt to convert float time values to datetime
+     objects. This is useful when the float values may be malformed and uncovertible to datetime objects.
+    """
+
+    _attrs_slice = ('uid', '_value', '_src_idx', '_value_datetime')
+    _date_parts = ('year', 'month', 'day', 'hour', 'minute', 'second')
     _axis = 'T'
 
     def __init__(self, *args, **kwargs):
-        self.calendar = kwargs.pop('calendar', 'standard')
+        self.format_time = kwargs.pop('format_time', True)
+        self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
+        self.value_datetime = kwargs.pop('value_datetime', None)
+        self.bounds_datetime = kwargs.pop('bounds_datetime', None)
+
         super(TemporalDimension, self).__init__(*args, **kwargs)
-        self.units = self.units or 'days since 0000-01-01 00:00:00'
-    
-    def get_grouping(self,grouping):
-        ## there is no need to go through the process of breaking out datetime
-        ## parts when the grouping is 'all'.
-        if grouping == 'all':
-            new_bounds,date_parts,repr_dt,dgroups = self._get_grouping_all_()
-        ## the process for getting "unique" seasons is also specialized
-        elif 'unique' in grouping:
-            new_bounds,date_parts,repr_dt,dgroups = self._get_grouping_seasonal_unique_(grouping)
-        ## for standard groups ("['month']") or seasons across entire time range
+
+        self.units = self.units or constants.default_temporal_units
+        # test if the units are the special case with months in the time units
+        if self.units.startswith('months'):
+            self._has_months_units = True
         else:
-            new_bounds,date_parts,repr_dt,dgroups = self._get_grouping_other_(grouping)
-        
-        tgd = self._get_temporal_group_dimension_(
-                    grouping=grouping,date_parts=date_parts,bounds=new_bounds,
-                    dgroups=dgroups,value=repr_dt,name_value='time',name_uid='tid',
-                    name=self.name,meta=self.meta,units=self.units)
-        
-        return(tgd)
-    
-    def get_iter(self,*args,**kwds):
+            self._has_months_units = False
+
+    def get_datetime(self, arr):
+        """
+        :param arr: An array of floats to convert to datetime objects.
+        :type arr: :class:`numpy.ndarray`
+        :returns: An object array of the same shape as ``arr`` with float objects converted to datetime objects.
+        :rtype: :class:`numpy.ndarray`
+        """
+
+        # if there are month units, call the special procedure to convert those to datetime objects
+        if not self._has_months_units:
+            arr = np.atleast_1d(nc.num2date(arr, self.units, calendar=self.calendar))
+            dt = datetime.datetime
+            for idx, t in iter_array(arr, return_value=True):
+                # attempt to convert times to datetime objects
+                try:
+                    arr[idx] = dt(t.year, t.month, t.day, t.hour, t.minute, t.second)
+                # this may fail for some calendars, in that case maintain the instance object returned from
+                # netcdftime see: http://netcdf4-python.googlecode.com/svn/trunk/docs/netcdftime.netcdftime.datetime-class.html
+                except ValueError:
+                    arr[idx] = arr[idx]
+        else:
+            arr = get_datetime_from_months_time_units(arr, self.units, month_centroid=constants.calc_month_centroid)
+        return arr
+
+    def get_grouping(self, grouping):
+        """
+        :param sequence grouping: The temporal grouping to use when creating the temporal group dimension.
+
+        >>> grouping = ['month']
+
+        :returns: A temporal group dimension.
+        :rtype: :class:`~ocgis.interface.base.dimension.temporal.TemporalGroupDimension`
+        """
+
+        # there is no need to go through the process of breaking out datetime parts when the grouping is 'all'.
+        if grouping == 'all':
+            new_bounds, date_parts, repr_dt, dgroups = self._get_grouping_all_()
+        # the process for getting "unique" seasons is also specialized
+        elif 'unique' in grouping:
+            new_bounds, date_parts, repr_dt, dgroups = self._get_grouping_seasonal_unique_(grouping)
+        # for standard groups ("['month']") or seasons across entire time range
+        else:
+            new_bounds, date_parts, repr_dt, dgroups = self._get_grouping_other_(grouping)
+
+        tgd = self._get_temporal_group_dimension_(grouping=grouping, date_parts=date_parts, bounds=new_bounds,
+                                                  dgroups=dgroups, value=repr_dt, name_value='time', name_uid='tid',
+                                                  name=self.name, meta=self.meta, units=self.units)
+
+        return tgd
+
+    def get_iter(self, *args, **kwargs):
         r_name_value = self.name_value
         r_set_date_parts = self._set_date_parts_
-        for ii,yld in super(TemporalDimension,self).get_iter(*args,**kwds):
+        for ii, yld in super(TemporalDimension, self).get_iter(*args, **kwargs):
             r_value = yld[r_name_value]
-            r_set_date_parts(yld,r_value)
-            yield(ii,yld)
+            r_set_date_parts(yld, r_value)
+            yield (ii, yld)
     
     def get_time_region(self,time_region,return_indices=False):
         assert(isinstance(time_region,dict))
@@ -100,38 +162,15 @@ class TemporalDimension(base.VectorDimension):
 
         return(ret)
 
-    def _get_grouping_seasonal_unique_(self, grouping):
-        """
-        :param list grouping: A seasonal list containing the unique flag.
+    def _get_datetime_bounds_(self):
+        '''Intended for subclasses to overload the method for accessing the datetime
+        value. For example, netCDF times are floats that must be converted.'''
+        return(self.bounds)
 
-        >>> grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], 'unique']
-
-        :returns: A tuple of elements necessary to create a :class:`ocgis.interface.base.dimension.temporal.TemporalGroupDimension`
-         object.
-        :rtype: tuple
-        """
-
-        # remove the unique keyword from the list
-        grouping = list(deepcopy(grouping))
-        grouping.remove('unique')
-        grouping = get_sorted_seasons(grouping)
-        # turn the seasons into time regions
-        time_regions = get_time_regions(grouping, self._get_datetime_value_(), raise_if_incomplete=False)
-        # holds the boolean selection arrays
-        dgroups = deque()
-        new_bounds = np.array([], dtype=object).reshape(-1, 2)
-        repr_dt = np.array([], dtype=object)
-        # return temporal dimensions and convert to groups
-        for dgroup, sub in iter_boolean_groups_from_time_regions(time_regions, self, yield_subset=True,
-                                                                 raise_if_incomplete=False):
-            dgroups.append(dgroup)
-            sub_value_datetime = sub._get_datetime_value_()
-            new_bounds = np.vstack((new_bounds, [min(sub_value_datetime), max(sub_value_datetime)]))
-            repr_dt = np.append(repr_dt, sub_value_datetime[int(sub.shape[0] / 2)])
-        # no date parts yet...
-        date_parts = None
-
-        return new_bounds, date_parts, repr_dt, dgroups
+    def _get_datetime_value_(self):
+        '''Intended for subclasses to overload the method for accessing the datetime
+        value. For example, netCDF times are floats that must be converted.'''
+        return(self.value)
 
     def _get_grouping_all_(self):
         '''
@@ -289,19 +328,6 @@ class TemporalDimension(base.VectorDimension):
 
         return(new_bounds,date_parts,repr_dt,dgroups)
 
-    def _set_date_parts_(self,yld,value):
-        yld['year'],yld['month'],yld['day'] = value.year,value.month,value.day
-
-    def _get_datetime_bounds_(self):
-        '''Intended for subclasses to overload the method for accessing the datetime
-        value. For example, netCDF times are floats that must be converted.'''
-        return(self.bounds)
-    
-    def _get_datetime_value_(self):
-        '''Intended for subclasses to overload the method for accessing the datetime
-        value. For example, netCDF times are floats that must be converted.'''
-        return(self.value)
-    
     def _get_grouping_representative_datetime_(self,grouping,bounds,value):
         ref_value = value
         ref_bounds = bounds
@@ -365,11 +391,47 @@ class TemporalDimension(base.VectorDimension):
                 ret[idx] = fill
         return(ret)
     
+    def _get_grouping_seasonal_unique_(self, grouping):
+        """
+        :param list grouping: A seasonal list containing the unique flag.
+
+        >>> grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], 'unique']
+
+        :returns: A tuple of elements necessary to create a :class:`ocgis.interface.base.dimension.temporal.TemporalGroupDimension`
+         object.
+        :rtype: tuple
+        """
+
+        # remove the unique keyword from the list
+        grouping = list(deepcopy(grouping))
+        grouping.remove('unique')
+        grouping = get_sorted_seasons(grouping)
+        # turn the seasons into time regions
+        time_regions = get_time_regions(grouping, self._get_datetime_value_(), raise_if_incomplete=False)
+        # holds the boolean selection arrays
+        dgroups = deque()
+        new_bounds = np.array([], dtype=object).reshape(-1, 2)
+        repr_dt = np.array([], dtype=object)
+        # return temporal dimensions and convert to groups
+        for dgroup, sub in iter_boolean_groups_from_time_regions(time_regions, self, yield_subset=True,
+                                                                 raise_if_incomplete=False):
+            dgroups.append(dgroup)
+            sub_value_datetime = sub._get_datetime_value_()
+            new_bounds = np.vstack((new_bounds, [min(sub_value_datetime), max(sub_value_datetime)]))
+            repr_dt = np.append(repr_dt, sub_value_datetime[int(sub.shape[0] / 2)])
+        # no date parts yet...
+        date_parts = None
+
+        return new_bounds, date_parts, repr_dt, dgroups
+
     def _get_iter_value_bounds_(self):
-        return(self._get_datetime_value_(),self._get_datetime_bounds_())
-    
-    def _get_temporal_group_dimension_(self,*args,**kwds):
-        return(TemporalGroupDimension(*args,**kwds))
+        return self._get_datetime_value_(), self._get_datetime_bounds_()
+
+    def _get_temporal_group_dimension_(self, *args, **kwargs):
+        return TemporalGroupDimension(*args, **kwargs)
+
+    def _set_date_parts_(self, yld, value):
+        yld['year'], yld['month'], yld['day'] = value.year, value.month, value.day
 
 
 class TemporalGroupDimension(TemporalDimension):
@@ -380,6 +442,173 @@ class TemporalGroupDimension(TemporalDimension):
         self.date_parts = kwds.pop('date_parts')
                 
         TemporalDimension.__init__(self,*args,**kwds)
+
+
+def get_datetime_from_months_time_units(vec, units, month_centroid=16):
+    """
+    Convert a vector of months offsets into :class:``datetime.datetime`` objects.
+
+    :param vec: Vector of integer month offsets.
+    :type vec: :class:``np.ndarray``
+    :param str units: Source units to parse.
+    :param month_centroid: The center day of the month to use when creating the :class:``datetime.datetime`` objects.
+
+    >>> units = "months since 1978-12"
+    >>> vec = np.array([0,1,2,3])
+    >>> get_datetime_from_months_time_units(vec,units)
+    array([1978-12-16 00:00:00, 1979-01-16 00:00:00, 1979-02-16 00:00:00,
+           1979-03-16 00:00:00], dtype=object)
+    """
+
+    # only work with integer inputs
+    vec = np.array(vec, dtype=int)
+
+    def _get_datetime_(current_year, origin_month, offset_month, current_month_correction, month_centroid):
+        return datetime.datetime(current_year, (origin_month + offset_month) - current_month_correction, month_centroid)
+
+    origin = get_origin_datetime_from_months_units(units)
+    origin_month = origin.month
+    current_year = origin.year
+    current_month_correction = 0
+    ret = np.ones(len(vec), dtype=object)
+    for ii, offset_month in enumerate(vec):
+        try:
+            fill = _get_datetime_(current_year, origin_month, offset_month, current_month_correction, month_centroid)
+        except ValueError:
+            current_month_correction += 12
+            current_year += 1
+            fill = _get_datetime_(current_year, origin_month, offset_month, current_month_correction, month_centroid)
+        ret[ii] = fill
+    return ret
+
+
+def get_is_interannual(sequence):
+    """
+    Returns ``True`` if an integer sequence representing a season crosses a year boundary.
+
+    >>> sequence = [11,12,1]
+    >>> get_is_interannual(sequence)
+    True
+    """
+
+    if 12 in sequence and 1 in sequence:
+        ret = True
+    else:
+        ret = False
+    return ret
+
+
+def get_origin_datetime_from_months_units(units):
+    """
+    Get the origin Python :class:``datetime.datetime`` object from a month string.
+
+    :param str units: Source units to parse.
+    :returns: :class:``datetime.datetime``
+
+    >>> units = "months since 1978-12"
+    >>> get_origin_datetime_from_months_units(units)
+    datetime.datetime(1978, 12, 1, 0, 0)
+    """
+
+    origin = ' '.join(units.split(' ')[2:])
+    to_try = ['%Y-%m', '%Y-%m-%d %H']
+    converted = False
+    for tt in to_try:
+        try:
+            origin = datetime.datetime.strptime(origin, tt)
+            converted = True
+            break
+        except ValueError as e:
+            continue
+    if not converted:
+        raise e
+    return origin
+
+
+def get_sorted_seasons(seasons, method='max'):
+    """
+    Sorts ``seasons`` sequence by ``method`` of season elements.
+
+    >>> seasons = [[9,10,11],[12,1,2],[6,7,8]]
+    >>> get_sorted_seasons(seasons)
+    [[6,7,8],[9,10,11],[12,1,2]]
+
+    :type seasons: list[list[int]]
+    :type method: str
+    :rtype: list[list[int]]
+    """
+
+    methods = {'min': min, 'max': max}
+
+    season_map = {}
+    for ii, season in enumerate(seasons):
+        season_map[ii] = season
+    max_map = {}
+    for key, value in season_map.iteritems():
+        max_map[methods[method](value)] = key
+    sorted_maxes = sorted(max_map)
+    ret = [seasons[max_map[s]] for s in sorted_maxes]
+    ret = deepcopy(ret)
+    return ret
+
+
+def get_time_regions(seasons, dates, raise_if_incomplete=True):
+    """
+    >>> seasons = [[6,7,8],[9,10,11],[12,1,2]]
+    >>> dates = <vector of datetime objects>
+    """
+
+    # extract the years from the data vector collapsing them to a unique set then sort in ascending order
+    years = list(set([d.year for d in dates]))
+    years.sort()
+    # determine if any of the seasons are interannual
+    interannual_check = map(get_is_interannual, seasons)
+    # holds the return value
+    time_regions = []
+    # the interannual cases requires two time region sequences to properly extract
+    if any(interannual_check):
+        # loop over years first to ensure each year is accounted for in the time region output
+        for ii_year, year in enumerate(years):
+            # the interannual flag is used internally for simple optimization
+            for ic, cg in itertools.izip(interannual_check, seasons):
+                # if no exception is raised for an incomplete season, this flag indicate whether to append to the output
+                append_to_time_regions = True
+                if ic:
+                    # copy and sort in descending order the season because december of the current year should be first.
+                    _cg = deepcopy(cg)
+                    _cg.sort()
+                    _cg.reverse()
+                    # look for the interannual break and split the season into the current year and next year.
+                    diff = np.abs(np.diff(_cg))
+                    split_base = np.arange(1, len(_cg))
+                    split_indices = split_base[diff > 1]
+                    split = np.split(_cg, split_indices)
+                    # will hold the sub-element time regions
+                    sub_time_region = []
+                    for ii_split, s in enumerate(split):
+                        try:
+                            to_append_sub = {'year': [years[ii_year + ii_split]], 'month': s.tolist()}
+                            sub_time_region.append(to_append_sub)
+                        # there may not be another year of data for an interannual season. we DO NOT keep incomplete
+                        # seasons.
+                        except IndexError:
+                            # don't just blow through an incomplete season unless asked to
+                            if raise_if_incomplete:
+                                raise (IncompleteSeasonError(_cg, year))
+                            else:
+                                append_to_time_regions = False
+                                continue
+                    to_append = sub_time_region
+                else:
+                    to_append = [{'year': [year], 'month': cg}]
+                if append_to_time_regions:
+                    time_regions.append(to_append)
+    # without interannual seasons the time regions are unique combos of the years and seasons designations
+    else:
+        for year, season in itertools.product(years, seasons):
+            time_regions.append([{'year': [year], 'month': season}])
+
+    return time_regions
 
 
 def iter_boolean_groups_from_time_regions(time_regions, temporal_dimension, yield_subset=False,
@@ -430,113 +659,3 @@ def iter_boolean_groups_from_time_regions(time_regions, temporal_dimension, yiel
             yld = dgroup
 
         yield yld
-        
-def get_is_interannual(sequence):
-    '''
-    Returns ``True`` if an integer sequence representing a season crosses a year
-    boundary.
-    
-    >>> sequence = [11,12,1]
-    >>> get_is_interannual(sequence)
-    True
-    '''
-    
-    if 12 in sequence and 1 in sequence:
-        ret = True
-    else:
-        ret = False
-    return(ret)
-
-
-def get_sorted_seasons(seasons, method='max'):
-    """
-    Sorts ``seasons`` sequence by ``method`` of season elements.
-
-    >>> seasons = [[9,10,11],[12,1,2],[6,7,8]]
-    >>> get_sorted_seasons(seasons)
-    [[6,7,8],[9,10,11],[12,1,2]]
-
-    :type seasons: list[list[int]]
-    :type method: str
-    :rtype: list[list[int]]
-    """
-
-    methods = {'min': min, 'max': max}
-
-    season_map = {}
-    for ii,season in enumerate(seasons):
-        season_map[ii] = season
-    max_map = {}
-    for key,value in season_map.iteritems():
-        max_map[methods[method](value)] = key
-    sorted_maxes = sorted(max_map)
-    ret = [seasons[max_map[s]] for s in sorted_maxes]
-    ret = deepcopy(ret)
-    return(ret)
-
-
-def get_time_regions(seasons,dates,raise_if_incomplete=True):
-    '''
-    >>> seasons = [[6,7,8],[9,10,11],[12,1,2]]
-    >>> dates = <vector of datetime objects>
-    '''
-    ## extract the years from the data vector collapsing them to a unique
-    ## set then sort in ascending order
-    years = list(set([d.year for d in dates]))
-    years.sort()
-    ## determine if any of the seasons are interannual
-    interannual_check = map(get_is_interannual,seasons)
-    ## holds the return value
-    time_regions = []
-    ## the interannual cases requires two time region sequences to
-    ## properly extract
-    if any(interannual_check):
-        ## loop over years first to ensure each year is accounted for
-        ## in the time region output
-        for ii_year,year in enumerate(years):
-            ## the interannual flag is used internally for simple optimization
-            for ic,cg in itertools.izip(interannual_check,seasons):
-                ## if no exception is raised for an incomplete season,
-                ## this flag indicate whether to append to the output
-                append_to_time_regions = True
-                if ic:
-                    ## copy and sort in descending order the season because
-                    ## december of the current year should be first.
-                    _cg = deepcopy(cg)
-                    _cg.sort()
-                    _cg.reverse()
-                    ## look for the interannual break and split the season
-                    ## into the current year and next year.
-                    diff = np.abs(np.diff(_cg))
-                    split_base = np.arange(1,len(_cg))
-                    split_indices = split_base[diff > 1]
-                    split = np.split(_cg,split_indices)
-                    ## will hold the sub-element time regions
-                    sub_time_region = []
-                    for ii_split,s in enumerate(split):
-                        try:
-                            to_append_sub = {'year':[years[ii_year+ii_split]],'month':s.tolist()}
-                            sub_time_region.append(to_append_sub)
-                        ## there may not be another year of data for an
-                        ## interannual season. we DO NOT keep incomplete
-                        ## seasons.
-                        except IndexError:
-                            ## don't just blow through an incomplete season
-                            ## unless asked to
-                            if raise_if_incomplete:
-                                raise(IncompleteSeasonError(_cg,year))
-                            else:
-                                append_to_time_regions = False
-                                continue
-                    to_append = sub_time_region
-                else:
-                    to_append = [{'year':[year],'month':cg}]
-                if append_to_time_regions:
-                    time_regions.append(to_append)
-    ## without interannual seasons the time regions are unique combos of
-    ## the years and seasons designations
-    else:
-        for year,season in itertools.product(years,seasons):
-            time_regions.append([{'year':[year],'month':season}])
-            
-    return(time_regions)

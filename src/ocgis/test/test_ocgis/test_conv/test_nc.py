@@ -5,6 +5,7 @@ from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.test.test_ocgis.test_conv.test_base import AbstractTestConverter
 import ocgis
 from ocgis import constants
+from datetime import datetime as dt
 
 
 class TestNcConverter(AbstractTestConverter):

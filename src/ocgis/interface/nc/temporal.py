@@ -8,23 +8,23 @@ from ocgis import constants
 
 
 class NcTemporalDimension(TemporalDimension, NcVectorDimension):
-    _attrs_slice = ('uid','_value','_src_idx','_value_datetime')
+    # _attrs_slice = ('uid','_value','_src_idx','_value_datetime')
     
-    def __init__(self, *args, **kwds):
-        self.format_time = kwds.pop('format_time',True)
-        self._value_datetime = kwds.pop('value_datetime',None)
-        self._bounds_datetime = kwds.pop('bounds_datetime',None)
-
-        TemporalDimension.__init__(self, *args, **kwds)
-        
-        assert(self.units != None)
-        assert(self.calendar != None)
-
-        ## test if the units are the special case with months in the time units
-        if self.units.startswith('months'):
-            self._has_months_units = True
-        else:
-            self._has_months_units = False
+    # def __init__(self, *args, **kwds):
+    #     self.format_time = kwds.pop('format_time',True)
+    #     self._value_datetime = kwds.pop('value_datetime',None)
+    #     self._bounds_datetime = kwds.pop('bounds_datetime',None)
+    #
+    #     TemporalDimension.__init__(self, *args, **kwds)
+    #
+    #     assert(self.units != None)
+    #     assert(self.calendar != None)
+    #
+    #     ## test if the units are the special case with months in the time units
+    #     if self.units.startswith('months'):
+    #         self._has_months_units = True
+    #     else:
+    #         self._has_months_units = False
         
     @property
     def bounds_datetime(self):
@@ -54,25 +54,25 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
         lower,upper = tuple(self.get_nc_time([lower,upper]))
         return(NcVectorDimension.get_between(self,lower,upper,return_indices=return_indices))
         
-    def get_datetime(self,arr):
-        ## if there are month units, call the special procedure to convert those
-        ## to datetime objects
-        if self._has_months_units == False:
-            arr = np.atleast_1d(nc.num2date(arr,self.units,calendar=self.calendar))
-            dt = datetime.datetime
-            for idx,t in iter_array(arr,return_value=True):
-                ## attempt to convert times to datetime objects
-                try:
-                    arr[idx] = dt(t.year,t.month,t.day,
-                                  t.hour,t.minute,t.second)
-                ## this may fail for some calendars, in that case maintain the instance
-                ## object returned from netcdftime see:
-                ## http://netcdf4-python.googlecode.com/svn/trunk/docs/netcdftime.netcdftime.datetime-class.html
-                except ValueError:
-                    arr[idx] = arr[idx]
-        else:
-            arr = get_datetime_from_months_time_units(arr,self.units,month_centroid=constants.calc_month_centroid)
-        return(arr)
+    # def get_datetime(self,arr):
+    #     ## if there are month units, call the special procedure to convert those
+    #     ## to datetime objects
+    #     if self._has_months_units == False:
+    #         arr = np.atleast_1d(nc.num2date(arr,self.units,calendar=self.calendar))
+    #         dt = datetime.datetime
+    #         for idx,t in iter_array(arr,return_value=True):
+    #             ## attempt to convert times to datetime objects
+    #             try:
+    #                 arr[idx] = dt(t.year,t.month,t.day,
+    #                               t.hour,t.minute,t.second)
+    #             ## this may fail for some calendars, in that case maintain the instance
+    #             ## object returned from netcdftime see:
+    #             ## http://netcdf4-python.googlecode.com/svn/trunk/docs/netcdftime.netcdftime.datetime-class.html
+    #             except ValueError:
+    #                 arr[idx] = arr[idx]
+    #     else:
+    #         arr = get_datetime_from_months_time_units(arr,self.units,month_centroid=constants.calc_month_centroid)
+    #     return(arr)
     
     def get_nc_time(self,values):
         try:
@@ -173,68 +173,68 @@ class NcTemporalGroupDimension(NcTemporalDimension):
         finally:
             self.name_bounds = previous_name_bounds
         
-def get_origin_datetime_from_months_units(units):
-    '''
-    Get the origin Python :class:``datetime.datetime`` object from a month
-    string.
-    
-    :param str units: Source units to parse.
-    :returns: :class:``datetime.datetime``
-    
-    >>> units = "months since 1978-12"
-    >>> get_origin_datetime_from_months_units(units)
-    datetime.datetime(1978, 12, 1, 0, 0)
-    '''
-    origin = ' '.join(units.split(' ')[2:])
-    to_try = ['%Y-%m','%Y-%m-%d %H']
-    converted = False
-    for tt in to_try:
-        try:
-            origin = datetime.datetime.strptime(origin,tt)
-            converted = True
-            break
-        except ValueError as e:
-            continue
-    if converted == False:
-        raise(e)
-    return(origin)
+# def get_origin_datetime_from_months_units(units):
+#     '''
+#     Get the origin Python :class:``datetime.datetime`` object from a month
+#     string.
+#
+#     :param str units: Source units to parse.
+#     :returns: :class:``datetime.datetime``
+#
+#     >>> units = "months since 1978-12"
+#     >>> get_origin_datetime_from_months_units(units)
+#     datetime.datetime(1978, 12, 1, 0, 0)
+#     '''
+#     origin = ' '.join(units.split(' ')[2:])
+#     to_try = ['%Y-%m','%Y-%m-%d %H']
+#     converted = False
+#     for tt in to_try:
+#         try:
+#             origin = datetime.datetime.strptime(origin,tt)
+#             converted = True
+#             break
+#         except ValueError as e:
+#             continue
+#     if converted == False:
+#         raise(e)
+#     return(origin)
 
-def get_datetime_from_months_time_units(vec,units,month_centroid=16):
-    '''
-    Convert a vector of months offsets into :class:``datetime.datetime`` objects.
-    
-    :param vec: Vector of integer month offsets.
-    :type vec: :class:``np.ndarray``
-    :param str units: Source units to parse.
-    :param month_centroid: The center day of the month to use when creating the
-     :class:``datetime.datetime`` objects.
-    
-    >>> units = "months since 1978-12"
-    >>> vec = np.array([0,1,2,3])
-    >>> get_datetime_from_months_time_units(vec,units)
-    array([1978-12-16 00:00:00, 1979-01-16 00:00:00, 1979-02-16 00:00:00,
-           1979-03-16 00:00:00], dtype=object)
-    '''
-    ## only work with integer inputs
-    vec = np.array(vec,dtype=int)
-      
-    def _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid):
-        return(datetime.datetime(current_year,(origin_month+offset_month)-current_month_correction,month_centroid))
-    
-    origin = get_origin_datetime_from_months_units(units)
-    origin_month = origin.month
-    current_year = origin.year
-    current_month_correction = 0
-    ret = np.ones(len(vec),dtype=object)
-    for ii,offset_month in enumerate(vec):
-        try:
-            fill = _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid)
-        except ValueError:
-            current_month_correction += 12
-            current_year += 1
-            fill = _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid)
-        ret[ii] = fill
-    return(ret)
+# def get_datetime_from_months_time_units(vec,units,month_centroid=16):
+#     '''
+#     Convert a vector of months offsets into :class:``datetime.datetime`` objects.
+#
+#     :param vec: Vector of integer month offsets.
+#     :type vec: :class:``np.ndarray``
+#     :param str units: Source units to parse.
+#     :param month_centroid: The center day of the month to use when creating the
+#      :class:``datetime.datetime`` objects.
+#
+#     >>> units = "months since 1978-12"
+#     >>> vec = np.array([0,1,2,3])
+#     >>> get_datetime_from_months_time_units(vec,units)
+#     array([1978-12-16 00:00:00, 1979-01-16 00:00:00, 1979-02-16 00:00:00,
+#            1979-03-16 00:00:00], dtype=object)
+#     '''
+#     ## only work with integer inputs
+#     vec = np.array(vec,dtype=int)
+#
+#     def _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid):
+#         return(datetime.datetime(current_year,(origin_month+offset_month)-current_month_correction,month_centroid))
+#
+#     origin = get_origin_datetime_from_months_units(units)
+#     origin_month = origin.month
+#     current_year = origin.year
+#     current_month_correction = 0
+#     ret = np.ones(len(vec),dtype=object)
+#     for ii,offset_month in enumerate(vec):
+#         try:
+#             fill = _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid)
+#         except ValueError:
+#             current_month_correction += 12
+#             current_year += 1
+#             fill = _get_datetime_(current_year,origin_month,offset_month,current_month_correction,month_centroid)
+#         ret[ii] = fill
+#     return(ret)
 
 def get_difference_in_months(origin,target):
     '''

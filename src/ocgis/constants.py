@@ -6,6 +6,12 @@ ocgis_bounds = 'bounds'
 #: Default netCDF4 output file type
 netCDF_default_data_model = 'NETCDF4_CLASSIC'
 
+#: Default temporal calendar.
+default_temporal_calendar = 'standard'
+
+#: Default temporal units.
+default_temporal_units = 'days since 0000-01-01 00:00:00'
+
 #: Standard headers for subset operations.
 raw_headers = ['did','vid','ugid','tid','lid','gid','variable','alias','time','year','month','day','level','value']
 #: Standard headers for computation.

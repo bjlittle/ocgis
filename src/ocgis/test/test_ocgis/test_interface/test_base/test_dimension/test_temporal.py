@@ -1,4 +1,6 @@
+from netCDF4 import num2date, date2num
 import os
+import netcdftime
 from ocgis import constants
 from ocgis.test.base import TestBase
 from datetime import datetime as dt
@@ -54,9 +56,36 @@ class TestTemporalDimension(TestBase):
 
     def test_init(self):
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)])
-        self.assertEqual(td.calendar, 'standard')
-        self.assertEqual(td.units, 'days since 0000-01-01 00:00:00')
+        self.assertEqual(td.calendar, constants.default_temporal_calendar)
+        self.assertEqual(td.units, constants.default_temporal_units)
         self.assertIsInstance(td, VectorDimension)
+        self.assertIsNone(td.value_datetime)
+        self.assertIsNone(td.bounds_datetime)
+        self.assertFalse(td._has_months_units)
+        self.assertTrue(td.format_time)
+
+        td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12")
+        self.assertTrue(td._has_months_units)
+
+    def test_get_datetime(self):
+        td = TemporalDimension(value=[5, 6])
+        dts = np.array([dt(2000, 1, 15, 12), dt(2000, 2, 15, 12)])
+        arr = date2num(dts, 'days since 0000-01-01 00:00:00')
+        res = td.get_datetime(arr)
+        self.assertNumpyAll(dts, res)
+
+        td = TemporalDimension(value=[5, 6], units='months since 1978-12')
+        res = td.get_datetime(td.value)
+        self.assertEqual(res[0], dt(1979, 5, 16))
+
+        units = 'days since 0000-01-01 00:00:00'
+        calendar = '365_day'
+        ndt = netcdftime.datetime
+        ndts = np.array([ndt(0000, 2, 30), ndt(0000, 2, 31)])
+        narr = date2num(ndts, units, calendar=calendar)
+        td = TemporalDimension(value=narr, units=units, calendar=calendar)
+        res = td.get_datetime(td.value)
+        self.assertTrue(all([isinstance(element, ndt) for element in res.flat]))
 
     def test_get_grouping(self):
         td = self.get_temporal_dimension()
