@@ -69,8 +69,6 @@ class TestTemporalDimension(TestBase):
         self.assertEqual(td.calendar, constants.default_temporal_calendar)
         self.assertEqual(td.units, constants.default_temporal_units)
         self.assertIsInstance(td, VectorDimension)
-        self.assertIsNone(td.value_datetime)
-        self.assertIsNone(td.bounds_datetime)
         self.assertFalse(td._has_months_units)
         self.assertTrue(td.format_time)
 
@@ -362,11 +360,10 @@ class TestTemporalDimension(TestBase):
         value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
         value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
         keywords = dict(format_time=[True, False],
-                        value=[value, None],
-                        value_datetime=[None, value_datetime])
+                        value=[value, value_datetime])
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             td = TemporalDimension(**k._asdict())
-            self.assertNumpyAll(td.value, value)
+            self.assertNumpyAll(td.value, k.value)
             self.assertNumpyAll(td.value_datetime, value_datetime)
         import ipdb;ipdb.set_trace()
 

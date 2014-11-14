@@ -20,14 +20,6 @@ class TemporalDimension(base.VectorDimension):
      the netCDF-CF calendar tyes: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
     :keyword str units: (``='days since 0000-01-01 00:00:00'``) The units string to use when converting from float to
      datetime objects. See: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
-    :keyword value_datetime: (``=None``) A vector array containing datetime objects.
-    :type value_datetime: :class:`numpy.ndarray`
-
-    >>> value_datetime = [datetime.datetime(2000, 1, 1), datetime.datetime(2000, 2, 1)]
-
-    :keyword bounds_datetime: (``=None``) A *m x 2* array containing upper and lower datetime bounds for
-     ``value_datetime``.
-    :type bounds_datetime: :class:`numpy.ndarray`
     :keyword bool format_time: (``=True``) If ``False``, do not attempt to convert float time values to datetime
      objects. This is useful when the float values may be malformed and uncovertible to datetime objects.
     """
@@ -39,8 +31,6 @@ class TemporalDimension(base.VectorDimension):
     def __init__(self, *args, **kwargs):
         self.format_time = kwargs.pop('format_time', True)
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
-        self.value_datetime = kwargs.pop('value_datetime', None)
-        self.bounds_datetime = kwargs.pop('bounds_datetime', None)
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 
@@ -51,11 +41,18 @@ class TemporalDimension(base.VectorDimension):
         else:
             self._has_months_units = False
 
+        self._value_datetime = None
+        self._bounds_datetime = None
+        self._value_nctime = None
+        self._bounds_nctime = None
+
     @property
     def value_datetime(self):
-        if self._value_datetime is None and self.format_time is True:
+        if self._value_datetime is None:
             if get_datetime_conversion_state(self.value[0]):
                 self._value_datetime = np.atleast_1d(self.get_datetime(self.value))
+            else:
+                self._value_datetime = self.value
         return self._value_datetime
 
     @value_datetime.setter
