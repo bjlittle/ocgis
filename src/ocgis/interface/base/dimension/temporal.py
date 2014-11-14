@@ -1,3 +1,4 @@
+import netcdftime
 import base
 import numpy as np
 from collections import deque
@@ -49,6 +50,17 @@ class TemporalDimension(base.VectorDimension):
             self._has_months_units = True
         else:
             self._has_months_units = False
+
+    @property
+    def value_datetime(self):
+        if self._value_datetime is None and self.format_time is True:
+            if get_datetime_conversion_state(self.value[0]):
+                self._value_datetime = np.atleast_1d(self.get_datetime(self.value))
+        return self._value_datetime
+
+    @value_datetime.setter
+    def value_datetime(self, value):
+        self._value_datetime = value
 
     def get_datetime(self, arr):
         """
@@ -442,6 +454,21 @@ class TemporalGroupDimension(TemporalDimension):
         self.date_parts = kwds.pop('date_parts')
                 
         TemporalDimension.__init__(self,*args,**kwds)
+
+
+def get_datetime_conversion_state(archetype):
+    """
+    :param archetype: The object to test for conversion to datetime.
+    :type archetyp: float, :class:`datetime.datetime`, or :class:`netcdftime.datetime`
+    :returns: ``True`` if the object should be converted to datetime.
+    :rtype: bool
+    """
+
+    if isinstance(archetype, (datetime.datetime, netcdftime.datetime)):
+        ret = False
+    else:
+        ret = True
+    return ret
 
 
 def get_datetime_from_months_time_units(vec, units, month_centroid=16):

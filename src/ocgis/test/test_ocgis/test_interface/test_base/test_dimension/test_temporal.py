@@ -1,11 +1,12 @@
 from netCDF4 import num2date, date2num
 import os
 import netcdftime
+from ocgis.util.itester import itr_products_keywords
 from ocgis import constants
 from ocgis.test.base import TestBase
 from datetime import datetime as dt
 from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_interannual, get_sorted_seasons, \
-    get_time_regions, iter_boolean_groups_from_time_regions
+    get_time_regions, iter_boolean_groups_from_time_regions, get_datetime_conversion_state
 import numpy as np
 from ocgis.util.helpers import get_date_list
 import datetime
@@ -16,6 +17,15 @@ from ocgis.interface.base.dimension.base import VectorDimension
 
 
 class Test(TestBase):
+
+    def test_get_datetime_conversion_state(self):
+        archetypes = [45.5, datetime.datetime(2000, 1, 1), netcdftime.datetime(2000, 4, 5)]
+        for archetype in archetypes:
+            res = get_datetime_conversion_state(archetype)
+            try:
+                self.assertFalse(res)
+            except AssertionError:
+                self.assertEqual(type(archetype), float)
 
     def test_iter_boolean_groups_from_time_regions(self):
         time_regions = [[{'month': [12], 'year': [1900]}, {'month': [2, 1], 'year': [1901]}]]
@@ -347,7 +357,19 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=dates,bounds=bounds)
         ret = td.get_between(r1,r2)
         self.assertEqual(ret.value[-1],datetime.datetime(1950,12,31,12,0))
-        
+
+    def test_value_datetime(self):
+        value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
+        value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
+        keywords = dict(format_time=[True, False],
+                        value=[value, None],
+                        value_datetime=[None, value_datetime])
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            td = TemporalDimension(**k._asdict())
+            self.assertNumpyAll(td.value, value)
+            self.assertNumpyAll(td.value_datetime, value_datetime)
+        import ipdb;ipdb.set_trace()
+
     def test_get_sorted_seasons(self):
         calc_grouping = [[9, 10, 11], [12, 1, 2], [6, 7, 8]]
         methods = ['max', 'min']
