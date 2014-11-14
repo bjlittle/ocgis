@@ -40,9 +40,9 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #         new = np.atleast_2d(value).reshape(-1,2)
     #     self._bounds_datetime = new
         
-    @property
-    def extent_datetime(self):
-        return(tuple(self.get_datetime(self.extent)))
+    # @property
+    # def extent_datetime(self):
+    #     return(tuple(self.get_datetime(self.extent)))
         
     # @property
     # def value_datetime(self):

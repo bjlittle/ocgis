@@ -364,7 +364,7 @@ class TestTemporalDimension(TestBase):
         ret = td.get_between(r1,r2)
         self.assertEqual(ret.value[-1],datetime.datetime(1950,12,31,12,0))
 
-    def test_bounds_datetime(self):
+    def test_bounds_datetime_and_bounds_numtime(self):
         value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
         bounds_datetime = np.array([[dt(2000, 1, 1), dt(2000, 2, 1)],
                                     [dt(2000, 2, 1), dt(2000, 3, 1)]])
@@ -376,10 +376,20 @@ class TestTemporalDimension(TestBase):
             td = TemporalDimension(value=value, bounds=bounds)
             try:
                 self.assertNumpyAll(td.bounds_datetime, bounds_datetime)
+                self.assertNumpyAll(td.bounds_numtime, bounds_num)
             except AssertionError:
                 self.assertIsNone(bounds)
                 self.assertIsNone(td.bounds)
                 self.assertIsNone(td.bounds_datetime)
+
+    def test_extent_datetime_and_extent_numtime(self):
+        value_numtime = np.array([6000., 6001., 6002])
+        value_datetime = TemporalDimension(value=value_numtime).value_datetime
+
+        for value in [value_numtime, value_datetime]:
+            td = TemporalDimension(value=value)
+            self.assertEqual(td.extent_datetime, (min(value_datetime), max(value_datetime)))
+            self.assertEqual(td.extent_numtime, (6000., 6002.))
 
     def test_value_datetime_and_value_numtime(self):
         value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
@@ -389,6 +399,7 @@ class TestTemporalDimension(TestBase):
             td = TemporalDimension(**k._asdict())
             self.assertNumpyAll(td.value, k.value)
             self.assertNumpyAll(td.value_datetime, value_datetime)
+            self.assertNumpyAll(td.value_numtime, value)
 
     def test_get_sorted_seasons(self):
         calc_grouping = [[9, 10, 11], [12, 1, 2], [6, 7, 8]]

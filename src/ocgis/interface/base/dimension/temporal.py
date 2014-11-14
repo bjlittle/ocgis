@@ -54,6 +54,30 @@ class TemporalDimension(base.VectorDimension):
         return self._bounds_datetime
 
     @property
+    def bounds_numtime(self):
+        if self.bounds is not None:
+            if self._bounds_numtime is None:
+                if not get_datetime_conversion_state(self.bounds[0, 0]):
+                    self._bounds_numtime = np.atleast_2d(self.get_numtime(self.bounds))
+                else:
+                    self._bounds_numtime = self.bounds
+        return self._bounds_numtime
+
+    @property
+    def extent_datetime(self):
+        extent = self.extent
+        if get_datetime_conversion_state(extent[0]):
+            extent = self.get_datetime(extent)
+        return tuple(extent)
+
+    @property
+    def extent_numtime(self):
+        extent = self.extent
+        if not get_datetime_conversion_state(extent[0]):
+            extent = self.get_numtime(extent)
+        return tuple(extent)
+
+    @property
     def value_datetime(self):
         if self._value_datetime is None:
             if get_datetime_conversion_state(self.value[0]):
@@ -64,13 +88,12 @@ class TemporalDimension(base.VectorDimension):
 
     @property
     def value_numtime(self):
-        tdk
         if self._value_numtime is None:
             if not get_datetime_conversion_state(self.value[0]):
-                self._value_datetime = np.atleast_1d(self.get_(self.value))
+                self._value_numtime = np.atleast_1d(self.get_numtime(self.value))
             else:
-                self._value_datetime = self.value
-        return self._value_datetime
+                self._value_numtime = self.value
+        return self._value_numtime
 
     def get_datetime(self, arr):
         """
