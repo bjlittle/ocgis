@@ -20,8 +20,6 @@ class TemporalDimension(base.VectorDimension):
      the netCDF-CF calendar tyes: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
     :keyword str units: (``='days since 0000-01-01 00:00:00'``) The units string to use when converting from float to
      datetime objects. See: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
-    :keyword bool format_time: (``=True``) If ``False``, do not attempt to convert float time values to datetime
-     objects. This is useful when the float values may be malformed and uncovertible to datetime objects.
     """
 
     _attrs_slice = ('uid', '_value', '_src_idx', '_value_datetime')
@@ -29,7 +27,6 @@ class TemporalDimension(base.VectorDimension):
     _axis = 'T'
 
     def __init__(self, *args, **kwargs):
-        self.format_time = kwargs.pop('format_time', True)
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
@@ -43,8 +40,18 @@ class TemporalDimension(base.VectorDimension):
 
         self._value_datetime = None
         self._bounds_datetime = None
-        self._value_nctime = None
-        self._bounds_nctime = None
+        self._value_numtime = None
+        self._bounds_numtime = None
+
+    @property
+    def bounds_datetime(self):
+        if self.bounds is not None:
+            if self._bounds_datetime is None:
+                if get_datetime_conversion_state(self.bounds[0, 0]):
+                    self._bounds_datetime = np.atleast_2d(self.get_datetime(self.bounds))
+                else:
+                    self._bounds_datetime = self.bounds
+        return self._bounds_datetime
 
     @property
     def value_datetime(self):
@@ -55,9 +62,15 @@ class TemporalDimension(base.VectorDimension):
                 self._value_datetime = self.value
         return self._value_datetime
 
-    @value_datetime.setter
-    def value_datetime(self, value):
-        self._value_datetime = value
+    @property
+    def value_numtime(self):
+        tdk
+        if self._value_numtime is None:
+            if not get_datetime_conversion_state(self.value[0]):
+                self._value_datetime = np.atleast_1d(self.get_(self.value))
+            else:
+                self._value_datetime = self.value
+        return self._value_datetime
 
     def get_datetime(self, arr):
         """
@@ -116,7 +129,25 @@ class TemporalDimension(base.VectorDimension):
             r_value = yld[r_name_value]
             r_set_date_parts(yld, r_value)
             yield (ii, yld)
-    
+
+    def get_numtime(self, arr):
+        """
+        :param arr: An array of datetime objects to convert to numeric time.
+        :type array: :class:`numpy.array`
+        :returns: An array of numeric values with same shape as ``arr``.
+        :rtype: :class:`numpy.array`
+        """
+
+        try:
+            ret = np.atleast_1d(nc.date2num(arr, self.units, calendar=self.calendar))
+        except ValueError:
+            # special behavior for conversion of time units with months
+            if self._has_months_units:
+                ret = get_num_from_months_time_units(arr, self.units, dtype=None)
+            else:
+                raise
+        return ret
+
     def get_time_region(self,time_region,return_indices=False):
         assert(isinstance(time_region,dict))
 
@@ -506,6 +537,62 @@ def get_datetime_from_months_time_units(vec, units, month_centroid=16):
     return ret
 
 
+def get_difference_in_months(origin, target):
+    """
+    Get the integer difference in months between an origin and target datetime.
+
+    :param :class:``datetime.datetime`` origin: The origin datetime object.
+    :param :class:``datetime.datetime`` target: The target datetime object.
+
+    >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1979,3,1))
+    3
+    >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1978,7,1))
+    -5
+    """
+
+    def _count_(start_month, stop_month, start_year, stop_year, direction):
+        count = 0
+        curr_month = start_month
+        curr_year = start_year
+        while True:
+            if curr_month == stop_month and curr_year == stop_year:
+                break
+            else:
+                pass
+
+            if direction == 'forward':
+                curr_month += 1
+            elif direction == 'backward':
+                curr_month -= 1
+            else:
+                raise (NotImplementedError(direction))
+
+            if curr_month == 13:
+                curr_month = 1
+                curr_year += 1
+            if curr_month == 0:
+                curr_month = 12
+                curr_year -= 1
+
+            if direction == 'forward':
+                count += 1
+            else:
+                count -= 1
+
+        return count
+
+    origin_month, origin_year = origin.month, origin.year
+    target_month, target_year = target.month, target.year
+
+    if origin <= target:
+        direction = 'forward'
+    else:
+        direction = 'backward'
+
+    diff_months = _count_(origin_month, target_month, origin_year, target_year, direction)
+    return diff_months
+
+
 def get_is_interannual(sequence):
     """
     Returns ``True`` if an integer sequence representing a season crosses a year boundary.
@@ -520,6 +607,26 @@ def get_is_interannual(sequence):
     else:
         ret = False
     return ret
+
+
+def get_num_from_months_time_units(vec, units, dtype=None):
+    """
+    Convert a vector of :class:``datetime.datetime`` objects into an integer vector.
+
+    :param vec: Input vector to convert.
+    :type vec: :class:``np.ndarray``
+    :param str units: Source units to parse.
+    :param type dtype: Output vector array type.
+
+    >>> units = "months since 1978-12"
+    >>> vec = np.array([datetime.datetime(1978,12,1),datetime.datetime(1979,1,1)])
+    >>> get_num_from_months_time_units(vec,units)
+    array([0, 1])
+    """
+
+    origin = get_origin_datetime_from_months_units(units)
+    ret = [get_difference_in_months(origin, target) for target in vec]
+    return np.array(ret, dtype=dtype)
 
 
 def get_origin_datetime_from_months_units(units):

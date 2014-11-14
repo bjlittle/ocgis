@@ -26,19 +26,19 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #     else:
     #         self._has_months_units = False
         
-    @property
-    def bounds_datetime(self):
-        if self.bounds is not None:
-            if self._bounds_datetime is None:
-                self._bounds_datetime = np.atleast_2d(self.get_datetime(self.bounds))
-        return(self._bounds_datetime)
-    @bounds_datetime.setter
-    def bounds_datetime(self,value):
-        if value is None:
-            new = None
-        else:
-            new = np.atleast_2d(value).reshape(-1,2)
-        self._bounds_datetime = new
+    # @property
+    # def bounds_datetime(self):
+    #     if self.bounds is not None:
+    #         if self._bounds_datetime is None:
+    #             self._bounds_datetime = np.atleast_2d(self.get_datetime(self.bounds))
+    #     return(self._bounds_datetime)
+    # @bounds_datetime.setter
+    # def bounds_datetime(self,value):
+    #     if value is None:
+    #         new = None
+    #     else:
+    #         new = np.atleast_2d(value).reshape(-1,2)
+    #     self._bounds_datetime = new
         
     @property
     def extent_datetime(self):
@@ -74,16 +74,16 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #         arr = get_datetime_from_months_time_units(arr,self.units,month_centroid=constants.calc_month_centroid)
     #     return(arr)
     
-    def get_nc_time(self,values):
-        try:
-            ret = np.atleast_1d(nc.date2num(values,self.units,calendar=self.calendar))
-        except ValueError:
-            ## special behavior for conversion of time units with months
-            if self._has_months_units:
-                ret = get_num_from_months_time_units(values, self.units, dtype=None)
-            else:
-                raise
-        return(ret)
+    # def get_nc_time(self,values):
+    #     try:
+    #         ret = np.atleast_1d(nc.date2num(values,self.units,calendar=self.calendar))
+    #     except ValueError:
+    #         ## special behavior for conversion of time units with months
+    #         if self._has_months_units:
+    #             ret = get_num_from_months_time_units(values, self.units, dtype=None)
+    #         else:
+    #             raise
+    #     return(ret)
 
     def write_to_netcdf_dataset(self, dataset, **kwargs):
         """
@@ -236,79 +236,79 @@ class NcTemporalGroupDimension(NcTemporalDimension):
 #         ret[ii] = fill
 #     return(ret)
 
-def get_difference_in_months(origin,target):
-    '''
-    Get the integer difference in months between an origin and target datetime.
-    
-    :param :class:``datetime.datetime`` origin: The origin datetime object.
-    :param :class:``datetime.datetime`` target: The target datetime object.
-    
-    >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1979,3,1))
-    3
-    >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1978,7,1))
-    -5
-    '''
-            
-    def _count_(start_month,stop_month,start_year,stop_year,direction):
-        count = 0
-        curr_month = start_month
-        curr_year = start_year
-        while True:
-            if curr_month == stop_month and curr_year == stop_year:
-                break
-            else:
-                pass
-            
-            if direction == 'forward':
-                curr_month += 1
-            elif direction == 'backward':
-                curr_month -= 1
-            else:
-                raise(NotImplementedError(direction))
-                
-            if curr_month == 13:
-                curr_month = 1
-                curr_year += 1
-            if curr_month == 0:
-                curr_month = 12
-                curr_year -= 1
-            
-            if direction == 'forward':
-                count += 1
-            else:
-                count -= 1
-            
-        return(count)
-    
-    origin_month,origin_year = origin.month,origin.year
-    target_month,target_year = target.month,target.year
-    
-    if origin <= target:
-        direction = 'forward'
-    else:
-        direction = 'backward'
-        
-    diff_months = _count_(origin_month,target_month,origin_year,target_year,direction)
-    return(diff_months)
+# def get_difference_in_months(origin,target):
+#     '''
+#     Get the integer difference in months between an origin and target datetime.
+#
+#     :param :class:``datetime.datetime`` origin: The origin datetime object.
+#     :param :class:``datetime.datetime`` target: The target datetime object.
+#
+#     >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1979,3,1))
+#     3
+#     >>> get_difference_in_months(datetime.datetime(1978,12,1),datetime.datetime(1978,7,1))
+#     -5
+#     '''
+#
+#     def _count_(start_month,stop_month,start_year,stop_year,direction):
+#         count = 0
+#         curr_month = start_month
+#         curr_year = start_year
+#         while True:
+#             if curr_month == stop_month and curr_year == stop_year:
+#                 break
+#             else:
+#                 pass
+#
+#             if direction == 'forward':
+#                 curr_month += 1
+#             elif direction == 'backward':
+#                 curr_month -= 1
+#             else:
+#                 raise(NotImplementedError(direction))
+#
+#             if curr_month == 13:
+#                 curr_month = 1
+#                 curr_year += 1
+#             if curr_month == 0:
+#                 curr_month = 12
+#                 curr_year -= 1
+#
+#             if direction == 'forward':
+#                 count += 1
+#             else:
+#                 count -= 1
+#
+#         return(count)
+#
+#     origin_month,origin_year = origin.month,origin.year
+#     target_month,target_year = target.month,target.year
+#
+#     if origin <= target:
+#         direction = 'forward'
+#     else:
+#         direction = 'backward'
+#
+#     diff_months = _count_(origin_month,target_month,origin_year,target_year,direction)
+#     return(diff_months)
 
-def get_num_from_months_time_units(vec,units,dtype=None):
-    '''
-    Convert a vector of :class:``datetime.datetime`` objects into an integer
-    vector.
-    
-    :param vec: Input vector to convert.
-    :type vec: :class:``np.ndarray``
-    :param str units: Source units to parse.
-    :param type dtype: Output vector array type.
-    
-    >>> units = "months since 1978-12"
-    >>> vec = np.array([datetime.datetime(1978,12,1),datetime.datetime(1979,1,1)])
-    >>> get_num_from_months_time_units(vec,units)
-    array([0, 1])
-    '''
-    origin = get_origin_datetime_from_months_units(units)
-    ret = [get_difference_in_months(origin,target) for target in vec]
-    return(np.array(ret,dtype=dtype))
+# def get_num_from_months_time_units(vec,units,dtype=None):
+#     '''
+#     Convert a vector of :class:``datetime.datetime`` objects into an integer
+#     vector.
+#
+#     :param vec: Input vector to convert.
+#     :type vec: :class:``np.ndarray``
+#     :param str units: Source units to parse.
+#     :param type dtype: Output vector array type.
+#
+#     >>> units = "months since 1978-12"
+#     >>> vec = np.array([datetime.datetime(1978,12,1),datetime.datetime(1979,1,1)])
+#     >>> get_num_from_months_time_units(vec,units)
+#     array([0, 1])
+#     '''
+#     origin = get_origin_datetime_from_months_units(units)
+#     ret = [get_difference_in_months(origin,target) for target in vec]
+#     return(np.array(ret,dtype=dtype))
 
 
 if __name__ == "__main__":
