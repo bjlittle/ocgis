@@ -175,8 +175,8 @@ class TemporalDimension(base.VectorDimension):
         assert(isinstance(time_region,dict))
 
         ## return the values to use for the temporal region subsetting.
-        value = self._get_datetime_value_()
-        bounds = self._get_datetime_bounds_()
+        value = self.value_datetime
+        bounds = self.bounds_datetime
 
         ## switch to indicate if bounds or centroid datetimes are to be used.
         use_bounds = False if bounds is None else True
@@ -225,23 +225,23 @@ class TemporalDimension(base.VectorDimension):
 
         return(ret)
 
-    def _get_datetime_bounds_(self):
-        '''Intended for subclasses to overload the method for accessing the datetime
-        value. For example, netCDF times are floats that must be converted.'''
-        return(self.bounds)
-
-    def _get_datetime_value_(self):
-        '''Intended for subclasses to overload the method for accessing the datetime
-        value. For example, netCDF times are floats that must be converted.'''
-        return(self.value)
+    # def _get_datetime_bounds_(self):
+    #     '''Intended for subclasses to overload the method for accessing the datetime
+    #     value. For example, netCDF times are floats that must be converted.'''
+    #     return(self.bounds)
+    #
+    # def _get_datetime_value_(self):
+    #     '''Intended for subclasses to overload the method for accessing the datetime
+    #     value. For example, netCDF times are floats that must be converted.'''
+    #     return(self.value)
 
     def _get_grouping_all_(self):
         '''
         Applied when the grouping is 'all'.
         '''
 
-        value = self._get_datetime_value_()
-        bounds = self._get_datetime_bounds_()
+        value = self.value_datetime
+        bounds = self.bounds_datetime
         try:
             lower = bounds.min()
             upper = bounds.max()
@@ -277,8 +277,8 @@ class TemporalDimension(base.VectorDimension):
         value = np.empty((self.value.shape[0],3),dtype=object)
 
         ## reference the value and bounds datetime object arrays
-        value_datetime = self._get_datetime_value_()
-        value_datetime_bounds = self._get_datetime_bounds_()
+        value_datetime = self.value_datetime
+        value_datetime_bounds = self.bounds_datetime
 
         ## populate the value array depending on the presence of bounds
         if self.bounds is None:
@@ -470,7 +470,7 @@ class TemporalDimension(base.VectorDimension):
         grouping.remove('unique')
         grouping = get_sorted_seasons(grouping)
         # turn the seasons into time regions
-        time_regions = get_time_regions(grouping, self._get_datetime_value_(), raise_if_incomplete=False)
+        time_regions = get_time_regions(grouping, self.value_datetime, raise_if_incomplete=False)
         # holds the boolean selection arrays
         dgroups = deque()
         new_bounds = np.array([], dtype=object).reshape(-1, 2)
@@ -479,7 +479,7 @@ class TemporalDimension(base.VectorDimension):
         for dgroup, sub in iter_boolean_groups_from_time_regions(time_regions, self, yield_subset=True,
                                                                  raise_if_incomplete=False):
             dgroups.append(dgroup)
-            sub_value_datetime = sub._get_datetime_value_()
+            sub_value_datetime = sub.value_datetime
             new_bounds = np.vstack((new_bounds, [min(sub_value_datetime), max(sub_value_datetime)]))
             repr_dt = np.append(repr_dt, sub_value_datetime[int(sub.shape[0] / 2)])
         # no date parts yet...
@@ -488,7 +488,7 @@ class TemporalDimension(base.VectorDimension):
         return new_bounds, date_parts, repr_dt, dgroups
 
     def _get_iter_value_bounds_(self):
-        return self._get_datetime_value_(), self._get_datetime_bounds_()
+        return self.value_datetime, self.bounds_datetime
 
     def _get_temporal_group_dimension_(self, *args, **kwargs):
         return TemporalGroupDimension(*args, **kwargs)
@@ -498,13 +498,13 @@ class TemporalDimension(base.VectorDimension):
 
 
 class TemporalGroupDimension(TemporalDimension):
-    
-    def __init__(self,*args,**kwds):
-        self.grouping = kwds.pop('grouping')
-        self.dgroups = kwds.pop('dgroups')
-        self.date_parts = kwds.pop('date_parts')
-                
-        TemporalDimension.__init__(self,*args,**kwds)
+
+    def __init__(self, *args, **kwargs):
+        self.grouping = kwargs.pop('grouping')
+        self.dgroups = kwargs.pop('dgroups')
+        self.date_parts = kwargs.pop('date_parts')
+
+        TemporalDimension.__init__(self, *args, **kwargs)
 
 
 def get_datetime_conversion_state(archetype):
@@ -788,7 +788,7 @@ def iter_boolean_groups_from_time_regions(time_regions, temporal_dimension, yiel
         for time_region in sub_time_regions:
             sub, idx = temporal_dimension.get_time_region(time_region, return_indices=True)
             ## insert a check to ensure there are months present for each time region
-            months = set([d.month for d in sub._get_datetime_value_()])
+            months = set([d.month for d in sub.value_datetime])
             try:
                 assert (months == set(time_region['month']))
             except AssertionError:

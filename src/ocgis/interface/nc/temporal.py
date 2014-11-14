@@ -85,22 +85,22 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #             raise
     #     return(ret)
 
-    def write_to_netcdf_dataset(self, dataset, **kwargs):
-        """
-        Calls superclass write method then adds ``calendar`` and ``units`` attributes to time variable and time bounds
-        variable. See documentation for :meth:`~ocgis.interface.base.dimension.base.VectorDimension#write_to_netcdf_dataset`.
-        """
-
-        TemporalDimension.write_to_netcdf_dataset(self, dataset, **kwargs)
-        for name in [self.name_value, self.name_bounds]:
-            try:
-                variable = dataset.variables[name]
-            except KeyError:
-                # bounds are likely missing
-                if self.bounds is not None:
-                    raise
-            variable.calendar = self.calendar
-            variable.units = self.units
+    # def write_to_netcdf_dataset(self, dataset, **kwargs):
+    #     """
+    #     Calls superclass write method then adds ``calendar`` and ``units`` attributes to time variable and time bounds
+    #     variable. See documentation for :meth:`~ocgis.interface.base.dimension.base.VectorDimension#write_to_netcdf_dataset`.
+    #     """
+    #
+    #     TemporalDimension.write_to_netcdf_dataset(self, dataset, **kwargs)
+    #     for name in [self.name_value, self.name_bounds]:
+    #         try:
+    #             variable = dataset.variables[name]
+    #         except KeyError:
+    #             # bounds are likely missing
+    #             if self.bounds is not None:
+    #                 raise
+    #         variable.calendar = self.calendar
+    #         variable.units = self.units
     
     def _format_slice_state_(self,state,slc):
         state = NcVectorDimension._format_slice_state_(self,state,slc)
@@ -121,35 +121,35 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
             ret = self.value
         return(ret)
     
-    def _get_temporal_group_dimension_(self,*args,**kwds):
-        kwds['calendar'] = self.calendar
-        kwds['units'] = self.units
-        value = kwds.pop('value')
-        bounds = kwds.pop('bounds')
-        kwds['value'] = self.get_nc_time(value)
-
-        try:
-            kwds['bounds'] = self.get_nc_time(bounds)
-        ## this may happen if the data has months in the time units. the functions that compute the datetime-numeric
-        ## conversions did not anticipate bounds.
-        except AttributeError:
-            if self._has_months_units:
-                bounds_fill = np.empty(bounds.shape)
-                bounds_fill[:,0] = self.get_nc_time(bounds[:,0])
-                bounds_fill[:,1] = self.get_nc_time(bounds[:,1])
-                kwds['bounds'] = bounds_fill
-            else:
-                raise
-
-        kwds['value_datetime'] = value
-        kwds['bounds_datetime'] = bounds
-        return(NcTemporalGroupDimension(*args,**kwds))
+    # def _get_temporal_group_dimension_(self,*args,**kwds):
+    #     kwds['calendar'] = self.calendar
+    #     kwds['units'] = self.units
+    #     value = kwds.pop('value')
+    #     bounds = kwds.pop('bounds')
+    #     kwds['value'] = self.get_nc_time(value)
+    #
+    #     try:
+    #         kwds['bounds'] = self.get_nc_time(bounds)
+    #     ## this may happen if the data has months in the time units. the functions that compute the datetime-numeric
+    #     ## conversions did not anticipate bounds.
+    #     except AttributeError:
+    #         if self._has_months_units:
+    #             bounds_fill = np.empty(bounds.shape)
+    #             bounds_fill[:,0] = self.get_nc_time(bounds[:,0])
+    #             bounds_fill[:,1] = self.get_nc_time(bounds[:,1])
+    #             kwds['bounds'] = bounds_fill
+    #         else:
+    #             raise
+    #
+    #     kwds['value_datetime'] = value
+    #     kwds['bounds_datetime'] = bounds
+    #     return(NcTemporalGroupDimension(*args,**kwds))
     
-    def _set_date_parts_(self,yld,value):
-        if self.format_time:
-            TemporalDimension._set_date_parts_(self,yld,value)
-        else:
-            yld['year'],yld['month'],yld['day'] = None,None,None
+    # def _set_date_parts_(self,yld,value):
+    #     if self.format_time:
+    #         TemporalDimension._set_date_parts_(self,yld,value)
+    #     else:
+    #         yld['year'],yld['month'],yld['day'] = None,None,None
     
     
 class NcTemporalGroupDimension(NcTemporalDimension):

@@ -70,7 +70,6 @@ class TestTemporalDimension(TestBase):
         self.assertEqual(td.units, constants.default_temporal_units)
         self.assertIsInstance(td, VectorDimension)
         self.assertFalse(td._has_months_units)
-        self.assertTrue(td.format_time)
 
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12")
         self.assertTrue(td._has_months_units)
