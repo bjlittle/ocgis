@@ -8,6 +8,22 @@ class OcgException(Exception):
         return self.message
 
 
+########################################################################################################################
+
+
+class CannotFormatTimeError(OcgException):
+    """
+    Raised when datetime objects from numeric are blocked by "format_time".
+    """
+
+    def __init__(self, property_name):
+        self.property_name = property_name
+
+    def __str__(self):
+        msg = 'Attempted to retrieve datetime values from "{0}" with "format_time" as "False". Set "format_time" to "True".'.format(self.property_name)
+        return msg
+
+
 class MultipleElementsFound(OcgException):
     """
     Raised when multiple elements are encountered in a :class:`ocgis.interface.base.dimension.spatial.SpatialDimension`

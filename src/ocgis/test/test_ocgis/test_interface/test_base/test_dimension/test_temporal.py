@@ -18,7 +18,7 @@ from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_in
     get_datetime_from_months_time_units, get_difference_in_months, get_num_from_months_time_units, \
     get_origin_datetime_from_months_units
 from ocgis.util.helpers import get_date_list
-from ocgis.exc import IncompleteSeasonError
+from ocgis.exc import IncompleteSeasonError, CannotFormatTimeError
 from ocgis.interface.base.dimension.base import VectorDimension
 
 
@@ -115,22 +115,22 @@ class TestFunctions(TestBase):
 
 
 class TestTemporalDimension(TestBase):
-    
-    def get_temporal_dimension(self,add_bounds=True,start=None,stop=None,days=1):
-        start = start or datetime.datetime(1899,1,1,12)
-        stop = stop or datetime.datetime(1901,12,31,12)
-        dates = get_date_list(start,stop,days=days)
+
+    def get_temporal_dimension(self, add_bounds=True, start=None, stop=None, days=1, name=None, format_time=True):
+        start = start or datetime.datetime(1899, 1, 1, 12)
+        stop = stop or datetime.datetime(1901, 12, 31, 12)
+        dates = get_date_list(start, stop, days=days)
         if add_bounds:
             delta = datetime.timedelta(hours=12)
             lower = np.array(dates) - delta
             upper = np.array(dates) + delta
-            bounds = np.empty((lower.shape[0],2),dtype=object)
-            bounds[:,0] = lower
-            bounds[:,1] = upper
+            bounds = np.empty((lower.shape[0], 2), dtype=object)
+            bounds[:, 0] = lower
+            bounds[:, 1] = upper
         else:
             bounds = None
-        td = TemporalDimension(value=dates,bounds=bounds)
-        return(td)
+        td = TemporalDimension(value=dates, bounds=bounds, name=name, format_time=format_time)
+        return td
 
     def test_init(self):
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)])
@@ -138,6 +138,7 @@ class TestTemporalDimension(TestBase):
         self.assertEqual(td.units, constants.default_temporal_units)
         self.assertIsInstance(td, VectorDimension)
         self.assertFalse(td._has_months_units)
+        self.assertTrue(td.format_time)
 
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12")
         self.assertTrue(td._has_months_units)
@@ -169,24 +170,35 @@ class TestTemporalDimension(TestBase):
         bounds_num = date2num(bounds_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
         bounds_options = [None, bounds_num, bounds_datetime]
         value_options = [value, value, value_datetime]
-        for value, bounds in zip(value_options, bounds_options):
-            td = TemporalDimension(value=value, bounds=bounds)
-            try:
-                self.assertNumpyAll(td.bounds_datetime, bounds_datetime)
-                self.assertNumpyAll(td.bounds_numtime, bounds_num)
-            except AssertionError:
-                self.assertIsNone(bounds)
-                self.assertIsNone(td.bounds)
-                self.assertIsNone(td.bounds_datetime)
+        for format_time in [True, False]:
+            for value, bounds in zip(value_options, bounds_options):
+                td = TemporalDimension(value=value, bounds=bounds, format_time=format_time)
+                try:
+                    try:
+                        self.assertNumpyAll(td.bounds_datetime, bounds_datetime)
+                    except CannotFormatTimeError:
+                        self.assertFalse(format_time)
+                    self.assertNumpyAll(td.bounds_numtime, bounds_num)
+                except AssertionError:
+                    self.assertIsNone(bounds)
+                    self.assertIsNone(td.bounds)
+                    try:
+                        self.assertIsNone(td.bounds_datetime)
+                    except CannotFormatTimeError:
+                        self.assertFalse(format_time)
 
     def test_extent_datetime_and_extent_numtime(self):
         value_numtime = np.array([6000., 6001., 6002])
         value_datetime = TemporalDimension(value=value_numtime).value_datetime
 
-        for value in [value_numtime, value_datetime]:
-            td = TemporalDimension(value=value)
-            self.assertEqual(td.extent_datetime, (min(value_datetime), max(value_datetime)))
-            self.assertEqual(td.extent_numtime, (6000., 6002.))
+        for format_time in [True, False]:
+            for value in [value_numtime, value_datetime]:
+                td = TemporalDimension(value=value, format_time=format_time)
+                try:
+                    self.assertEqual(td.extent_datetime, (min(value_datetime), max(value_datetime)))
+                except CannotFormatTimeError:
+                    self.assertFalse(format_time)
+                self.assertEqual(td.extent_numtime, (6000., 6002.))
 
     def test_format_slice_state(self):
         td = self.get_temporal_dimension()
@@ -251,6 +263,18 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=narr, units=units, calendar=calendar)
         res = td.get_datetime(td.value)
         self.assertTrue(all([isinstance(element, ndt) for element in res.flat]))
+
+    def test_getiter(self):
+        for format_time in [True, False]:
+            td = self.get_temporal_dimension(name='time', format_time=format_time)
+            for idx, values in td.get_iter():
+                to_test = (values['day'], values['month'], values['year'])
+                try:
+                    self.assertTrue(all([element is not None for element in to_test]))
+                    self.assertIsInstance(values['time'], dt)
+                except AssertionError:
+                    self.assertTrue(all([element is None for element in to_test]))
+                    self.assertIsInstance(values['time'], float)
 
     def test_get_numtime(self):
         units_options = [constants.default_temporal_units, 'months since 1960-5']
@@ -554,11 +578,15 @@ class TestTemporalDimension(TestBase):
     def test_value_datetime_and_value_numtime(self):
         value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
         value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
-        keywords = dict(value=[value, value_datetime])
+        keywords = dict(value=[value, value_datetime],
+                        format_time=[True, False])
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             td = TemporalDimension(**k._asdict())
             self.assertNumpyAll(td.value, k.value)
-            self.assertNumpyAll(td.value_datetime, value_datetime)
+            try:
+                self.assertNumpyAll(td.value_datetime, value_datetime)
+            except CannotFormatTimeError:
+                self.assertFalse(k.format_time)
             self.assertNumpyAll(td.value_numtime, value)
 
     def test_write_to_netcdf_dataset(self):

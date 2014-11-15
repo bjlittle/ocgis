@@ -10,7 +10,7 @@ import numpy as np
 import base
 from ocgis import constants
 from ocgis.util.logging_ocgis import ocgis_lh
-from ocgis.exc import EmptySubsetError, IncompleteSeasonError
+from ocgis.exc import EmptySubsetError, IncompleteSeasonError, CannotFormatTimeError
 from ocgis.util.helpers import get_is_date_between, iter_array, get_none_or_slice
 
 
@@ -20,6 +20,9 @@ class TemporalDimension(base.VectorDimension):
 
     :keyword str calendar: (``='standard'``) The calendar to use when converting from float to datetime objects. Any of
      the netCDF-CF calendar tyes: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
+    :keyword bool format_time: (``=True``) If ``False``, do not allow access to ``value_datetime``,
+     ``bounds_datetime``, and ``extent_datetime``. If these properties are accessed raise
+     :class:``~ocgis.exc.CannotFormatTimeError``.
     :keyword str units: (``='days since 0000-01-01 00:00:00'``) The units string to use when converting from float to
      datetime objects. See: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
     """
@@ -30,7 +33,7 @@ class TemporalDimension(base.VectorDimension):
 
     def __init__(self, *args, **kwargs):
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
-        self._format_time = kwargs.pop('format_time', None)
+        self.format_time = kwargs.pop('format_time', True)
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 
@@ -48,6 +51,8 @@ class TemporalDimension(base.VectorDimension):
 
     @property
     def bounds_datetime(self):
+        if not self.format_time:
+            raise CannotFormatTimeError('bounds_datetime')
         if self.bounds is not None:
             if self._bounds_datetime is None:
                 if get_datetime_conversion_state(self.bounds[0, 0]):
@@ -68,6 +73,8 @@ class TemporalDimension(base.VectorDimension):
 
     @property
     def extent_datetime(self):
+        if not self.format_time:
+            raise CannotFormatTimeError('extent_datetime')
         extent = self.extent
         if get_datetime_conversion_state(extent[0]):
             extent = self.get_datetime(extent)
@@ -82,6 +89,8 @@ class TemporalDimension(base.VectorDimension):
 
     @property
     def value_datetime(self):
+        if not self.format_time:
+            raise CannotFormatTimeError('value_datetime')
         if self._value_datetime is None:
             if get_datetime_conversion_state(self.value[0]):
                 self._value_datetime = np.atleast_1d(self.get_datetime(self.value))
@@ -523,13 +532,21 @@ class TemporalDimension(base.VectorDimension):
         return new_bounds, date_parts, repr_dt, dgroups
 
     def _get_iter_value_bounds_(self):
-        return self.value_datetime, self.bounds_datetime
+        if self.format_time:
+            ret = self.value_datetime, self.bounds_datetime
+        else:
+            ret = self.value_numtime, self.bounds_numtime
+        return ret
 
     def _get_temporal_group_dimension_(self, *args, **kwargs):
         return TemporalGroupDimension(*args, **kwargs)
 
     def _set_date_parts_(self, yld, value):
-        yld['year'], yld['month'], yld['day'] = value.year, value.month, value.day
+        if self.format_time:
+            fill = (value.year, value.month, value.day)
+        else:
+            fill = [None]*3
+        yld['year'], yld['month'], yld['day'] = fill
 
 
 class TemporalGroupDimension(TemporalDimension):
