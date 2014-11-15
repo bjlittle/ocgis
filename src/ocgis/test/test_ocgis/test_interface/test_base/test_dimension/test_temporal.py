@@ -1,26 +1,28 @@
 from copy import deepcopy
 from netCDF4 import num2date, date2num
 import os
+from datetime import datetime as dt
+import datetime
+from collections import deque
+import itertools
+
 import netcdftime
+import numpy as np
+
 from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.itester import itr_products_keywords
 from ocgis import constants
 from ocgis.test.base import TestBase
-from datetime import datetime as dt
 from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_interannual, get_sorted_seasons, \
     get_time_regions, iter_boolean_groups_from_time_regions, get_datetime_conversion_state, \
     get_datetime_from_months_time_units, get_difference_in_months, get_num_from_months_time_units, \
     get_origin_datetime_from_months_units
-import numpy as np
 from ocgis.util.helpers import get_date_list
-import datetime
-from collections import deque
-import itertools
 from ocgis.exc import IncompleteSeasonError
 from ocgis.interface.base.dimension.base import VectorDimension
 
 
-class Test(TestBase):
+class TestFunctions(TestBase):
 
     def test_get_datetime_conversion_state(self):
         archetypes = [45.5, datetime.datetime(2000, 1, 1), netcdftime.datetime(2000, 4, 5)]
@@ -30,24 +32,6 @@ class Test(TestBase):
                 self.assertFalse(res)
             except AssertionError:
                 self.assertEqual(type(archetype), float)
-
-    def test_iter_boolean_groups_from_time_regions(self):
-        time_regions = [[{'month': [12], 'year': [1900]}, {'month': [2, 1], 'year': [1901]}]]
-        yield_subset = True
-        raise_if_incomplete = False
-
-        start = datetime.datetime(1900, 1, 1)
-        end = datetime.datetime(1902, 12, 31)
-        value = self.get_time_series(start, end)
-        temporal_dimension = TemporalDimension(value=value)
-
-        itr = iter_boolean_groups_from_time_regions(time_regions, temporal_dimension, yield_subset=yield_subset,
-                                                    raise_if_incomplete=raise_if_incomplete)
-        itr = list(itr)
-        self.assertEqual(len(itr), 1)
-        for dgroup, sub in itr:
-            self.assertEqual(sub.value[0].year, 1900)
-            self.assertEqual(sub.value[0].month, 12)
 
     def test_get_datetime_from_months_time_units(self):
         units = "months since 1978-12"
@@ -81,6 +65,10 @@ class Test(TestBase):
         distance = get_difference_in_months(datetime.datetime(1978, 12, 1), datetime.datetime(1978, 12, 1))
         self.assertEqual(distance, 0)
 
+    def test_get_is_interannual(self):
+        self.assertTrue(get_is_interannual([11, 12, 1]))
+        self.assertFalse(get_is_interannual([10, 11, 12]))
+
     def test_get_num_from_months_time_units_1d_array(self):
         units = "months since 1978-12"
         vec = range(0, 36)
@@ -95,6 +83,35 @@ class Test(TestBase):
         units = "months since 1979-1-1 0"
         self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1979, 1, 1))
 
+    def test_get_sorted_seasons(self):
+        calc_grouping = [[9, 10, 11], [12, 1, 2], [6, 7, 8]]
+        methods = ['max', 'min']
+
+        for method in methods:
+            for perm in itertools.permutations(calc_grouping, r=3):
+                ret = get_sorted_seasons(perm, method=method)
+                if method == 'max':
+                    self.assertEqual(ret, [[6, 7, 8], [9, 10, 11], [12, 1, 2]])
+                else:
+                    self.assertEqual(ret, [[12, 1, 2], [6, 7, 8], [9, 10, 11]])
+
+    def test_iter_boolean_groups_from_time_regions(self):
+        time_regions = [[{'month': [12], 'year': [1900]}, {'month': [2, 1], 'year': [1901]}]]
+        yield_subset = True
+        raise_if_incomplete = False
+
+        start = datetime.datetime(1900, 1, 1)
+        end = datetime.datetime(1902, 12, 31)
+        value = self.get_time_series(start, end)
+        temporal_dimension = TemporalDimension(value=value)
+
+        itr = iter_boolean_groups_from_time_regions(time_regions, temporal_dimension, yield_subset=yield_subset,
+                                                    raise_if_incomplete=raise_if_incomplete)
+        itr = list(itr)
+        self.assertEqual(len(itr), 1)
+        for dgroup, sub in itr:
+            self.assertEqual(sub.value[0].year, 1900)
+            self.assertEqual(sub.value[0].month, 12)
 
 
 class TestTemporalDimension(TestBase):
@@ -144,6 +161,33 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=num, calendar='360_day', units='days since 1900-01-01')
         self.assertNumpyAll(np.array(vec), td.value_datetime)
 
+    def test_bounds_datetime_and_bounds_numtime(self):
+        value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
+        bounds_datetime = np.array([[dt(2000, 1, 1), dt(2000, 2, 1)],
+                                    [dt(2000, 2, 1), dt(2000, 3, 1)]])
+        value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
+        bounds_num = date2num(bounds_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
+        bounds_options = [None, bounds_num, bounds_datetime]
+        value_options = [value, value, value_datetime]
+        for value, bounds in zip(value_options, bounds_options):
+            td = TemporalDimension(value=value, bounds=bounds)
+            try:
+                self.assertNumpyAll(td.bounds_datetime, bounds_datetime)
+                self.assertNumpyAll(td.bounds_numtime, bounds_num)
+            except AssertionError:
+                self.assertIsNone(bounds)
+                self.assertIsNone(td.bounds)
+                self.assertIsNone(td.bounds_datetime)
+
+    def test_extent_datetime_and_extent_numtime(self):
+        value_numtime = np.array([6000., 6001., 6002])
+        value_datetime = TemporalDimension(value=value_numtime).value_datetime
+
+        for value in [value_numtime, value_datetime]:
+            td = TemporalDimension(value=value)
+            self.assertEqual(td.extent_datetime, (min(value_datetime), max(value_datetime)))
+            self.assertEqual(td.extent_numtime, (6000., 6002.))
+
     def test_format_slice_state(self):
         td = self.get_temporal_dimension()
         elements = [td.bounds_datetime, td.bounds_numtime]
@@ -170,6 +214,24 @@ class TestTemporalDimension(TestBase):
             self.assertIsNone(td._value_datetime)
             self.assertIsNone(td._bounds_datetime)
 
+    def test_get_boolean_groups_from_time_regions(self):
+        dates = get_date_list(dt(2012,1,1),dt(2013,12,31),1)
+        seasons = [[3,4,5],[6,7,8],[9,10,11],[12,1,2]]
+        td = TemporalDimension(value=dates)
+        time_regions = get_time_regions(seasons,dates,raise_if_incomplete=False)
+
+        dgroups = list(iter_boolean_groups_from_time_regions(time_regions,td))
+        ## the last winter season is not complete as it does not have enough years
+        self.assertEqual(len(dgroups),7)
+
+        to_test = []
+        for dgroup in dgroups:
+            sub = td[dgroup]
+            ## (upper and lower values of time vector, count of elements in time group, the middle value of the vector)
+            to_test.append([sub.extent, sub.shape[0], sub[sub.shape[0]/2].value[0]])
+        correct = [[(datetime.datetime(2012, 3, 1, 0, 0), datetime.datetime(2012, 5, 31, 0, 0)), 92, datetime.datetime(2012, 4, 16, 0, 0)], [(datetime.datetime(2012, 6, 1, 0, 0), datetime.datetime(2012, 8, 31, 0, 0)), 92, datetime.datetime(2012, 7, 17, 0, 0)], [(datetime.datetime(2012, 9, 1, 0, 0), datetime.datetime(2012, 11, 30, 0, 0)), 91, datetime.datetime(2012, 10, 16, 0, 0)], [(datetime.datetime(2012, 12, 1, 0, 0), datetime.datetime(2013, 2, 28, 0, 0)), 90, datetime.datetime(2013, 1, 15, 0, 0)], [(datetime.datetime(2013, 3, 1, 0, 0), datetime.datetime(2013, 5, 31, 0, 0)), 92, datetime.datetime(2013, 4, 16, 0, 0)], [(datetime.datetime(2013, 6, 1, 0, 0), datetime.datetime(2013, 8, 31, 0, 0)), 92, datetime.datetime(2013, 7, 17, 0, 0)], [(datetime.datetime(2013, 9, 1, 0, 0), datetime.datetime(2013, 11, 30, 0, 0)), 91, datetime.datetime(2013, 10, 16, 0, 0)]]
+        self.assertEqual(to_test,correct)
+
     def test_get_datetime(self):
         td = TemporalDimension(value=[5, 6])
         dts = np.array([dt(2000, 1, 15, 12), dt(2000, 2, 15, 12)])
@@ -189,6 +251,14 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=narr, units=units, calendar=calendar)
         res = td.get_datetime(td.value)
         self.assertTrue(all([isinstance(element, ndt) for element in res.flat]))
+
+    def test_get_numtime(self):
+        units_options = [constants.default_temporal_units, 'months since 1960-5']
+        value_options = [np.array([5000., 5001]), np.array([5, 6, 7])]
+        for units, value in zip(units_options, value_options):
+            td = TemporalDimension(value=value, units=units)
+            nums = td.get_numtime(td.value_datetime)
+            self.assertNumpyAll(nums, value)
 
     def test_get_grouping(self):
         td = self.get_temporal_dimension()
@@ -261,7 +331,7 @@ class TestTemporalDimension(TestBase):
         tg = td.get_grouping([[3,4,5]])
         self.assertEqual(tg.value[0],dt(2005,4,16))
     
-    def test_get_grouping_season_empty_with_year_missing_month(self):
+    def test_get_grouping_seasonal_empty_with_year_missing_month(self):
         dt1 = datetime.datetime(1900,01,01)
         dt2 = datetime.datetime(1903,1,31)
         dates = get_date_list(dt1,dt2,days=1)
@@ -309,18 +379,6 @@ class TestTemporalDimension(TestBase):
             self.assertNumpyAll(tg.dgroups[ii], dgroups[ii])
         self.assertEqual(len(tg.dgroups), len(dgroups))
     
-    def test_get_grouping_seasonal_unique_flag_winter_season(self):
-        """Test with a single winter season using the unique flag."""
-
-        dt1 = datetime.datetime(1900, 01, 01)
-        dt2 = datetime.datetime(1902, 12, 31)
-        dates = get_date_list(dt1, dt2, days=1)
-        td = TemporalDimension(value=dates)
-        group = [[12, 1, 2], 'unique']
-        tg = td.get_grouping(group)
-        self.assertEqual(tg.value.shape[0], 2)
-        self.assertEqual(tg.bounds.tolist(), [[datetime.datetime(1900, 12, 1, 0, 0), datetime.datetime(1901, 2, 28, 0, 0)], [datetime.datetime(1901, 12, 1, 0, 0), datetime.datetime(1902, 2, 28, 0, 0)]])
-
     def test_get_grouping_seasonal_unique_flag_all_seasons(self):
         """Test unique flag with all seasons."""
 
@@ -341,6 +399,18 @@ class TestTemporalDimension(TestBase):
 
         self.assertEqual(group.value.tolist(), [datetime.datetime(1900, 4, 16, 0, 0), datetime.datetime(1900, 7, 17, 0, 0), datetime.datetime(1900, 10, 16, 0, 0), datetime.datetime(1901, 1, 15, 0, 0), datetime.datetime(1901, 4, 16, 0, 0), datetime.datetime(1901, 7, 17, 0, 0), datetime.datetime(1901, 10, 16, 0, 0), datetime.datetime(1902, 1, 15, 0, 0), datetime.datetime(1902, 4, 16, 0, 0), datetime.datetime(1902, 7, 17, 0, 0), datetime.datetime(1902, 10, 16, 0, 0)])
         self.assertEqual(group.bounds.tolist(), [[datetime.datetime(1900, 3, 1, 0, 0), datetime.datetime(1900, 5, 31, 0, 0)], [datetime.datetime(1900, 6, 1, 0, 0), datetime.datetime(1900, 8, 31, 0, 0)], [datetime.datetime(1900, 9, 1, 0, 0), datetime.datetime(1900, 11, 30, 0, 0)], [datetime.datetime(1900, 12, 1, 0, 0), datetime.datetime(1901, 2, 28, 0, 0)], [datetime.datetime(1901, 3, 1, 0, 0), datetime.datetime(1901, 5, 31, 0, 0)], [datetime.datetime(1901, 6, 1, 0, 0), datetime.datetime(1901, 8, 31, 0, 0)], [datetime.datetime(1901, 9, 1, 0, 0), datetime.datetime(1901, 11, 30, 0, 0)], [datetime.datetime(1901, 12, 1, 0, 0), datetime.datetime(1902, 2, 28, 0, 0)], [datetime.datetime(1902, 3, 1, 0, 0), datetime.datetime(1902, 5, 31, 0, 0)], [datetime.datetime(1902, 6, 1, 0, 0), datetime.datetime(1902, 8, 31, 0, 0)], [datetime.datetime(1902, 9, 1, 0, 0), datetime.datetime(1902, 11, 30, 0, 0)]])
+
+    def test_get_grouping_seasonal_unique_flag_winter_season(self):
+        """Test with a single winter season using the unique flag."""
+
+        dt1 = datetime.datetime(1900, 01, 01)
+        dt2 = datetime.datetime(1902, 12, 31)
+        dates = get_date_list(dt1, dt2, days=1)
+        td = TemporalDimension(value=dates)
+        group = [[12, 1, 2], 'unique']
+        tg = td.get_grouping(group)
+        self.assertEqual(tg.value.shape[0], 2)
+        self.assertEqual(tg.bounds.tolist(), [[datetime.datetime(1900, 12, 1, 0, 0), datetime.datetime(1901, 2, 28, 0, 0)], [datetime.datetime(1901, 12, 1, 0, 0), datetime.datetime(1902, 2, 28, 0, 0)]])
 
     def test_get_grouping_seasonal_year_flag(self):
         ## test with year flag
@@ -377,6 +447,25 @@ class TestTemporalDimension(TestBase):
             # '[datetime.datetime(2013, 1, 1, 0, 0) datetime.datetime(2013, 1, 2, 0, 0)\n datetime.datetime(2013, 1, 3, 0, 0) datetime.datetime(2013, 1, 4, 0, 0)\n datetime.datetime(2013, 1, 5, 0, 0) datetime.datetime(2013, 1, 6, 0, 0)\n datetime.datetime(2013, 1, 7, 0, 0) datetime.datetime(2013, 1, 8, 0, 0)\n datetime.datetime(2013, 1, 9, 0, 0) datetime.datetime(2013, 1, 10, 0, 0)\n datetime.datetime(2013, 1, 11, 0, 0) datetime.datetime(2013, 1, 12, 0, 0)\n datetime.datetime(2013, 1, 13, 0, 0) datetime.datetime(2013, 1, 14, 0, 0)\n datetime.datetime(2013, 1, 15, 0, 0) datetime.datetime(2013, 1, 16, 0, 0)\n datetime.datetime(2013, 1, 17, 0, 0) datetime.datetime(2013, 1, 18, 0, 0)\n datetime.datetime(2013, 1, 19, 0, 0) datetime.datetime(2013, 1, 20, 0, 0)\n datetime.datetime(2013, 1, 21, 0, 0) datetime.datetime(2013, 1, 22, 0, 0)\n datetime.datetime(2013, 1, 23, 0, 0) datetime.datetime(2013, 1, 24, 0, 0)\n datetime.datetime(2013, 1, 25, 0, 0) datetime.datetime(2013, 1, 26, 0, 0)\n datetime.datetime(2013, 1, 27, 0, 0) datetime.datetime(2013, 1, 28, 0, 0)\n datetime.datetime(2013, 1, 29, 0, 0) datetime.datetime(2013, 1, 30, 0, 0)\n datetime.datetime(2013, 1, 31, 0, 0) datetime.datetime(2013, 2, 1, 0, 0)\n datetime.datetime(2013, 2, 2, 0, 0) datetime.datetime(2013, 2, 3, 0, 0)\n datetime.datetime(2013, 2, 4, 0, 0) datetime.datetime(2013, 2, 5, 0, 0)\n datetime.datetime(2013, 2, 6, 0, 0) datetime.datetime(2013, 2, 7, 0, 0)\n datetime.datetime(2013, 2, 8, 0, 0) datetime.datetime(2013, 2, 9, 0, 0)\n datetime.datetime(2013, 2, 10, 0, 0) datetime.datetime(2013, 2, 11, 0, 0)\n datetime.datetime(2013, 2, 12, 0, 0) datetime.datetime(2013, 2, 13, 0, 0)\n datetime.datetime(2013, 2, 14, 0, 0) datetime.datetime(2013, 2, 15, 0, 0)\n datetime.datetime(2013, 2, 16, 0, 0) datetime.datetime(2013, 2, 17, 0, 0)\n datetime.datetime(2013, 2, 18, 0, 0) datetime.datetime(2013, 2, 19, 0, 0)\n datetime.datetime(2013, 2, 20, 0, 0) datetime.datetime(2013, 2, 21, 0, 0)\n datetime.datetime(2013, 2, 22, 0, 0) datetime.datetime(2013, 2, 23, 0, 0)\n datetime.datetime(2013, 2, 24, 0, 0) datetime.datetime(2013, 2, 25, 0, 0)\n datetime.datetime(2013, 2, 26, 0, 0) datetime.datetime(2013, 2, 27, 0, 0)\n datetime.datetime(2013, 2, 28, 0, 0) datetime.datetime(2013, 12, 1, 0, 0)\n datetime.datetime(2013, 12, 2, 0, 0) datetime.datetime(2013, 12, 3, 0, 0)\n datetime.datetime(2013, 12, 4, 0, 0) datetime.datetime(2013, 12, 5, 0, 0)\n datetime.datetime(2013, 12, 6, 0, 0) datetime.datetime(2013, 12, 7, 0, 0)\n datetime.datetime(2013, 12, 8, 0, 0) datetime.datetime(2013, 12, 9, 0, 0)\n datetime.datetime(2013, 12, 10, 0, 0)\n datetime.datetime(2013, 12, 11, 0, 0)\n datetime.datetime(2013, 12, 12, 0, 0)\n datetime.datetime(2013, 12, 13, 0, 0)\n datetime.datetime(2013, 12, 14, 0, 0)\n datetime.datetime(2013, 12, 15, 0, 0)\n datetime.datetime(2013, 12, 16, 0, 0)\n datetime.datetime(2013, 12, 17, 0, 0)\n datetime.datetime(2013, 12, 18, 0, 0)\n datetime.datetime(2013, 12, 19, 0, 0)\n datetime.datetime(2013, 12, 20, 0, 0)\n datetime.datetime(2013, 12, 21, 0, 0)\n datetime.datetime(2013, 12, 22, 0, 0)\n datetime.datetime(2013, 12, 23, 0, 0)\n datetime.datetime(2013, 12, 24, 0, 0)\n datetime.datetime(2013, 12, 25, 0, 0)\n datetime.datetime(2013, 12, 26, 0, 0)\n datetime.datetime(2013, 12, 27, 0, 0)\n datetime.datetime(2013, 12, 28, 0, 0)\n datetime.datetime(2013, 12, 29, 0, 0)\n datetime.datetime(2013, 12, 30, 0, 0)\n datetime.datetime(2013, 12, 31, 0, 0)]'
             self.assertNumpyAll(td.value[tg.dgroups[1]],np.loads('\x80\x02cnumpy.core.multiarray\n_reconstruct\nq\x01cnumpy\nndarray\nq\x02K\x00\x85U\x01b\x87Rq\x03(K\x01KZ\x85cnumpy\ndtype\nq\x04U\x02O8K\x00K\x01\x87Rq\x05(K\x03U\x01|NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK?tb\x89]q\x06(cdatetime\ndatetime\nq\x07U\n\x07\xdd\x01\x01\x00\x00\x00\x00\x00\x00\x85Rq\x08h\x07U\n\x07\xdd\x01\x02\x00\x00\x00\x00\x00\x00\x85Rq\th\x07U\n\x07\xdd\x01\x03\x00\x00\x00\x00\x00\x00\x85Rq\nh\x07U\n\x07\xdd\x01\x04\x00\x00\x00\x00\x00\x00\x85Rq\x0bh\x07U\n\x07\xdd\x01\x05\x00\x00\x00\x00\x00\x00\x85Rq\x0ch\x07U\n\x07\xdd\x01\x06\x00\x00\x00\x00\x00\x00\x85Rq\rh\x07U\n\x07\xdd\x01\x07\x00\x00\x00\x00\x00\x00\x85Rq\x0eh\x07U\n\x07\xdd\x01\x08\x00\x00\x00\x00\x00\x00\x85Rq\x0fh\x07U\n\x07\xdd\x01\t\x00\x00\x00\x00\x00\x00\x85Rq\x10h\x07U\n\x07\xdd\x01\n\x00\x00\x00\x00\x00\x00\x85Rq\x11h\x07U\n\x07\xdd\x01\x0b\x00\x00\x00\x00\x00\x00\x85Rq\x12h\x07U\n\x07\xdd\x01\x0c\x00\x00\x00\x00\x00\x00\x85Rq\x13h\x07U\n\x07\xdd\x01\r\x00\x00\x00\x00\x00\x00\x85Rq\x14h\x07U\n\x07\xdd\x01\x0e\x00\x00\x00\x00\x00\x00\x85Rq\x15h\x07U\n\x07\xdd\x01\x0f\x00\x00\x00\x00\x00\x00\x85Rq\x16h\x07U\n\x07\xdd\x01\x10\x00\x00\x00\x00\x00\x00\x85Rq\x17h\x07U\n\x07\xdd\x01\x11\x00\x00\x00\x00\x00\x00\x85Rq\x18h\x07U\n\x07\xdd\x01\x12\x00\x00\x00\x00\x00\x00\x85Rq\x19h\x07U\n\x07\xdd\x01\x13\x00\x00\x00\x00\x00\x00\x85Rq\x1ah\x07U\n\x07\xdd\x01\x14\x00\x00\x00\x00\x00\x00\x85Rq\x1bh\x07U\n\x07\xdd\x01\x15\x00\x00\x00\x00\x00\x00\x85Rq\x1ch\x07U\n\x07\xdd\x01\x16\x00\x00\x00\x00\x00\x00\x85Rq\x1dh\x07U\n\x07\xdd\x01\x17\x00\x00\x00\x00\x00\x00\x85Rq\x1eh\x07U\n\x07\xdd\x01\x18\x00\x00\x00\x00\x00\x00\x85Rq\x1fh\x07U\n\x07\xdd\x01\x19\x00\x00\x00\x00\x00\x00\x85Rq h\x07U\n\x07\xdd\x01\x1a\x00\x00\x00\x00\x00\x00\x85Rq!h\x07U\n\x07\xdd\x01\x1b\x00\x00\x00\x00\x00\x00\x85Rq"h\x07U\n\x07\xdd\x01\x1c\x00\x00\x00\x00\x00\x00\x85Rq#h\x07U\n\x07\xdd\x01\x1d\x00\x00\x00\x00\x00\x00\x85Rq$h\x07U\n\x07\xdd\x01\x1e\x00\x00\x00\x00\x00\x00\x85Rq%h\x07U\n\x07\xdd\x01\x1f\x00\x00\x00\x00\x00\x00\x85Rq&h\x07U\n\x07\xdd\x02\x01\x00\x00\x00\x00\x00\x00\x85Rq\'h\x07U\n\x07\xdd\x02\x02\x00\x00\x00\x00\x00\x00\x85Rq(h\x07U\n\x07\xdd\x02\x03\x00\x00\x00\x00\x00\x00\x85Rq)h\x07U\n\x07\xdd\x02\x04\x00\x00\x00\x00\x00\x00\x85Rq*h\x07U\n\x07\xdd\x02\x05\x00\x00\x00\x00\x00\x00\x85Rq+h\x07U\n\x07\xdd\x02\x06\x00\x00\x00\x00\x00\x00\x85Rq,h\x07U\n\x07\xdd\x02\x07\x00\x00\x00\x00\x00\x00\x85Rq-h\x07U\n\x07\xdd\x02\x08\x00\x00\x00\x00\x00\x00\x85Rq.h\x07U\n\x07\xdd\x02\t\x00\x00\x00\x00\x00\x00\x85Rq/h\x07U\n\x07\xdd\x02\n\x00\x00\x00\x00\x00\x00\x85Rq0h\x07U\n\x07\xdd\x02\x0b\x00\x00\x00\x00\x00\x00\x85Rq1h\x07U\n\x07\xdd\x02\x0c\x00\x00\x00\x00\x00\x00\x85Rq2h\x07U\n\x07\xdd\x02\r\x00\x00\x00\x00\x00\x00\x85Rq3h\x07U\n\x07\xdd\x02\x0e\x00\x00\x00\x00\x00\x00\x85Rq4h\x07U\n\x07\xdd\x02\x0f\x00\x00\x00\x00\x00\x00\x85Rq5h\x07U\n\x07\xdd\x02\x10\x00\x00\x00\x00\x00\x00\x85Rq6h\x07U\n\x07\xdd\x02\x11\x00\x00\x00\x00\x00\x00\x85Rq7h\x07U\n\x07\xdd\x02\x12\x00\x00\x00\x00\x00\x00\x85Rq8h\x07U\n\x07\xdd\x02\x13\x00\x00\x00\x00\x00\x00\x85Rq9h\x07U\n\x07\xdd\x02\x14\x00\x00\x00\x00\x00\x00\x85Rq:h\x07U\n\x07\xdd\x02\x15\x00\x00\x00\x00\x00\x00\x85Rq;h\x07U\n\x07\xdd\x02\x16\x00\x00\x00\x00\x00\x00\x85Rq<h\x07U\n\x07\xdd\x02\x17\x00\x00\x00\x00\x00\x00\x85Rq=h\x07U\n\x07\xdd\x02\x18\x00\x00\x00\x00\x00\x00\x85Rq>h\x07U\n\x07\xdd\x02\x19\x00\x00\x00\x00\x00\x00\x85Rq?h\x07U\n\x07\xdd\x02\x1a\x00\x00\x00\x00\x00\x00\x85Rq@h\x07U\n\x07\xdd\x02\x1b\x00\x00\x00\x00\x00\x00\x85RqAh\x07U\n\x07\xdd\x02\x1c\x00\x00\x00\x00\x00\x00\x85RqBh\x07U\n\x07\xdd\x0c\x01\x00\x00\x00\x00\x00\x00\x85RqCh\x07U\n\x07\xdd\x0c\x02\x00\x00\x00\x00\x00\x00\x85RqDh\x07U\n\x07\xdd\x0c\x03\x00\x00\x00\x00\x00\x00\x85RqEh\x07U\n\x07\xdd\x0c\x04\x00\x00\x00\x00\x00\x00\x85RqFh\x07U\n\x07\xdd\x0c\x05\x00\x00\x00\x00\x00\x00\x85RqGh\x07U\n\x07\xdd\x0c\x06\x00\x00\x00\x00\x00\x00\x85RqHh\x07U\n\x07\xdd\x0c\x07\x00\x00\x00\x00\x00\x00\x85RqIh\x07U\n\x07\xdd\x0c\x08\x00\x00\x00\x00\x00\x00\x85RqJh\x07U\n\x07\xdd\x0c\t\x00\x00\x00\x00\x00\x00\x85RqKh\x07U\n\x07\xdd\x0c\n\x00\x00\x00\x00\x00\x00\x85RqLh\x07U\n\x07\xdd\x0c\x0b\x00\x00\x00\x00\x00\x00\x85RqMh\x07U\n\x07\xdd\x0c\x0c\x00\x00\x00\x00\x00\x00\x85RqNh\x07U\n\x07\xdd\x0c\r\x00\x00\x00\x00\x00\x00\x85RqOh\x07U\n\x07\xdd\x0c\x0e\x00\x00\x00\x00\x00\x00\x85RqPh\x07U\n\x07\xdd\x0c\x0f\x00\x00\x00\x00\x00\x00\x85RqQh\x07U\n\x07\xdd\x0c\x10\x00\x00\x00\x00\x00\x00\x85RqRh\x07U\n\x07\xdd\x0c\x11\x00\x00\x00\x00\x00\x00\x85RqSh\x07U\n\x07\xdd\x0c\x12\x00\x00\x00\x00\x00\x00\x85RqTh\x07U\n\x07\xdd\x0c\x13\x00\x00\x00\x00\x00\x00\x85RqUh\x07U\n\x07\xdd\x0c\x14\x00\x00\x00\x00\x00\x00\x85RqVh\x07U\n\x07\xdd\x0c\x15\x00\x00\x00\x00\x00\x00\x85RqWh\x07U\n\x07\xdd\x0c\x16\x00\x00\x00\x00\x00\x00\x85RqXh\x07U\n\x07\xdd\x0c\x17\x00\x00\x00\x00\x00\x00\x85RqYh\x07U\n\x07\xdd\x0c\x18\x00\x00\x00\x00\x00\x00\x85RqZh\x07U\n\x07\xdd\x0c\x19\x00\x00\x00\x00\x00\x00\x85Rq[h\x07U\n\x07\xdd\x0c\x1a\x00\x00\x00\x00\x00\x00\x85Rq\\h\x07U\n\x07\xdd\x0c\x1b\x00\x00\x00\x00\x00\x00\x85Rq]h\x07U\n\x07\xdd\x0c\x1c\x00\x00\x00\x00\x00\x00\x85Rq^h\x07U\n\x07\xdd\x0c\x1d\x00\x00\x00\x00\x00\x00\x85Rq_h\x07U\n\x07\xdd\x0c\x1e\x00\x00\x00\x00\x00\x00\x85Rq`h\x07U\n\x07\xdd\x0c\x1f\x00\x00\x00\x00\x00\x00\x85Rqaetb.'))
 
+    def test_get_time_region_value_only(self):
+        dates = get_date_list(dt(2002,1,31),dt(2009,12,31),1)
+        td = TemporalDimension(value=dates)
+
+        ret,indices = td.get_time_region({'month':[8]},return_indices=True)
+        self.assertEqual(set([8]),set([d.month for d in ret.value.flat]))
+
+        ret,indices = td.get_time_region({'year':[2008,2004]},return_indices=True)
+        self.assertEqual(set([2008,2004]),set([d.year for d in ret.value.flat]))
+
+        ret,indices = td.get_time_region({'day':[20,31]},return_indices=True)
+        self.assertEqual(set([20,31]),set([d.day for d in ret.value.flat]))
+
+        ret,indices = td.get_time_region({'day':[20,31],'month':[9,10],'year':[2003]},return_indices=True)
+        self.assertNumpyAll(ret.value,np.array([dt(2003,9,20),dt(2003,10,20),dt(2003,10,31,)]))
+        self.assertEqual(ret.shape,indices.shape)
+
+        self.assertEqual(ret.extent,(datetime.datetime(2003,9,20),datetime.datetime(2003,10,31)))
+
     def test_months_in_time_units(self):
         units = "months since 1978-12"
         vec = range(0, 36)
@@ -405,32 +494,6 @@ class TestTemporalDimension(TestBase):
         value = np.array([31])
         td = TemporalDimension(value=value, units=units, calendar='standard')
         self.assertFalse(td._has_months_units)
-
-    def test_get_numtime(self):
-        units_options = [constants.default_temporal_units, 'months since 1960-5']
-        value_options = [np.array([5000., 5001]), np.array([5, 6, 7])]
-        for units, value in zip(units_options, value_options):
-            td = TemporalDimension(value=value, units=units)
-            nums = td.get_numtime(td.value_datetime)
-            self.assertNumpyAll(nums, value)
-
-    def test_get_boolean_groups_from_time_regions(self):
-        dates = get_date_list(dt(2012,1,1),dt(2013,12,31),1)
-        seasons = [[3,4,5],[6,7,8],[9,10,11],[12,1,2]]
-        td = TemporalDimension(value=dates)
-        time_regions = get_time_regions(seasons,dates,raise_if_incomplete=False)
-
-        dgroups = list(iter_boolean_groups_from_time_regions(time_regions,td))
-        ## the last winter season is not complete as it does not have enough years
-        self.assertEqual(len(dgroups),7)
-
-        to_test = []
-        for dgroup in dgroups:
-            sub = td[dgroup]
-            ## (upper and lower values of time vector, count of elements in time group, the middle value of the vector)
-            to_test.append([sub.extent, sub.shape[0], sub[sub.shape[0]/2].value[0]])
-        correct = [[(datetime.datetime(2012, 3, 1, 0, 0), datetime.datetime(2012, 5, 31, 0, 0)), 92, datetime.datetime(2012, 4, 16, 0, 0)], [(datetime.datetime(2012, 6, 1, 0, 0), datetime.datetime(2012, 8, 31, 0, 0)), 92, datetime.datetime(2012, 7, 17, 0, 0)], [(datetime.datetime(2012, 9, 1, 0, 0), datetime.datetime(2012, 11, 30, 0, 0)), 91, datetime.datetime(2012, 10, 16, 0, 0)], [(datetime.datetime(2012, 12, 1, 0, 0), datetime.datetime(2013, 2, 28, 0, 0)), 90, datetime.datetime(2013, 1, 15, 0, 0)], [(datetime.datetime(2013, 3, 1, 0, 0), datetime.datetime(2013, 5, 31, 0, 0)), 92, datetime.datetime(2013, 4, 16, 0, 0)], [(datetime.datetime(2013, 6, 1, 0, 0), datetime.datetime(2013, 8, 31, 0, 0)), 92, datetime.datetime(2013, 7, 17, 0, 0)], [(datetime.datetime(2013, 9, 1, 0, 0), datetime.datetime(2013, 11, 30, 0, 0)), 91, datetime.datetime(2013, 10, 16, 0, 0)]]
-        self.assertEqual(to_test,correct)
 
     def test_seasonal_get_time_regions(self):
         dates = get_date_list(dt(2012,1,1),dt(2013,12,31),1)
@@ -468,7 +531,7 @@ class TestTemporalDimension(TestBase):
         time_regions = get_time_regions(calc_grouping,dates,raise_if_incomplete=False)
         correct = [[{'month': [3, 4, 5], 'year': [2012]}], [{'month': [6, 7, 8], 'year': [2012]}], [{'month': [9, 10, 11], 'year': [2012]}], [{'month': [12], 'year': [2012]}, {'month': [2, 1], 'year': [2013]}], [{'month': [3, 4, 5], 'year': [2013]}], [{'month': [6, 7, 8], 'year': [2013]}], [{'month': [9, 10, 11], 'year': [2013]}]]
         self.assertEqual(time_regions,correct)
-        
+
     def test_time_range_subset(self):
         dt1 = datetime.datetime(1950,01,01,12)
         dt2 = datetime.datetime(1950,12,31,12)
@@ -487,6 +550,16 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=dates,bounds=bounds)
         ret = td.get_between(r1,r2)
         self.assertEqual(ret.value[-1],datetime.datetime(1950,12,31,12,0))
+
+    def test_value_datetime_and_value_numtime(self):
+        value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
+        value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
+        keywords = dict(value=[value, value_datetime])
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            td = TemporalDimension(**k._asdict())
+            self.assertNumpyAll(td.value, k.value)
+            self.assertNumpyAll(td.value_datetime, value_datetime)
+            self.assertNumpyAll(td.value_numtime, value)
 
     def test_write_to_netcdf_dataset(self):
         rd = self.test_data.get_rd('cancm4_tas')
@@ -525,78 +598,6 @@ class TestTemporalDimension(TestBase):
             except AttributeError:
                 self.assertFalse(k.with_bounds)
                 self.assertIsNone(original_bounds)
-
-    def test_bounds_datetime_and_bounds_numtime(self):
-        value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
-        bounds_datetime = np.array([[dt(2000, 1, 1), dt(2000, 2, 1)],
-                                    [dt(2000, 2, 1), dt(2000, 3, 1)]])
-        value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
-        bounds_num = date2num(bounds_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
-        bounds_options = [None, bounds_num, bounds_datetime]
-        value_options = [value, value, value_datetime]
-        for value, bounds in zip(value_options, bounds_options):
-            td = TemporalDimension(value=value, bounds=bounds)
-            try:
-                self.assertNumpyAll(td.bounds_datetime, bounds_datetime)
-                self.assertNumpyAll(td.bounds_numtime, bounds_num)
-            except AssertionError:
-                self.assertIsNone(bounds)
-                self.assertIsNone(td.bounds)
-                self.assertIsNone(td.bounds_datetime)
-
-    def test_extent_datetime_and_extent_numtime(self):
-        value_numtime = np.array([6000., 6001., 6002])
-        value_datetime = TemporalDimension(value=value_numtime).value_datetime
-
-        for value in [value_numtime, value_datetime]:
-            td = TemporalDimension(value=value)
-            self.assertEqual(td.extent_datetime, (min(value_datetime), max(value_datetime)))
-            self.assertEqual(td.extent_numtime, (6000., 6002.))
-
-    def test_value_datetime_and_value_numtime(self):
-        value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
-        value = date2num(value_datetime, constants.default_temporal_units, calendar=constants.default_temporal_calendar)
-        keywords = dict(value=[value, value_datetime])
-        for k in itr_products_keywords(keywords, as_namedtuple=True):
-            td = TemporalDimension(**k._asdict())
-            self.assertNumpyAll(td.value, k.value)
-            self.assertNumpyAll(td.value_datetime, value_datetime)
-            self.assertNumpyAll(td.value_numtime, value)
-
-    def test_get_sorted_seasons(self):
-        calc_grouping = [[9, 10, 11], [12, 1, 2], [6, 7, 8]]
-        methods = ['max', 'min']
-
-        for method in methods:
-            for perm in itertools.permutations(calc_grouping, r=3):
-                ret = get_sorted_seasons(perm, method=method)
-                if method == 'max':
-                    self.assertEqual(ret, [[6, 7, 8], [9, 10, 11], [12, 1, 2]])
-                else:
-                    self.assertEqual(ret, [[12, 1, 2], [6, 7, 8], [9, 10, 11]])
-        
-    def test_get_is_interannual(self):       
-        self.assertTrue(get_is_interannual([11,12,1]))
-        self.assertFalse(get_is_interannual([10,11,12]))
-    
-    def test_get_time_region_value_only(self):
-        dates = get_date_list(dt(2002,1,31),dt(2009,12,31),1)
-        td = TemporalDimension(value=dates)
-        
-        ret,indices = td.get_time_region({'month':[8]},return_indices=True)
-        self.assertEqual(set([8]),set([d.month for d in ret.value.flat]))
-        
-        ret,indices = td.get_time_region({'year':[2008,2004]},return_indices=True)
-        self.assertEqual(set([2008,2004]),set([d.year for d in ret.value.flat]))
-        
-        ret,indices = td.get_time_region({'day':[20,31]},return_indices=True)
-        self.assertEqual(set([20,31]),set([d.day for d in ret.value.flat]))
-        
-        ret,indices = td.get_time_region({'day':[20,31],'month':[9,10],'year':[2003]},return_indices=True)
-        self.assertNumpyAll(ret.value,np.array([dt(2003,9,20),dt(2003,10,20),dt(2003,10,31,)]))
-        self.assertEqual(ret.shape,indices.shape)
-        
-        self.assertEqual(ret.extent,(datetime.datetime(2003,9,20),datetime.datetime(2003,10,31)))
 
 
 class TestTemporalGroupDimension(TestBase):

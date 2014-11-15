@@ -1,20 +1,22 @@
-import netcdftime
-import base
-import numpy as np
 from collections import deque
 import itertools
 import datetime
+from copy import deepcopy
+import netCDF4 as nc
+
+import netcdftime
+import numpy as np
+
+import base
 from ocgis import constants
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.exc import EmptySubsetError, IncompleteSeasonError
 from ocgis.util.helpers import get_is_date_between, iter_array, get_none_or_slice
-from copy import deepcopy
-import netCDF4 as nc
 
 
 class TemporalDimension(base.VectorDimension):
     """
-    .. note:: Accepts all arguments to :class:`~ocgis.interface.base.dimension.base.VectorDimension`.
+    .. note:: Accepts all parameters to :class:`~ocgis.interface.base.dimension.base.VectorDimension`.
 
     :keyword str calendar: (``='standard'``) The calendar to use when converting from float to datetime objects. Any of
      the netCDF-CF calendar tyes: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
