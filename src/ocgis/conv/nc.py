@@ -3,11 +3,10 @@ import ocgis
 from ocgis.conv.base import AbstractConverter
 import netCDF4 as nc
 from ocgis import constants
-from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.interface.base.crs import CFWGS84
-from ocgis.interface.nc.temporal import NcTemporalGroupDimension
+from ocgis.interface.base.dimension.temporal import TemporalGroupDimension
 
-    
+
 class NcConverter(AbstractConverter):
     _ext = 'nc'
     
@@ -112,7 +111,7 @@ class NcConverter(AbstractConverter):
         ## bounds attribute should be not be added.
         has_climatology_bounds = False
         
-        if isinstance(temporal,NcTemporalGroupDimension):
+        if isinstance(temporal,TemporalGroupDimension):
             ## update flag to indicate climatology bounds are present on the
             ## output dataset
             has_climatology_bounds = True
@@ -151,7 +150,7 @@ class NcConverter(AbstractConverter):
             setattr(times,key,value)
 
         ## add climatology bounds
-        if isinstance(temporal,NcTemporalGroupDimension):
+        if isinstance(temporal,TemporalGroupDimension):
             setattr(times,'climatology','climatology_bounds')
                         
         ## level variable
