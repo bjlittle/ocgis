@@ -8,6 +8,10 @@ from ocgis import constants
 
 
 class NcTemporalDimension(TemporalDimension, NcVectorDimension):
+
+    def __init__(self, *args, **kwargs):
+        TemporalDimension.__init__(self, *args, **kwargs)
+
     # _attrs_slice = ('uid','_value','_src_idx','_value_datetime')
     
     # def __init__(self, *args, **kwds):
@@ -50,9 +54,9 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #         self._value_datetime = np.atleast_1d(self.get_datetime(self.value))
     #     return self._value_datetime
     
-    def get_between(self,lower,upper,return_indices=False):
-        lower,upper = tuple(self.get_nc_time([lower,upper]))
-        return(NcVectorDimension.get_between(self,lower,upper,return_indices=return_indices))
+    # def get_between(self,lower,upper,return_indices=False):
+    #     lower,upper = tuple(self.get_nc_time([lower,upper]))
+    #     return(NcVectorDimension.get_between(self,lower,upper,return_indices=return_indices))
         
     # def get_datetime(self,arr):
     #     ## if there are month units, call the special procedure to convert those
@@ -102,24 +106,24 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #         variable.calendar = self.calendar
     #         variable.units = self.units
     
-    def _format_slice_state_(self,state,slc):
-        state = NcVectorDimension._format_slice_state_(self,state,slc)
-        state.bounds_datetime = get_none_or_slice(state._bounds_datetime,(slc,slice(None)))
-        return(state)
+    # def _format_slice_state_(self,state,slc):
+    #     state = NcVectorDimension._format_slice_state_(self,state,slc)
+    #     state.bounds_datetime = get_none_or_slice(state._bounds_datetime,(slc,slice(None)))
+    #     return(state)
     
-    def _get_datetime_bounds_(self):
-        if self.format_time:
-            ret = self.bounds_datetime
-        else:
-            ret = self.bounds
-        return(ret)
-    
-    def _get_datetime_value_(self):
-        if self.format_time:
-            ret = self.value_datetime
-        else:
-            ret = self.value
-        return(ret)
+    # def _get_datetime_bounds_(self):
+    #     if self.format_time:
+    #         ret = self.bounds_datetime
+    #     else:
+    #         ret = self.bounds
+    #     return(ret)
+    #
+    # def _get_datetime_value_(self):
+    #     if self.format_time:
+    #         ret = self.value_datetime
+    #     else:
+    #         ret = self.value
+    #     return(ret)
     
     # def _get_temporal_group_dimension_(self,*args,**kwds):
     #     kwds['calendar'] = self.calendar
@@ -152,26 +156,27 @@ class NcTemporalDimension(TemporalDimension, NcVectorDimension):
     #         yld['year'],yld['month'],yld['day'] = None,None,None
     
     
-class NcTemporalGroupDimension(NcTemporalDimension):
+# class NcTemporalGroupDimension(NcTemporalDimension):
+#     pass
+#
+#     def __init__(self, *args, **kwargs):
+#         self.grouping = kwargs.pop('grouping')
+#         self.dgroups = kwargs.pop('dgroups')
+#         self.date_parts = kwargs.pop('date_parts')
+#
+#         NcTemporalDimension.__init__(self, *args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        self.grouping = kwargs.pop('grouping')
-        self.dgroups = kwargs.pop('dgroups')
-        self.date_parts = kwargs.pop('date_parts')
-
-        NcTemporalDimension.__init__(self, *args, **kwargs)
-
-    def write_to_netcdf_dataset(self, *args, **kwargs):
-        """
-        For CF-compliance, ensures climatology bounds are correctly attributed.
-        """
-
-        previous_name_bounds = self.name_bounds
-        self.name_bounds = 'climatology_bounds'
-        try:
-            super(NcTemporalGroupDimension, self).write_to_netcdf_dataset(*args, **kwargs)
-        finally:
-            self.name_bounds = previous_name_bounds
+    # def write_to_netcdf_dataset(self, *args, **kwargs):
+    #     """
+    #     For CF-compliance, ensures climatology bounds are correctly attributed.
+    #     """
+    #
+    #     previous_name_bounds = self.name_bounds
+    #     self.name_bounds = 'climatology_bounds'
+    #     try:
+    #         super(NcTemporalGroupDimension, self).write_to_netcdf_dataset(*args, **kwargs)
+    #     finally:
+    #         self.name_bounds = previous_name_bounds
         
 # def get_origin_datetime_from_months_units(units):
 #     '''
@@ -311,6 +316,6 @@ class NcTemporalGroupDimension(NcTemporalDimension):
 #     return(np.array(ret,dtype=dtype))
 
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+# if __name__ == "__main__":
+#     import doctest
+#     doctest.testmod()

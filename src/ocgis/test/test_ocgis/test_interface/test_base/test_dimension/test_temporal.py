@@ -1,12 +1,16 @@
+from copy import deepcopy
 from netCDF4 import num2date, date2num
 import os
 import netcdftime
+from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.itester import itr_products_keywords
 from ocgis import constants
 from ocgis.test.base import TestBase
 from datetime import datetime as dt
 from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_interannual, get_sorted_seasons, \
-    get_time_regions, iter_boolean_groups_from_time_regions, get_datetime_conversion_state
+    get_time_regions, iter_boolean_groups_from_time_regions, get_datetime_conversion_state, \
+    get_datetime_from_months_time_units, get_difference_in_months, get_num_from_months_time_units, \
+    get_origin_datetime_from_months_units
 import numpy as np
 from ocgis.util.helpers import get_date_list
 import datetime
@@ -45,6 +49,53 @@ class Test(TestBase):
             self.assertEqual(sub.value[0].year, 1900)
             self.assertEqual(sub.value[0].month, 12)
 
+    def test_get_datetime_from_months_time_units(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        datetimes = get_datetime_from_months_time_units(vec, units)
+        test_datetimes = [datetime.datetime(1978, 12, 16, 0, 0), datetime.datetime(1979, 1, 16, 0, 0),
+                          datetime.datetime(1979, 2, 16, 0, 0), datetime.datetime(1979, 3, 16, 0, 0),
+                          datetime.datetime(1979, 4, 16, 0, 0), datetime.datetime(1979, 5, 16, 0, 0),
+                          datetime.datetime(1979, 6, 16, 0, 0), datetime.datetime(1979, 7, 16, 0, 0),
+                          datetime.datetime(1979, 8, 16, 0, 0), datetime.datetime(1979, 9, 16, 0, 0),
+                          datetime.datetime(1979, 10, 16, 0, 0), datetime.datetime(1979, 11, 16, 0, 0),
+                          datetime.datetime(1979, 12, 16, 0, 0), datetime.datetime(1980, 1, 16, 0, 0),
+                          datetime.datetime(1980, 2, 16, 0, 0), datetime.datetime(1980, 3, 16, 0, 0),
+                          datetime.datetime(1980, 4, 16, 0, 0), datetime.datetime(1980, 5, 16, 0, 0),
+                          datetime.datetime(1980, 6, 16, 0, 0), datetime.datetime(1980, 7, 16, 0, 0),
+                          datetime.datetime(1980, 8, 16, 0, 0), datetime.datetime(1980, 9, 16, 0, 0),
+                          datetime.datetime(1980, 10, 16, 0, 0), datetime.datetime(1980, 11, 16, 0, 0),
+                          datetime.datetime(1980, 12, 16, 0, 0), datetime.datetime(1981, 1, 16, 0, 0),
+                          datetime.datetime(1981, 2, 16, 0, 0), datetime.datetime(1981, 3, 16, 0, 0),
+                          datetime.datetime(1981, 4, 16, 0, 0), datetime.datetime(1981, 5, 16, 0, 0),
+                          datetime.datetime(1981, 6, 16, 0, 0), datetime.datetime(1981, 7, 16, 0, 0),
+                          datetime.datetime(1981, 8, 16, 0, 0), datetime.datetime(1981, 9, 16, 0, 0),
+                          datetime.datetime(1981, 10, 16, 0, 0), datetime.datetime(1981, 11, 16, 0, 0)]
+        self.assertNumpyAll(datetimes, np.array(test_datetimes))
+
+    def test_get_difference_in_months(self):
+        distance = get_difference_in_months(datetime.datetime(1978, 12, 1), datetime.datetime(1979, 3, 1))
+        self.assertEqual(distance, 3)
+        distance = get_difference_in_months(datetime.datetime(1978, 12, 1), datetime.datetime(1978, 7, 1))
+        self.assertEqual(distance, -5)
+        distance = get_difference_in_months(datetime.datetime(1978, 12, 1), datetime.datetime(1978, 12, 1))
+        self.assertEqual(distance, 0)
+
+    def test_get_num_from_months_time_units_1d_array(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        datetimes = get_datetime_from_months_time_units(vec, units)
+        num = get_num_from_months_time_units(datetimes, units, dtype=np.int32)
+        self.assertNumpyAll(num, np.array(vec, dtype=np.int32))
+        self.assertEqual(num.dtype, np.int32)
+
+    def test_get_origin_datetime_from_months_units(self):
+        units = "months since 1978-12"
+        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1978, 12, 1))
+        units = "months since 1979-1-1 0"
+        self.assertEqual(get_origin_datetime_from_months_units(units), datetime.datetime(1979, 1, 1))
+
+
 
 class TestTemporalDimension(TestBase):
     
@@ -73,6 +124,51 @@ class TestTemporalDimension(TestBase):
 
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12")
         self.assertTrue(td._has_months_units)
+
+    def test_getitem(self):
+        td = self.get_temporal_dimension()
+        self.assertIsNotNone(td.value_datetime)
+        self.assertIsNotNone(td.value_numtime)
+        sub = td[3]
+        self.assertEqual(sub.value_datetime.shape, (1,))
+        self.assertEqual(sub.value_numtime.shape, (1,))
+
+    def test_360_day_calendar(self):
+        months = range(1, 13)
+        days = range(1, 31)
+        vec = []
+        for month in months:
+            for day in days:
+                vec.append(netcdftime.datetime(2000, month, day))
+        num = date2num(vec, 'days since 1900-01-01', calendar='360_day')
+        td = TemporalDimension(value=num, calendar='360_day', units='days since 1900-01-01')
+        self.assertNumpyAll(np.array(vec), td.value_datetime)
+
+    def test_format_slice_state(self):
+        td = self.get_temporal_dimension()
+        elements = [td.bounds_datetime, td.bounds_numtime]
+        for element in elements:
+            self.assertIsNotNone(element)
+        sub = td[2]
+        elements = [sub.bounds_datetime, sub.bounds_numtime]
+        for element in elements:
+            self.assertEqual(element.shape, (1, 2))
+
+    def test_get_between(self):
+        keywords = dict(as_datetime=[False, True])
+
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            td = self.get_temporal_dimension()
+            if not k.as_datetime:
+                td._value = td.value_numtime
+                td._bounds = td.bounds_numtime
+                td._value_datetime = None
+                td._bounds_datetime = None
+                self.assertTrue(get_datetime_conversion_state(td.value[0]))
+            res = td.get_between(dt(1899, 1, 4, 12, 0), dt(1899, 1, 10, 12, 0), return_indices=False)
+            self.assertEqual(res.shape, (7,))
+            self.assertIsNone(td._value_datetime)
+            self.assertIsNone(td._bounds_datetime)
 
     def test_get_datetime(self):
         td = TemporalDimension(value=[5, 6])
@@ -281,6 +377,35 @@ class TestTemporalDimension(TestBase):
             # '[datetime.datetime(2013, 1, 1, 0, 0) datetime.datetime(2013, 1, 2, 0, 0)\n datetime.datetime(2013, 1, 3, 0, 0) datetime.datetime(2013, 1, 4, 0, 0)\n datetime.datetime(2013, 1, 5, 0, 0) datetime.datetime(2013, 1, 6, 0, 0)\n datetime.datetime(2013, 1, 7, 0, 0) datetime.datetime(2013, 1, 8, 0, 0)\n datetime.datetime(2013, 1, 9, 0, 0) datetime.datetime(2013, 1, 10, 0, 0)\n datetime.datetime(2013, 1, 11, 0, 0) datetime.datetime(2013, 1, 12, 0, 0)\n datetime.datetime(2013, 1, 13, 0, 0) datetime.datetime(2013, 1, 14, 0, 0)\n datetime.datetime(2013, 1, 15, 0, 0) datetime.datetime(2013, 1, 16, 0, 0)\n datetime.datetime(2013, 1, 17, 0, 0) datetime.datetime(2013, 1, 18, 0, 0)\n datetime.datetime(2013, 1, 19, 0, 0) datetime.datetime(2013, 1, 20, 0, 0)\n datetime.datetime(2013, 1, 21, 0, 0) datetime.datetime(2013, 1, 22, 0, 0)\n datetime.datetime(2013, 1, 23, 0, 0) datetime.datetime(2013, 1, 24, 0, 0)\n datetime.datetime(2013, 1, 25, 0, 0) datetime.datetime(2013, 1, 26, 0, 0)\n datetime.datetime(2013, 1, 27, 0, 0) datetime.datetime(2013, 1, 28, 0, 0)\n datetime.datetime(2013, 1, 29, 0, 0) datetime.datetime(2013, 1, 30, 0, 0)\n datetime.datetime(2013, 1, 31, 0, 0) datetime.datetime(2013, 2, 1, 0, 0)\n datetime.datetime(2013, 2, 2, 0, 0) datetime.datetime(2013, 2, 3, 0, 0)\n datetime.datetime(2013, 2, 4, 0, 0) datetime.datetime(2013, 2, 5, 0, 0)\n datetime.datetime(2013, 2, 6, 0, 0) datetime.datetime(2013, 2, 7, 0, 0)\n datetime.datetime(2013, 2, 8, 0, 0) datetime.datetime(2013, 2, 9, 0, 0)\n datetime.datetime(2013, 2, 10, 0, 0) datetime.datetime(2013, 2, 11, 0, 0)\n datetime.datetime(2013, 2, 12, 0, 0) datetime.datetime(2013, 2, 13, 0, 0)\n datetime.datetime(2013, 2, 14, 0, 0) datetime.datetime(2013, 2, 15, 0, 0)\n datetime.datetime(2013, 2, 16, 0, 0) datetime.datetime(2013, 2, 17, 0, 0)\n datetime.datetime(2013, 2, 18, 0, 0) datetime.datetime(2013, 2, 19, 0, 0)\n datetime.datetime(2013, 2, 20, 0, 0) datetime.datetime(2013, 2, 21, 0, 0)\n datetime.datetime(2013, 2, 22, 0, 0) datetime.datetime(2013, 2, 23, 0, 0)\n datetime.datetime(2013, 2, 24, 0, 0) datetime.datetime(2013, 2, 25, 0, 0)\n datetime.datetime(2013, 2, 26, 0, 0) datetime.datetime(2013, 2, 27, 0, 0)\n datetime.datetime(2013, 2, 28, 0, 0) datetime.datetime(2013, 12, 1, 0, 0)\n datetime.datetime(2013, 12, 2, 0, 0) datetime.datetime(2013, 12, 3, 0, 0)\n datetime.datetime(2013, 12, 4, 0, 0) datetime.datetime(2013, 12, 5, 0, 0)\n datetime.datetime(2013, 12, 6, 0, 0) datetime.datetime(2013, 12, 7, 0, 0)\n datetime.datetime(2013, 12, 8, 0, 0) datetime.datetime(2013, 12, 9, 0, 0)\n datetime.datetime(2013, 12, 10, 0, 0)\n datetime.datetime(2013, 12, 11, 0, 0)\n datetime.datetime(2013, 12, 12, 0, 0)\n datetime.datetime(2013, 12, 13, 0, 0)\n datetime.datetime(2013, 12, 14, 0, 0)\n datetime.datetime(2013, 12, 15, 0, 0)\n datetime.datetime(2013, 12, 16, 0, 0)\n datetime.datetime(2013, 12, 17, 0, 0)\n datetime.datetime(2013, 12, 18, 0, 0)\n datetime.datetime(2013, 12, 19, 0, 0)\n datetime.datetime(2013, 12, 20, 0, 0)\n datetime.datetime(2013, 12, 21, 0, 0)\n datetime.datetime(2013, 12, 22, 0, 0)\n datetime.datetime(2013, 12, 23, 0, 0)\n datetime.datetime(2013, 12, 24, 0, 0)\n datetime.datetime(2013, 12, 25, 0, 0)\n datetime.datetime(2013, 12, 26, 0, 0)\n datetime.datetime(2013, 12, 27, 0, 0)\n datetime.datetime(2013, 12, 28, 0, 0)\n datetime.datetime(2013, 12, 29, 0, 0)\n datetime.datetime(2013, 12, 30, 0, 0)\n datetime.datetime(2013, 12, 31, 0, 0)]'
             self.assertNumpyAll(td.value[tg.dgroups[1]],np.loads('\x80\x02cnumpy.core.multiarray\n_reconstruct\nq\x01cnumpy\nndarray\nq\x02K\x00\x85U\x01b\x87Rq\x03(K\x01KZ\x85cnumpy\ndtype\nq\x04U\x02O8K\x00K\x01\x87Rq\x05(K\x03U\x01|NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK?tb\x89]q\x06(cdatetime\ndatetime\nq\x07U\n\x07\xdd\x01\x01\x00\x00\x00\x00\x00\x00\x85Rq\x08h\x07U\n\x07\xdd\x01\x02\x00\x00\x00\x00\x00\x00\x85Rq\th\x07U\n\x07\xdd\x01\x03\x00\x00\x00\x00\x00\x00\x85Rq\nh\x07U\n\x07\xdd\x01\x04\x00\x00\x00\x00\x00\x00\x85Rq\x0bh\x07U\n\x07\xdd\x01\x05\x00\x00\x00\x00\x00\x00\x85Rq\x0ch\x07U\n\x07\xdd\x01\x06\x00\x00\x00\x00\x00\x00\x85Rq\rh\x07U\n\x07\xdd\x01\x07\x00\x00\x00\x00\x00\x00\x85Rq\x0eh\x07U\n\x07\xdd\x01\x08\x00\x00\x00\x00\x00\x00\x85Rq\x0fh\x07U\n\x07\xdd\x01\t\x00\x00\x00\x00\x00\x00\x85Rq\x10h\x07U\n\x07\xdd\x01\n\x00\x00\x00\x00\x00\x00\x85Rq\x11h\x07U\n\x07\xdd\x01\x0b\x00\x00\x00\x00\x00\x00\x85Rq\x12h\x07U\n\x07\xdd\x01\x0c\x00\x00\x00\x00\x00\x00\x85Rq\x13h\x07U\n\x07\xdd\x01\r\x00\x00\x00\x00\x00\x00\x85Rq\x14h\x07U\n\x07\xdd\x01\x0e\x00\x00\x00\x00\x00\x00\x85Rq\x15h\x07U\n\x07\xdd\x01\x0f\x00\x00\x00\x00\x00\x00\x85Rq\x16h\x07U\n\x07\xdd\x01\x10\x00\x00\x00\x00\x00\x00\x85Rq\x17h\x07U\n\x07\xdd\x01\x11\x00\x00\x00\x00\x00\x00\x85Rq\x18h\x07U\n\x07\xdd\x01\x12\x00\x00\x00\x00\x00\x00\x85Rq\x19h\x07U\n\x07\xdd\x01\x13\x00\x00\x00\x00\x00\x00\x85Rq\x1ah\x07U\n\x07\xdd\x01\x14\x00\x00\x00\x00\x00\x00\x85Rq\x1bh\x07U\n\x07\xdd\x01\x15\x00\x00\x00\x00\x00\x00\x85Rq\x1ch\x07U\n\x07\xdd\x01\x16\x00\x00\x00\x00\x00\x00\x85Rq\x1dh\x07U\n\x07\xdd\x01\x17\x00\x00\x00\x00\x00\x00\x85Rq\x1eh\x07U\n\x07\xdd\x01\x18\x00\x00\x00\x00\x00\x00\x85Rq\x1fh\x07U\n\x07\xdd\x01\x19\x00\x00\x00\x00\x00\x00\x85Rq h\x07U\n\x07\xdd\x01\x1a\x00\x00\x00\x00\x00\x00\x85Rq!h\x07U\n\x07\xdd\x01\x1b\x00\x00\x00\x00\x00\x00\x85Rq"h\x07U\n\x07\xdd\x01\x1c\x00\x00\x00\x00\x00\x00\x85Rq#h\x07U\n\x07\xdd\x01\x1d\x00\x00\x00\x00\x00\x00\x85Rq$h\x07U\n\x07\xdd\x01\x1e\x00\x00\x00\x00\x00\x00\x85Rq%h\x07U\n\x07\xdd\x01\x1f\x00\x00\x00\x00\x00\x00\x85Rq&h\x07U\n\x07\xdd\x02\x01\x00\x00\x00\x00\x00\x00\x85Rq\'h\x07U\n\x07\xdd\x02\x02\x00\x00\x00\x00\x00\x00\x85Rq(h\x07U\n\x07\xdd\x02\x03\x00\x00\x00\x00\x00\x00\x85Rq)h\x07U\n\x07\xdd\x02\x04\x00\x00\x00\x00\x00\x00\x85Rq*h\x07U\n\x07\xdd\x02\x05\x00\x00\x00\x00\x00\x00\x85Rq+h\x07U\n\x07\xdd\x02\x06\x00\x00\x00\x00\x00\x00\x85Rq,h\x07U\n\x07\xdd\x02\x07\x00\x00\x00\x00\x00\x00\x85Rq-h\x07U\n\x07\xdd\x02\x08\x00\x00\x00\x00\x00\x00\x85Rq.h\x07U\n\x07\xdd\x02\t\x00\x00\x00\x00\x00\x00\x85Rq/h\x07U\n\x07\xdd\x02\n\x00\x00\x00\x00\x00\x00\x85Rq0h\x07U\n\x07\xdd\x02\x0b\x00\x00\x00\x00\x00\x00\x85Rq1h\x07U\n\x07\xdd\x02\x0c\x00\x00\x00\x00\x00\x00\x85Rq2h\x07U\n\x07\xdd\x02\r\x00\x00\x00\x00\x00\x00\x85Rq3h\x07U\n\x07\xdd\x02\x0e\x00\x00\x00\x00\x00\x00\x85Rq4h\x07U\n\x07\xdd\x02\x0f\x00\x00\x00\x00\x00\x00\x85Rq5h\x07U\n\x07\xdd\x02\x10\x00\x00\x00\x00\x00\x00\x85Rq6h\x07U\n\x07\xdd\x02\x11\x00\x00\x00\x00\x00\x00\x85Rq7h\x07U\n\x07\xdd\x02\x12\x00\x00\x00\x00\x00\x00\x85Rq8h\x07U\n\x07\xdd\x02\x13\x00\x00\x00\x00\x00\x00\x85Rq9h\x07U\n\x07\xdd\x02\x14\x00\x00\x00\x00\x00\x00\x85Rq:h\x07U\n\x07\xdd\x02\x15\x00\x00\x00\x00\x00\x00\x85Rq;h\x07U\n\x07\xdd\x02\x16\x00\x00\x00\x00\x00\x00\x85Rq<h\x07U\n\x07\xdd\x02\x17\x00\x00\x00\x00\x00\x00\x85Rq=h\x07U\n\x07\xdd\x02\x18\x00\x00\x00\x00\x00\x00\x85Rq>h\x07U\n\x07\xdd\x02\x19\x00\x00\x00\x00\x00\x00\x85Rq?h\x07U\n\x07\xdd\x02\x1a\x00\x00\x00\x00\x00\x00\x85Rq@h\x07U\n\x07\xdd\x02\x1b\x00\x00\x00\x00\x00\x00\x85RqAh\x07U\n\x07\xdd\x02\x1c\x00\x00\x00\x00\x00\x00\x85RqBh\x07U\n\x07\xdd\x0c\x01\x00\x00\x00\x00\x00\x00\x85RqCh\x07U\n\x07\xdd\x0c\x02\x00\x00\x00\x00\x00\x00\x85RqDh\x07U\n\x07\xdd\x0c\x03\x00\x00\x00\x00\x00\x00\x85RqEh\x07U\n\x07\xdd\x0c\x04\x00\x00\x00\x00\x00\x00\x85RqFh\x07U\n\x07\xdd\x0c\x05\x00\x00\x00\x00\x00\x00\x85RqGh\x07U\n\x07\xdd\x0c\x06\x00\x00\x00\x00\x00\x00\x85RqHh\x07U\n\x07\xdd\x0c\x07\x00\x00\x00\x00\x00\x00\x85RqIh\x07U\n\x07\xdd\x0c\x08\x00\x00\x00\x00\x00\x00\x85RqJh\x07U\n\x07\xdd\x0c\t\x00\x00\x00\x00\x00\x00\x85RqKh\x07U\n\x07\xdd\x0c\n\x00\x00\x00\x00\x00\x00\x85RqLh\x07U\n\x07\xdd\x0c\x0b\x00\x00\x00\x00\x00\x00\x85RqMh\x07U\n\x07\xdd\x0c\x0c\x00\x00\x00\x00\x00\x00\x85RqNh\x07U\n\x07\xdd\x0c\r\x00\x00\x00\x00\x00\x00\x85RqOh\x07U\n\x07\xdd\x0c\x0e\x00\x00\x00\x00\x00\x00\x85RqPh\x07U\n\x07\xdd\x0c\x0f\x00\x00\x00\x00\x00\x00\x85RqQh\x07U\n\x07\xdd\x0c\x10\x00\x00\x00\x00\x00\x00\x85RqRh\x07U\n\x07\xdd\x0c\x11\x00\x00\x00\x00\x00\x00\x85RqSh\x07U\n\x07\xdd\x0c\x12\x00\x00\x00\x00\x00\x00\x85RqTh\x07U\n\x07\xdd\x0c\x13\x00\x00\x00\x00\x00\x00\x85RqUh\x07U\n\x07\xdd\x0c\x14\x00\x00\x00\x00\x00\x00\x85RqVh\x07U\n\x07\xdd\x0c\x15\x00\x00\x00\x00\x00\x00\x85RqWh\x07U\n\x07\xdd\x0c\x16\x00\x00\x00\x00\x00\x00\x85RqXh\x07U\n\x07\xdd\x0c\x17\x00\x00\x00\x00\x00\x00\x85RqYh\x07U\n\x07\xdd\x0c\x18\x00\x00\x00\x00\x00\x00\x85RqZh\x07U\n\x07\xdd\x0c\x19\x00\x00\x00\x00\x00\x00\x85Rq[h\x07U\n\x07\xdd\x0c\x1a\x00\x00\x00\x00\x00\x00\x85Rq\\h\x07U\n\x07\xdd\x0c\x1b\x00\x00\x00\x00\x00\x00\x85Rq]h\x07U\n\x07\xdd\x0c\x1c\x00\x00\x00\x00\x00\x00\x85Rq^h\x07U\n\x07\xdd\x0c\x1d\x00\x00\x00\x00\x00\x00\x85Rq_h\x07U\n\x07\xdd\x0c\x1e\x00\x00\x00\x00\x00\x00\x85Rq`h\x07U\n\x07\xdd\x0c\x1f\x00\x00\x00\x00\x00\x00\x85Rqaetb.'))
 
+    def test_months_in_time_units(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        datetimes = get_datetime_from_months_time_units(vec, units)
+        td = TemporalDimension(value=vec, units=units, calendar='standard')
+        self.assertTrue(td._has_months_units)
+        self.assertNumpyAll(td.value_datetime, datetimes)
+
+    def test_months_in_time_units_are_bad_netcdftime(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        calendar = "standard"
+        with self.assertRaises(ValueError):
+            num2date(vec, units, calendar=calendar)
+
+    def test_months_in_time_units_between(self):
+        units = "months since 1978-12"
+        vec = range(0, 36)
+        datetimes = get_datetime_from_months_time_units(vec, units)
+        td = TemporalDimension(value=vec, units=units, calendar='standard')
+        ret = td.get_between(datetimes[0], datetimes[3])
+        self.assertNumpyAll(ret.value, np.array([0, 1, 2, 3]))
+
+    def test_months_not_in_time_units(self):
+        units = "days since 1900-01-01"
+        value = np.array([31])
+        td = TemporalDimension(value=value, units=units, calendar='standard')
+        self.assertFalse(td._has_months_units)
+
     def test_get_numtime(self):
         units_options = [constants.default_temporal_units, 'months since 1960-5']
         value_options = [np.array([5000., 5001]), np.array([5, 6, 7])]
@@ -363,6 +488,44 @@ class TestTemporalDimension(TestBase):
         ret = td.get_between(r1,r2)
         self.assertEqual(ret.value[-1],datetime.datetime(1950,12,31,12,0))
 
+    def test_write_to_netcdf_dataset(self):
+        rd = self.test_data.get_rd('cancm4_tas')
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+
+        keywords = dict(with_bounds=[True, False],
+                        as_datetime=[False, True])
+
+        for k in itr_products_keywords(keywords, as_namedtuple=True):
+            field = rd.get()
+            td = field.temporal
+            if not k.with_bounds:
+                td.bounds
+                td.bounds = None
+                self.assertIsNone(td.bounds)
+            if k.as_datetime:
+                td._value = td.value_datetime
+                td._bounds = td.bounds_datetime
+
+            original_value = deepcopy(td.value)
+            original_bounds = deepcopy(td.bounds)
+
+            with nc_scope(path, 'w') as ds:
+                td.write_to_netcdf_dataset(ds)
+                for name, expected_value in zip([td.name_value, td.name_bounds], [td.value_numtime, td.bounds_numtime]):
+                    try:
+                        variable = ds.variables[name]
+                    except KeyError:
+                        self.assertFalse(k.with_bounds)
+                        continue
+                    self.assertEqual(variable.calendar, td.calendar)
+                    self.assertEqual(variable.units, td.units)
+            self.assertNumpyAll(original_value, td.value)
+            try:
+                self.assertNumpyAll(original_bounds, td.bounds)
+            except AttributeError:
+                self.assertFalse(k.with_bounds)
+                self.assertIsNone(original_bounds)
+
     def test_bounds_datetime_and_bounds_numtime(self):
         value_datetime = np.array([dt(2000, 1, 15), dt(2000, 2, 15)])
         bounds_datetime = np.array([[dt(2000, 1, 1), dt(2000, 2, 1)],
@@ -437,11 +600,36 @@ class TestTemporalDimension(TestBase):
 
 
 class TestTemporalGroupDimension(TestBase):
-    
-    def test_constructor_by_temporal_dimension(self):
-        value = [dt(2012,1,1),dt(2012,1,2)]
+
+    def get_tgd(self):
+        td = self.test_data.get_rd('cancm4_tas').get().temporal
+        tgd = td.get_grouping(['month'])
+        return tgd
+
+    def test_init(self):
+        tgd = self.get_tgd()
+        self.assertIsInstance(tgd, TemporalDimension)
+
+    def test_return_from_get_grouping(self):
+        value = [dt(2012, 1, 1), dt(2012, 1, 2)]
         td = TemporalDimension(value=value)
         tgd = td.get_grouping(['month'])
-        self.assertEqual(tuple(tgd.date_parts[0]),(None,1,None,None,None,None))
+        self.assertEqual(tuple(tgd.date_parts[0]), (None, 1, None, None, None, None))
         self.assertTrue(tgd.dgroups[0].all())
-        self.assertNumpyAll(tgd.uid,np.array([1],dtype=constants.np_int))
+        self.assertNumpyAll(tgd.uid, np.array([1], dtype=constants.np_int))
+
+    def test_write_to_netcdf_dataset(self):
+        tgd = self.get_tgd()
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            tgd.write_to_netcdf_dataset(ds)
+            self.assertIn('climatology_bounds', ds.variables)
+            self.assertEqual(ds.variables[tgd.name_value].bounds, 'climatology_bounds')
+
+        # test failure and make sure original bounds name is preserved
+        self.assertNotEqual(tgd.name_bounds, 'climatology_bounds')
+        with nc_scope(path, 'w') as ds:
+            try:
+                tgd.write_to_netcdf_dataset(ds, darkness='forever')
+            except TypeError:
+                self.assertNotEqual(tgd.name_bounds, 'climatology_bounds')

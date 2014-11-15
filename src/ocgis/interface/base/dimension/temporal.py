@@ -7,7 +7,7 @@ import datetime
 from ocgis import constants
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.exc import EmptySubsetError, IncompleteSeasonError
-from ocgis.util.helpers import get_is_date_between, iter_array
+from ocgis.util.helpers import get_is_date_between, iter_array, get_none_or_slice
 from copy import deepcopy
 import netCDF4 as nc
 
@@ -22,12 +22,13 @@ class TemporalDimension(base.VectorDimension):
      datetime objects. See: http://unidata.github.io/netcdf4-python/netCDF4-module.html#num2date
     """
 
-    _attrs_slice = ('uid', '_value', '_src_idx', '_value_datetime')
+    _attrs_slice = ('uid', '_value', '_src_idx', '_value_datetime', '_value_numtime')
     _date_parts = ('year', 'month', 'day', 'hour', 'minute', 'second')
     _axis = 'T'
 
     def __init__(self, *args, **kwargs):
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
+        self._format_time = kwargs.pop('format_time', None)
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 
@@ -94,6 +95,11 @@ class TemporalDimension(base.VectorDimension):
             else:
                 self._value_numtime = self.value
         return self._value_numtime
+
+    def get_between(self, lower, upper, return_indices=False):
+        if get_datetime_conversion_state(self.value[0]):
+            lower, upper = tuple(self.get_numtime([lower, upper]))
+        return super(TemporalDimension, self).get_between(lower, upper, return_indices=return_indices)
 
     def get_datetime(self, arr):
         """
@@ -225,15 +231,42 @@ class TemporalDimension(base.VectorDimension):
 
         return(ret)
 
-    # def _get_datetime_bounds_(self):
-    #     '''Intended for subclasses to overload the method for accessing the datetime
-    #     value. For example, netCDF times are floats that must be converted.'''
-    #     return(self.bounds)
-    #
-    # def _get_datetime_value_(self):
-    #     '''Intended for subclasses to overload the method for accessing the datetime
-    #     value. For example, netCDF times are floats that must be converted.'''
-    #     return(self.value)
+    def write_to_netcdf_dataset(self, dataset, **kwargs):
+        """
+        Calls superclass write method then adds ``calendar`` and ``units`` attributes to time variable and time bounds
+        variable. See documentation for :meth:`~ocgis.interface.base.dimension.base.VectorDimension#write_to_netcdf_dataset`.
+        """
+
+        # swap the value/bounds references from datetime to numtime for the duration for the write
+        if not get_datetime_conversion_state(self.value[0]):
+            self._value = self.value_numtime
+            self._bounds = self.bounds_numtime
+            swapped_value_bounds = True
+        else:
+            swapped_value_bounds = False
+
+        super(TemporalDimension, self).write_to_netcdf_dataset(dataset, **kwargs)
+
+        # return the value and bounds to their original state
+        if swapped_value_bounds:
+            self._value = self.value_datetime
+            self._bounds = self.bounds_datetime
+
+        for name in [self.name_value, self.name_bounds]:
+            try:
+                variable = dataset.variables[name]
+            except KeyError:
+                # bounds are likely missing
+                if self.bounds is not None:
+                    raise
+            variable.calendar = self.calendar
+            variable.units = self.units
+
+    def _format_slice_state_(self, state, slc):
+        state = super(TemporalDimension, self)._format_slice_state_(state, slc)
+        state._bounds_datetime = get_none_or_slice(state._bounds_datetime, (slc, slice(None)))
+        state._bounds_numtime = get_none_or_slice(state._bounds_numtime, (slc, slice(None)))
+        return state
 
     def _get_grouping_all_(self):
         '''
@@ -505,6 +538,18 @@ class TemporalGroupDimension(TemporalDimension):
         self.date_parts = kwargs.pop('date_parts')
 
         TemporalDimension.__init__(self, *args, **kwargs)
+
+    def write_to_netcdf_dataset(self, *args, **kwargs):
+        """
+        For CF-compliance, ensures climatology bounds are correctly attributed.
+        """
+
+        previous_name_bounds = self.name_bounds
+        self.name_bounds = 'climatology_bounds'
+        try:
+            super(TemporalGroupDimension, self).write_to_netcdf_dataset(*args, **kwargs)
+        finally:
+            self.name_bounds = previous_name_bounds
 
 
 def get_datetime_conversion_state(archetype):
