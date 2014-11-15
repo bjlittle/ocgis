@@ -1,6 +1,11 @@
 import unittest
-import itertools
+from copy import deepcopy
+import netCDF4 as nc
+
 from shapely.geometry import Point, MultiPoint
+import numpy as np
+from shapely.geometry.multipolygon import MultiPolygon
+
 from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84,\
     CFAlbersEqualArea, CFLambertConformal, CFRotatedPole, CFWGS84, Spherical, WrappableCoordinateReferenceSystem
 from ocgis.interface.base.dimension.base import VectorDimension
@@ -8,11 +13,7 @@ from ocgis.interface.base.dimension.spatial import SpatialGridDimension,\
     SpatialDimension
 from ocgis.exc import SpatialWrappingError
 from ocgis.test.base import TestBase
-import numpy as np
-from copy import deepcopy
-from shapely.geometry.multipolygon import MultiPolygon
-from ocgis.util.helpers import get_temp_path, write_geom_dict, make_poly
-import netCDF4 as nc
+from ocgis.util.helpers import make_poly
 from ocgis.interface.metadata import NcMetadata
 import ocgis
 from ocgis.util.itester import itr_products_keywords

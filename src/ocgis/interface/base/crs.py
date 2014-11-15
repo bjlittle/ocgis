@@ -489,10 +489,19 @@ class CFCoordinateReferenceSystem(CoordinateReferenceSystem):
         cls._load_from_metadata_finalize_(kwds,var,meta)
         
         return(cls(**kwds))
-    
-    def write_to_rootgrp(self,rootgrp,meta):
+
+    def write_to_rootgrp(self, rootgrp, meta=None):
+        """
+        Write the coordinate system to an open netCDF file.
+
+        :param rootgrp: An open netCDF dataset object for writing.
+        :type rootgrp: :class:`netCDF4.Dataset`
+        :param dict meta: An optional metadata dictionary as returned from
+         :attr:`~ocgis.RequestDataset.source_metadata`.
+        """
+
         name = meta['grid_mapping_variable_name']
-        crs = rootgrp.createVariable(name,meta['variables'][name]['dtype'])
+        crs = rootgrp.createVariable(name, meta['variables'][name]['dtype'])
         attrs = meta['variables'][name]['attrs']
         crs.setncatts(attrs)
     
