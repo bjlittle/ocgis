@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from copy import copy, deepcopy
 import tempfile
 import itertools
@@ -82,6 +83,49 @@ class CoordinateReferenceSystem(object):
         sr = SpatialReference()
         sr.ImportFromProj4(to_string(self.value))
         return sr
+
+    def write_to_rootgrp(self, rootgrp, meta=None):
+        """
+        Write the coordinate system to an open netCDF file.
+
+        :param rootgrp: An open netCDF dataset object for writing.
+        :type rootgrp: :class:`netCDF4.Dataset`
+        :param dict meta: An optional metadata dictionary as returned from
+         :attr:`~ocgis.RequestDataset.source_metadata`.
+        :returns: The netCDF variable object created to hold the coordinate system metadata.
+        :rtype: :class:`netCDF4.Variable`
+        """
+
+        if meta is None:
+            # attempt to get the grid mapping name, otherwise use a default value
+            try:
+                name = self.grid_mapping_name
+            except AttributeError:
+                name = constants.default_coordinate_system_name
+            dtype = str
+            attrs = OrderedDict()
+        else:
+            name = meta['grid_mapping_variable_name']
+            dtype = meta['variables'][name]['dtype']
+            attrs = meta['variables'][name]['attrs'].copy()
+
+        # always add the proj4 string
+        attrs['proj4'] = self.proj4
+
+        try:
+            # ensure the map parameters are part of the attributes but respect the original metadata values if they
+            # are already there.
+            for k, v in self.map_parameters_values.iteritems():
+                if k not in attrs:
+                    attrs[k] = v
+        except AttributeError:
+            # if map parameters are not present on the object, continue
+            pass
+
+        variable = rootgrp.createVariable(name, dtype)
+        variable.setncatts(attrs)
+
+        return variable
 
 
 class WrappableCoordinateReferenceSystem(object):
@@ -421,7 +465,7 @@ class CFCoordinateReferenceSystem(CoordinateReferenceSystem):
                 crs.update({self.map_parameters[k]:kwds[k]})
                 
         super(CFCoordinateReferenceSystem,self).__init__(value=crs)
-            
+
     @abc.abstractproperty
     def grid_mapping_name(self): str
     
@@ -489,21 +533,6 @@ class CFCoordinateReferenceSystem(CoordinateReferenceSystem):
         cls._load_from_metadata_finalize_(kwds,var,meta)
         
         return(cls(**kwds))
-
-    def write_to_rootgrp(self, rootgrp, meta=None):
-        """
-        Write the coordinate system to an open netCDF file.
-
-        :param rootgrp: An open netCDF dataset object for writing.
-        :type rootgrp: :class:`netCDF4.Dataset`
-        :param dict meta: An optional metadata dictionary as returned from
-         :attr:`~ocgis.RequestDataset.source_metadata`.
-        """
-
-        name = meta['grid_mapping_variable_name']
-        crs = rootgrp.createVariable(name, meta['variables'][name]['dtype'])
-        attrs = meta['variables'][name]['attrs']
-        crs.setncatts(attrs)
     
     @classmethod
     def _load_from_metadata_finalize_(cls,kwds,var,meta):
@@ -649,6 +678,16 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
             new_spatial.crs = CFWGS84()
 
         return new_spatial
+
+    def write_to_rootgrp(self, rootgrp, meta=None):
+        """
+        .. note:: See :meth:`~ocgis.interface.base.crs.CoordinateReferenceSystem.write_to_rootgrp`.
+        """
+
+        variable = super(CFRotatedPole, self).write_to_rootgrp(rootgrp, meta=meta)
+        variable.proj4 = ''
+        variable.proj4_transform = self._trans_proj
+        return variable
 
     def _get_rotated_pole_transformation_for_grid_(self, grid, inverse=False, rc_original=None):
         """

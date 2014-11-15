@@ -1,3 +1,4 @@
+import os
 import unittest
 from copy import deepcopy
 import netCDF4 as nc
@@ -13,6 +14,7 @@ from ocgis.interface.base.dimension.spatial import SpatialGridDimension,\
     SpatialDimension
 from ocgis.exc import SpatialWrappingError
 from ocgis.test.base import TestBase
+from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import make_poly
 from ocgis.interface.metadata import NcMetadata
 import ocgis
@@ -54,6 +56,39 @@ class TestCoordinateReferenceSystem(TestBase):
         # try nonetype and string
         self.assertNotEqual(None, crs1)
         self.assertNotEqual('input', crs1)
+
+    def test_write_to_rootgrp(self):
+        rd_lambert_conformal = self.test_data.get_rd('narccap_lambert_conformal')
+
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        cs_options = [CoordinateReferenceSystem(epsg=4326), CFWGS84(), rd_lambert_conformal.crs, rd_lambert_conformal]
+        for cs in cs_options:
+            with nc_scope(path, 'w') as ds:
+                try:
+                    # may be passing request datasets through the test...
+                    meta = cs.source_metadata
+                    cs = cs.crs
+                except AttributeError:
+                    # if not a request dataset, assume it is a coordinate reference system object
+                    meta = None
+                created_variable = cs.write_to_rootgrp(ds, meta=meta)
+                self.assertIsInstance(created_variable, nc.Variable)
+                try:
+                    variable = ds.variables[constants.default_coordinate_system_name]
+                except KeyError:
+                    try:
+                        variable = ds.variables[cs.grid_mapping_name]
+                    except KeyError:
+                        variable = ds.variables[meta['grid_mapping_variable_name']]
+                self.assertEqual(variable.proj4, cs.proj4)
+                try:
+                    for k, v in cs.map_parameters_values.iteritems():
+                        try:
+                            self.assertEqual(variable.__dict__[k], v)
+                        except ValueError:
+                            self.assertNumpyAll(variable.__dict__[k], v)
+                except AttributeError:
+                    self.assertFalse(hasattr(cs, 'map_parameters_values'))
 
 
 class TestWrappableCoordinateSystem(TestBase):
@@ -309,23 +344,10 @@ class TestCFLambertConformalConic(TestBase):
         
 class TestCFRotatedPole(TestBase):
 
-    def test_load_from_metadata(self):
-        rd = self.test_data.get_rd('rotated_pole_ichec')
-        self.assertIsInstance(rd.get().spatial.crs, CFRotatedPole)
-
     def test_equal(self):
         rd = self.test_data.get_rd('rotated_pole_ichec')
         rd2 = deepcopy(rd)
         self.assertEqual(rd.get().spatial.crs, rd2.get().spatial.crs)
-
-    def test_in_operations(self):
-        rd = self.test_data.get_rd('rotated_pole_ichec')
-        rd2 = deepcopy(rd)
-        rd2.alias = 'tas2'
-        # # these projections are equivalent so it is okay to write them to a
-        ## common output file
-        ops = ocgis.OcgOperations(dataset=[rd, rd2], output_format='csv', snippet=True)
-        ops.execute()
 
     def test_get_rotated_pole_transformation(self):
         """Test SpatialDimension objects are appropriately transformed."""
@@ -373,8 +395,31 @@ class TestCFRotatedPole(TestBase):
         self.assertEqual(spatial.grid.row.name, inverse_spatial.grid.row.name)
         self.assertDictEqual(spatial.grid.col.meta, inverse_spatial.grid.col.meta)
         self.assertEqual(spatial.grid.col.name, inverse_spatial.grid.col.name)
-        
 
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()
+    def test_in_operations(self):
+        rd = self.test_data.get_rd('rotated_pole_ichec')
+        rd2 = deepcopy(rd)
+        rd2.alias = 'tas2'
+        # these projections are equivalent so it is okay to write them to a common output file
+        ops = ocgis.OcgOperations(dataset=[rd, rd2], output_format='csv', snippet=True)
+        ops.execute()
+
+    def test_load_from_metadata(self):
+        rd = self.test_data.get_rd('rotated_pole_ichec')
+        self.assertIsInstance(rd.get().spatial.crs, CFRotatedPole)
+
+    def test_write_to_rootgrp(self):
+        rd = self.test_data.get_rd('narccap_rotated_pole')
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+
+        with nc_scope(path, 'w') as ds:
+            variable = rd.crs.write_to_rootgrp(ds)
+            self.assertIsInstance(variable, nc.Variable)
+            self.assertEqual(variable.proj4, '')
+            self.assertEqual(variable.proj4_transform, rd.crs._trans_proj)
+
+        with nc_scope(path, 'w') as ds:
+            variable = rd.crs.write_to_rootgrp(ds, meta=rd.source_metadata)
+            self.assertIsInstance(variable, nc.Variable)
+            self.assertEqual(variable.proj4, '')
+            self.assertEqual(variable.proj4_transform, rd.crs._trans_proj)

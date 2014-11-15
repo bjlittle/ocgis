@@ -12,6 +12,9 @@ default_temporal_calendar = 'standard'
 #: Default temporal units.
 default_temporal_units = 'days since 0000-01-01 00:00:00'
 
+#: Default name for coordinate systems in netCDF file if none is provided.
+default_coordinate_system_name = 'coordinate_system'
+
 #: Standard headers for subset operations.
 raw_headers = ['did','vid','ugid','tid','lid','gid','variable','alias','time','year','month','day','level','value']
 #: Standard headers for computation.
