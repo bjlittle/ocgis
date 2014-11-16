@@ -380,6 +380,10 @@ class Field(Attributes):
 
             try:
                 nc_variable.grid_mapping = variable_crs._name
+            except AttributeError:
+                # no variables are creating in the case of lat/lon coordinate systems
+                if variable_crs is not None:
+                    raise
             except UnboundLocalError:
                 if self.spatial.crs is not None:
                     raise

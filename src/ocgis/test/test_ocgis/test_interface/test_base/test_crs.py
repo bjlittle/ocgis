@@ -83,7 +83,13 @@ class TestCoordinateReferenceSystem(TestBase):
                     else:
                         meta = None
                 created_variable = cs.write_to_rootgrp(ds, meta=meta)
-                self.assertIsInstance(created_variable, nc.Variable)
+                try:
+                    self.assertIsInstance(created_variable, nc.Variable)
+                except AssertionError:
+                    self.assertIsNone(created_variable)
+                    with self.assertRaises(AttributeError):
+                        cs.grid_mapping_name
+                    continue
                 if k.with_none_attr_value and meta is not None and len(meta) > 1:
                     self.assertEqual(created_variable.foo, '')
                 try:
@@ -111,8 +117,7 @@ class TestCoordinateReferenceSystem(TestBase):
         crs = CFWGS84()
         with nc_scope(path, 'w') as ds:
             crs.write_to_rootgrp(ds, meta=meta)
-            proj4 = ds.variables[constants.default_coordinate_system_name].proj4
-            self.assertEqual(proj4, crs.proj4)
+            self.assertEqual(len(ds.variables), 0)
 
 
 class TestWrappableCoordinateSystem(TestBase):
