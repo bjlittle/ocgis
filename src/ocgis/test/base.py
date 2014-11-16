@@ -133,20 +133,22 @@ class TestBase(unittest.TestCase):
 
             for varname, var in src.variables.iteritems():
                 dvar = dest.variables[varname]
+                var_value = var[:]
+                dvar_value = dvar[:]
                 try:
                     if not metadata_only:
                         if close:
-                            self.assertNumpyAllClose(var[:], dvar[:])
+                            self.assertNumpyAllClose(var_value, dvar_value)
                         else:
-                            self.assertNumpyAll(var[:], dvar[:], check_arr_dtype=check_types)
+                            self.assertNumpyAll(var_value, dvar_value, check_arr_dtype=check_types)
                 except AssertionError:
-                    cmp = var[:] == dvar[:]
+                    cmp = var_value == dvar_value
                     if cmp.shape == (1,) and cmp.data[0] == True:
                         pass
                     else:
                         raise
                 if check_types:
-                    self.assertEqual(var[:].dtype, dvar[:].dtype)
+                    self.assertEqual(var_value.dtype, dvar_value.dtype)
 
                 # check values of attributes on all variables
                 for k, v in var.__dict__.iteritems():

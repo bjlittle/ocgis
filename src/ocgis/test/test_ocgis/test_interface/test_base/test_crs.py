@@ -64,7 +64,8 @@ class TestCoordinateReferenceSystem(TestBase):
         cs_options = [CoordinateReferenceSystem(epsg=4326), CFWGS84(), rd_lambert_conformal.crs, rd_lambert_conformal]
 
         kwds = dict(cs=cs_options,
-                    meta_as_dict=[False, True])
+                    meta_as_dict=[False, True],
+                    with_none_attr_value=[False, True])
 
         for k in itr_products_keywords(kwds, as_namedtuple=True):
             cs = k.cs
@@ -73,6 +74,8 @@ class TestCoordinateReferenceSystem(TestBase):
                     # may be passing request datasets through the test...
                     meta = cs.source_metadata
                     cs = cs.crs
+                    if k.with_none_attr_value:
+                        meta['variables']['Lambert_Conformal']['attrs']['foo'] = None
                 except AttributeError:
                     # if not a request dataset, assume it is a coordinate reference system object
                     if k.meta_as_dict:
@@ -81,6 +84,8 @@ class TestCoordinateReferenceSystem(TestBase):
                         meta = None
                 created_variable = cs.write_to_rootgrp(ds, meta=meta)
                 self.assertIsInstance(created_variable, nc.Variable)
+                if k.with_none_attr_value and meta is not None and len(meta) > 1:
+                    self.assertEqual(created_variable.foo, '')
                 try:
                     variable = ds.variables[constants.default_coordinate_system_name]
                 except KeyError:
@@ -97,6 +102,17 @@ class TestCoordinateReferenceSystem(TestBase):
                             self.assertNumpyAll(variable.__dict__[k], v)
                 except AttributeError:
                     self.assertFalse(hasattr(cs, 'map_parameters_values'))
+
+    def test_write_to_rootgrp_no_grid_mapping_name(self):
+        """Test no grid mapping name on the metadata dictionary."""
+
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        meta = {'nonsense': []}
+        crs = CFWGS84()
+        with nc_scope(path, 'w') as ds:
+            crs.write_to_rootgrp(ds, meta=meta)
+            proj4 = ds.variables[constants.default_coordinate_system_name].proj4
+            self.assertEqual(proj4, crs.proj4)
 
 
 class TestWrappableCoordinateSystem(TestBase):

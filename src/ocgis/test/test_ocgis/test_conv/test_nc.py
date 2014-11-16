@@ -1,3 +1,4 @@
+from ocgis.util.itester import itr_products_keywords
 from ocgis.api.operations import OcgOperations
 from ocgis.conv.nc import NcConverter
 import numpy as np
@@ -58,8 +59,33 @@ class TestNcConverter(AbstractTestConverter):
 
     def test_write_coll(self):
         # use a field as the input dataset
-        coll = self.get_spatial_collection(field=self.get_field())
-        conv = NcConverter([coll], self.current_dir_output, 'foo')
-        with nc_scope(conv.path, 'w') as ds:
-            conv._write_coll_(ds, coll)
-        raise
+        field = self.get_field()
+        coll = self.get_spatial_collection(field=field)
+
+        kwds = dict(with_ops=[False, True],
+                    file_only=[False, True])
+
+        for k in itr_products_keywords(kwds, as_namedtuple=True):
+
+            if k.with_ops:
+                ops = OcgOperations(dataset=self.test_data.get_rd('cancm4_tas'), file_only=k.file_only,
+                                    output_format='nc', calc=[{'name': 'mean', 'func': 'mean'}], calc_grouping=['month'])
+            else:
+                ops = None
+
+            conv = NcConverter([coll], self.current_dir_output, 'foo', ops=ops, overwrite=True)
+
+            with nc_scope(conv.path, 'w') as ds:
+                conv._write_coll_(ds, coll)
+            with nc_scope(conv.path) as ds:
+                value_nc = ds.variables['foo'][:]
+                value_field = field.variables['foo'].value.squeeze()
+                try:
+                    self.assertNumpyAll(value_field, np.ma.array(value_nc))
+                except AssertionError:
+                    self.assertTrue(k.file_only)
+                    self.assertTrue(k.with_ops)
+                    self.assertTrue(value_nc.mask.all())
+                self.assertIn('ocgis', ds.history)
+                if k.with_ops:
+                    self.assertIn('OcgOperations', ds.history)

@@ -106,9 +106,15 @@ class CoordinateReferenceSystem(object):
             dtype = str
             attrs = OrderedDict()
         else:
-            name = meta['grid_mapping_variable_name']
-            dtype = meta['variables'][name]['dtype']
-            attrs = meta['variables'][name]['attrs'].copy()
+            try:
+                name = meta['grid_mapping_variable_name']
+            except KeyError:
+                name = constants.default_coordinate_system_name
+                dtype = str
+                attrs = OrderedDict()
+            else:
+                dtype = meta['variables'][name]['dtype']
+                attrs = meta['variables'][name]['attrs'].copy()
 
         # always add the proj4 string
         attrs['proj4'] = self.proj4
@@ -124,7 +130,12 @@ class CoordinateReferenceSystem(object):
             pass
 
         variable = rootgrp.createVariable(name, dtype)
-        variable.setncatts(attrs)
+
+        # look for nonetype values
+        for k, v in attrs.iteritems():
+            if v is None:
+                v = ''
+            setattr(variable, k, v)
 
         return variable
 
@@ -586,7 +597,7 @@ class CFLambertConformal(CFCoordinateReferenceSystem):
     @classmethod
     def _load_from_metadata_finalize_(cls,kwds,var,meta):
         kwds['units'] = meta['variables'][kwds['projection_x_coordinate']]['attrs'].get('units')
-        
+
         
 class CFPolarStereographic(CFCoordinateReferenceSystem):
     grid_mapping_name = 'polar_stereographic'

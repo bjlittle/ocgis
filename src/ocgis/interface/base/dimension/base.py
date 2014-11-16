@@ -372,7 +372,6 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
         kwargs['dimensions'] = (self.name,)
         variable = dataset.createVariable(self.name_value, self.value.dtype, **kwargs)
         variable[:] = self.value
-        self.write_attributes_to_netcdf_object(variable)
 
         if self.bounds is not None:
             try:
@@ -384,7 +383,10 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
             kwargs['dimensions'] = (self.name, bounds_dimension_name)
             bounds_variable = dataset.createVariable(self.name_bounds, self.bounds.dtype, **kwargs)
             bounds_variable[:] = self.bounds
-            variable.bounds = self.name_bounds
+            variable.setncattr('bounds', self.name_bounds)
+
+        # data mode issues require that this be last...?
+        self.write_attributes_to_netcdf_object(variable)
 
     def _format_private_value_(self,value):
         return(self._get_none_or_array_(value,masked=False))

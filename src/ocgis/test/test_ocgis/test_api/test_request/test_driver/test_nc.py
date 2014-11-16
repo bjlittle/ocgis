@@ -129,6 +129,39 @@ class TestDriverNetcdf(TestBase):
 
         ds.close()
 
+    def test_get_field_different_dimension_names_and_values(self):
+        """Test dimension names and dimension values are correctly read from netCDF."""
+
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            ds.createDimension('lat', 1)
+            ds.createDimension('lon', 1)
+            ds.createDimension('tme', 1)
+            ds.createDimension('the_bounds', 2)
+            latitude = ds.createVariable('latitude', int, dimensions=('lat',))
+            longitude = ds.createVariable('longitude', int, dimensions=('lon',))
+            time = ds.createVariable('time', int, dimensions=('tme',))
+            time_bounds = ds.createVariable('long_live_the_bounds', int, dimensions=('tme', 'the_bounds'))
+            time.units = 'days since 0000-01-01'
+            time.bounds = 'long_live_the_bounds'
+            value = ds.createVariable('value', int, dimensions=('tme', 'lat', 'lon'))
+
+            latitude[:] = 5
+            longitude[:] = 6
+            time[:] = 6
+            value[:] = np.array([7]).reshape(1, 1, 1)
+
+        rd = RequestDataset(path)
+        driver = DriverNetcdf(rd)
+        field = driver._get_field_()
+        self.assertEqual(field.temporal.name, 'tme')
+        self.assertEqual(field.temporal.name_value, 'time')
+        self.assertEqual(field.spatial.grid.row.name, 'lat')
+        self.assertEqual(field.spatial.grid.row.name_value, 'latitude')
+        self.assertEqual(field.spatial.grid.col.name, 'lon')
+        self.assertEqual(field.spatial.grid.col.name_value, 'longitude')
+        self.assertEqual(field.temporal.name_bounds, 'long_live_the_bounds')
+
     def test_get_field_dtype_on_dimensions(self):
         rd = self.test_data.get_rd('cancm4_tas')
         field = rd.get()
