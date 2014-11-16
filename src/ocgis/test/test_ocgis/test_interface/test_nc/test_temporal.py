@@ -1,5 +1,4 @@
-from ocgis.api.request.nc import NcVectorDimension
-
+from ocgis.interface.nc.dimension import NcVectorDimension
 from ocgis.interface.base.dimension.temporal import TemporalDimension, TemporalGroupDimension
 
 from ocgis.test.base import TestBase

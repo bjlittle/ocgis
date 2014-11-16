@@ -144,7 +144,7 @@ class DriverNetcdf(AbstractDriver):
 
                 # assemble parameters for creating the dimension class then initialize the class.
                 kwds = dict(name_uid=v['name_uid'], src_idx=src_idx, data=self.rd, meta=ref_variable, axis=axis_value,
-                            name=ref_variable.get('name'), dtype=dtype)
+                            name=ref_variable.get('name'), dtype=dtype, attrs=ref_variable['attrs'].copy())
 
                 # there may be additional parameters for each dimension.
                 if v['adds'] is not None:
@@ -174,18 +174,18 @@ class DriverNetcdf(AbstractDriver):
 
         vc = VariableCollection()
         for vdict in self.rd:
-            variable_meta = deepcopy(self.rd._source_metadata['variables'][vdict['variable']])
+            variable_meta = deepcopy(source_metadata['variables'][vdict['variable']])
             variable_units = vdict['units'] or variable_meta['attrs'].get('units')
             dtype = np.dtype(variable_meta['dtype'])
             fill_value = variable_meta['fill_value']
             variable = Variable(vdict['variable'], vdict['alias'], units=variable_units, meta=variable_meta,
                                 data=self.rd, conform_units_to=vdict['conform_units_to'], dtype=dtype,
-                                fill_value=fill_value)
+                                fill_value=fill_value, attrs=variable_meta['attrs'].copy())
             vc.add_variable(variable)
 
         ret = NcField(variables=vc, spatial=spatial, temporal=loaded['temporal'], level=loaded['level'],
-                      realization=loaded['realization'], meta=deepcopy(self.rd._source_metadata), uid=self.rd.did,
-                      name=self.rd.name)
+                      realization=loaded['realization'], meta=source_metadata.copy(), uid=self.rd.did,
+                      name=self.rd.name, attrs=source_metadata['dataset'].copy())
 
         ## apply any subset parameters after the field is loaded
         if self.rd.time_range is not None:

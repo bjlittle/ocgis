@@ -96,7 +96,8 @@ class CoordinateReferenceSystem(object):
         :rtype: :class:`netCDF4.Variable`
         """
 
-        if meta is None:
+        # be able to handle none values and empty dictionaries
+        if meta is None or len(meta) == 0:
             # attempt to get the grid mapping name, otherwise use a default value
             try:
                 name = self.grid_mapping_name

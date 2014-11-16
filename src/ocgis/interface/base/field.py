@@ -344,10 +344,14 @@ class Field(Attributes):
         with name_scope(self.temporal, 'time'):
             self.temporal.write_to_netcdf_dataset(dataset, **kwargs)
             value_dimensions.append(self.temporal.name)
-        with name_scope(self.level, 'level'):
-            self.level.write_to_netcdf_dataset(dataset, **kwargs)
+        try:
+            with name_scope(self.level, 'level'):
+                self.level.write_to_netcdf_dataset(dataset, **kwargs)
+                if self.level is not None:
+                    value_dimensions.append(self.level.name)
+        except AttributeError:
             if self.level is not None:
-                value_dimensions.append(self.level.name)
+                raise
         try:
             with name_scope(self.spatial.grid.row, 'yc'):
                 self.spatial.grid.row.write_to_netcdf_dataset(dataset, **kwargs)
@@ -360,6 +364,12 @@ class Field(Attributes):
                 msg = 'Row and/or column dimensions are required on the grid to write to netCDF.'
                 raise ValueError(msg)
 
+        try:
+            variable_crs = self.spatial.crs.write_to_rootgrp(dataset, meta=self.meta)
+        except AttributeError:
+            if self.spatial.crs is not None:
+                raise
+
         kwargs['dimensions'] = value_dimensions
         for variable in self.variables.itervalues():
             kwargs['fill_value'] = variable.fill_value
@@ -367,6 +377,13 @@ class Field(Attributes):
             if not file_only:
                 nc_variable[:] = variable.value
             variable.write_attributes_to_netcdf_object(nc_variable)
+
+            try:
+                nc_variable.grid_mapping = variable_crs._name
+            except UnboundLocalError:
+                if self.spatial.crs is not None:
+                    raise
+
             try:
                 nc_variable.units = variable.units
             except TypeError:

@@ -2,28 +2,31 @@ from netCDF4 import date2num
 import os
 import unittest
 from datetime import datetime as dt
-from ocgis import Inspect, RequestDataset
+import datetime
+import itertools
+from copy import deepcopy
+from importlib import import_module
+from collections import OrderedDict
+
+import numpy as np
+from shapely import wkt
+from shapely.ops import cascaded_union
+
+from ocgis import constants
+from ocgis import RequestDataset
 from ocgis.interface.base.attributes import Attributes
-from ocgis.interface.base.crs import WGS84
+from ocgis.interface.base.crs import WGS84, Spherical
 from ocgis.interface.nc.temporal import NcTemporalDimension
 from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
-import datetime
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.field import Field, DerivedField
-import numpy as np
-import itertools
 from ocgis.test.base import TestBase
 from ocgis.exc import EmptySubsetError
-from shapely import wkt
-from shapely.ops import cascaded_union
 from ocgis.interface.base.variable import Variable, VariableCollection
 from ocgis.interface.base.dimension.temporal import TemporalDimension
-from copy import deepcopy
-from importlib import import_module
 from ocgis.util.itester import itr_products_keywords
-from collections import OrderedDict
 
 
 class AbstractTestField(TestBase):
@@ -49,69 +52,67 @@ class AbstractTestField(TestBase):
             bounds = None
         row = VectorDimension(value=value,bounds=bounds,name='latitude')
         return(row)
-    
-    def get_field(self,with_bounds=True,with_value=False,with_level=True,with_temporal=True,
-                     with_realization=True,month_count=1,name='tmax',units='kelvin',field_name=None):
-        
+
+    def get_field(self, with_bounds=True, with_value=False, with_level=True, with_temporal=True, with_realization=True,
+                  month_count=1, name='tmax', units='kelvin', field_name=None, crs=None):
+
         if with_temporal:
-            temporal_start = dt(2000,1,1,12)
+            temporal_start = dt(2000, 1, 1, 12)
             if month_count == 1:
-                temporal_stop = dt(2000,1,31,12)
+                temporal_stop = dt(2000, 1, 31, 12)
             elif month_count == 2:
-                temporal_stop = dt(2000,2,29,12)
+                temporal_stop = dt(2000, 2, 29, 12)
             else:
-                raise(NotImplementedError)
-            temporal_value = get_date_list(temporal_start,temporal_stop,1)
+                raise NotImplementedError
+            temporal_value = get_date_list(temporal_start, temporal_stop, 1)
             delta_bounds = datetime.timedelta(hours=12)
             if with_bounds:
-                temporal_bounds = [[v-delta_bounds,v+delta_bounds] for v in temporal_value]
+                temporal_bounds = [[v - delta_bounds, v + delta_bounds] for v in temporal_value]
             else:
                 temporal_bounds = None
-            temporal = TemporalDimension(value=temporal_value,bounds=temporal_bounds,name='time',
-                                         units='days')
+            temporal = TemporalDimension(value=temporal_value, bounds=temporal_bounds, name='time', units='days')
             t_shape = temporal.shape[0]
         else:
             temporal = None
             t_shape = 1
-        
+
         if with_level:
-            level_value = [50,150]
+            level_value = [50, 150]
             if with_bounds:
-                level_bounds = [[0,100],[100,200]]
+                level_bounds = [[0, 100], [100, 200]]
             else:
                 level_bounds = None
-            level = VectorDimension(value=level_value,bounds=level_bounds,name='level',
-                                    units='meters')
+            level = VectorDimension(value=level_value, bounds=level_bounds, name='level', units='meters')
             l_shape = level.shape[0]
         else:
             level = None
             l_shape = 1
-        
+
         row = self.get_row(bounds=with_bounds)
         col = self.get_col(bounds=with_bounds)
-        grid = SpatialGridDimension(row=row,col=col)
-        spatial = SpatialDimension(grid=grid)
+        grid = SpatialGridDimension(row=row, col=col)
+        spatial = SpatialDimension(grid=grid, crs=crs)
         row_shape = row.shape[0]
         col_shape = col.shape[0]
-        
+
         if with_realization:
-            realization = VectorDimension(value=[1,2],name='realization')
+            realization = VectorDimension(value=[1, 2], name='realization')
             r_shape = realization.shape[0]
         else:
             realization = None
             r_shape = 1
-            
+
         if with_value:
-            value = np.random.rand(r_shape,t_shape,l_shape,row_shape,col_shape)
+            value = np.random.rand(r_shape, t_shape, l_shape, row_shape, col_shape)
         else:
             value = None
-        
-        var = Variable(name,units=units,debug=True,data=None,value=value)
+
+        var = Variable(name, units=units, debug=True, data=None, value=value)
         vc = VariableCollection(variables=var)
-        field = Field(variables=vc,temporal=temporal,level=level,realization=realization,
-                    spatial=spatial,name=field_name)
-        
-        return(field)
+        field = Field(variables=vc, temporal=temporal, level=level, realization=realization, spatial=spatial,
+                      name=field_name)
+
+        return field
 
 
 class TestField(AbstractTestField):
@@ -458,14 +459,20 @@ class TestField(AbstractTestField):
                         second_variable_alias=[None, 'tmin_alias'],
                         with_row_column=[True, False],
                         with_realization=[False, True],
-                        remove_dimension_names=[False, True])
+                        remove_dimension_names=[False, True],
+                        crs=[None, Spherical()],
+                        with_level=[True, False])
         path = os.path.join(self.current_dir_output, 'foo.nc')
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
-            field = self.get_field(with_value=True, with_realization=k.with_realization)
+            field = self.get_field(with_value=True, with_realization=k.with_realization, crs=k.crs,
+                                   with_level=k.with_level)
 
             if k.remove_dimension_names:
-                field.level.name = None
+                try:
+                    field.level.name = None
+                except AttributeError:
+                    self.assertFalse(k.with_level)
                 field.temporal.name = None
                 field.spatial.grid.row.name = None
                 field.spatial.grid.col.name = None
@@ -505,16 +512,39 @@ class TestField(AbstractTestField):
                         self.assertIsNone(field.spatial.grid.row)
                         self.assertIsNone(field.spatial.grid.col)
                     continue
+
             with nc_scope(path) as ds:
                 self.assertEqual(ds.another, 'some more information')
                 try:
-                    self.assertEqual(set(ds.variables.keys()), set(['time', 'time_bounds', 'level', 'level_bounds', 'latitude', 'latitude_bounds', 'longitude', 'longitude_bounds', 'tmax', second_variable_alias]))
-                    self.assertEqual(set(ds.dimensions.keys()), set(['time', 'bounds', 'level', 'latitude', 'longitude']))
+                    variable_names = ['time', 'time_bounds', 'latitude', 'latitude_bounds', 'longitude', 'longitude_bounds', 'tmax', second_variable_alias]
+                    dimension_names = ['time', 'bounds', 'latitude', 'longitude']
+                    if k.crs is not None:
+                        variable_names.append(constants.default_coordinate_system_name)
+                    if k.with_level:
+                        variable_names += ['level', 'level_bounds']
+                        dimension_names.append('level')
+                    self.assertEqual(set(ds.variables.keys()), set(variable_names))
+                    self.assertEqual(set(ds.dimensions.keys()), set(dimension_names))
                 except AssertionError:
                     self.assertTrue(k.remove_dimension_names)
-                    self.assertEqual(set(ds.variables.keys()), set(['time', 'time_bounds', 'level', 'level_bounds', 'yc', 'yc_bounds', 'xc', 'xc_bounds', 'tmax', second_variable_alias]))
-                    self.assertEqual(set(ds.dimensions.keys()), set(['time', 'bounds', 'level', 'yc', 'xc']))
+                    variable_names = ['time', 'time_bounds', 'yc', 'yc_bounds', 'xc', 'xc_bounds', 'tmax', second_variable_alias]
+                    dimension_names = ['time', 'bounds', 'yc', 'xc']
+                    if k.crs is not None:
+                        variable_names.append(constants.default_coordinate_system_name)
+                    if k.with_level:
+                        variable_names += ['level', 'level_bounds']
+                        dimension_names.append('level')
+                    self.assertEqual(set(ds.variables.keys()), set(variable_names))
+                    self.assertEqual(set(ds.dimensions.keys()), set(dimension_names))
                 nc_second_variable = ds.variables[second_variable_alias]
+
+                try:
+                    for field_variable in field.variables.itervalues():
+                        self.assertEqual(ds.variables[field_variable.alias].grid_mapping,
+                                         constants.default_coordinate_system_name)
+                except AttributeError:
+                    self.assertIsNone(k.crs)
+
                 self.assertEqual(nc_second_variable.open, 'up')
                 try:
                     self.assertNumpyAll(nc_second_variable[:], value.squeeze())
@@ -525,7 +555,24 @@ class TestField(AbstractTestField):
                 self.assertEqual(nc_second_variable.units, '')
             new_field = RequestDataset(path).get()
             self.assertEqual(new_field.variables.keys(), ['tmax', second_variable_alias])
-            self.assertEqual(new_field.shape, (1, 31, 2, 3, 4))
+            if k.with_level:
+                level_shape = 2
+            else:
+                level_shape = 1
+            self.assertEqual(new_field.shape, (1, 31, level_shape, 3, 4))
+
+    def test_write_to_netcdf_dataset_with_metadata(self):
+        """Test writing to netCDF with a source metadata dictionary attached and data loaded from file."""
+
+        rd = self.test_data.get_rd('narccap_lambert_conformal')
+        field = rd.get()[:, 0:31, :, 20:30, 30:40]
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+            self.assertSetEqual(set(ds.variables.keys()), {u'time', 'time_bnds', u'yc', u'xc', u'Lambert_Conformal',
+                                                           'pr'})
+            self.assertGreater(len(ds.__dict__), 0)
+            self.assertGreater(len(ds.variables['time'].__dict__), 0)
 
 
 class TestDerivedField(AbstractTestField):
@@ -540,8 +587,3 @@ class TestDerivedField(AbstractTestField):
         self.assertIsInstance(df.temporal.value[0],datetime.datetime)
         self.assertEqual(df.temporal.value.tolist(),[datetime.datetime(2000, 1, 16, 0, 0),datetime.datetime(2000, 2, 16, 0, 0)])
         self.assertEqual(df.temporal.bounds[1,1],datetime.datetime(2000, 3, 1, 0, 0))
-
-
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()

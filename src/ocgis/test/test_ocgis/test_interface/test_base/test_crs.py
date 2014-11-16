@@ -62,7 +62,12 @@ class TestCoordinateReferenceSystem(TestBase):
 
         path = os.path.join(self.current_dir_output, 'foo.nc')
         cs_options = [CoordinateReferenceSystem(epsg=4326), CFWGS84(), rd_lambert_conformal.crs, rd_lambert_conformal]
-        for cs in cs_options:
+
+        kwds = dict(cs=cs_options,
+                    meta_as_dict=[False, True])
+
+        for k in itr_products_keywords(kwds, as_namedtuple=True):
+            cs = k.cs
             with nc_scope(path, 'w') as ds:
                 try:
                     # may be passing request datasets through the test...
@@ -70,7 +75,10 @@ class TestCoordinateReferenceSystem(TestBase):
                     cs = cs.crs
                 except AttributeError:
                     # if not a request dataset, assume it is a coordinate reference system object
-                    meta = None
+                    if k.meta_as_dict:
+                        meta = {}
+                    else:
+                        meta = None
                 created_variable = cs.write_to_rootgrp(ds, meta=meta)
                 self.assertIsInstance(created_variable, nc.Variable)
                 try:

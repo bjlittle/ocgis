@@ -100,6 +100,13 @@ class TestDriverNetcdf(TestBase):
         self.assertEqual(col.name_value, 'lon')
         self.assertEqual(col.name_bounds, 'lon_bnds')
 
+        # test attributes are loaded
+        self.assertEqual(len(field.attrs), 31)
+        self.assertEqual(len(field.variables['tas'].attrs), 10)
+        self.assertEqual(len(field.temporal.attrs), 6)
+        self.assertEqual(len(field.spatial.grid.row.attrs), 5)
+        self.assertEqual(len(field.spatial.grid.col.attrs), 5)
+
         ds = nc.Dataset(uri,'r')
 
         self.assertEqual(field.level,None)
