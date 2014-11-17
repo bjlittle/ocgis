@@ -558,7 +558,7 @@ class TemporalGroupDimension(TemporalDimension):
 
         TemporalDimension.__init__(self, *args, **kwargs)
 
-    def write_to_netcdf_dataset(self, *args, **kwargs):
+    def write_to_netcdf_dataset(self, dataset, **kwargs):
         """
         For CF-compliance, ensures climatology bounds are correctly attributed.
         """
@@ -566,7 +566,10 @@ class TemporalGroupDimension(TemporalDimension):
         previous_name_bounds = self.name_bounds
         self.name_bounds = 'climatology_bounds'
         try:
-            super(TemporalGroupDimension, self).write_to_netcdf_dataset(*args, **kwargs)
+            super(TemporalGroupDimension, self).write_to_netcdf_dataset(dataset, **kwargs)
+            variable = dataset.variables[self.name_value]
+            variable.climatology = variable.bounds
+            variable.delncattr('bounds')
         finally:
             self.name_bounds = previous_name_bounds
 

@@ -653,7 +653,10 @@ class TestTemporalGroupDimension(TestBase):
         with nc_scope(path, 'w') as ds:
             tgd.write_to_netcdf_dataset(ds)
             self.assertIn('climatology_bounds', ds.variables)
-            self.assertEqual(ds.variables[tgd.name_value].bounds, 'climatology_bounds')
+            ncvar = ds.variables[tgd.name_value]
+            self.assertEqual(ncvar.climatology, 'climatology_bounds')
+            with self.assertRaises(AttributeError):
+                ncvar.bounds
 
         # test failure and make sure original bounds name is preserved
         self.assertNotEqual(tgd.name_bounds, 'climatology_bounds')

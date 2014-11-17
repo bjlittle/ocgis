@@ -133,8 +133,10 @@ class TestBase(unittest.TestCase):
 
             for varname, var in src.variables.iteritems():
                 dvar = dest.variables[varname]
+
                 var_value = var[:]
                 dvar_value = dvar[:]
+
                 try:
                     if not metadata_only:
                         if close:
@@ -147,6 +149,7 @@ class TestBase(unittest.TestCase):
                         pass
                     else:
                         raise
+
                 if check_types:
                     self.assertEqual(var_value.dtype, dvar_value.dtype)
 

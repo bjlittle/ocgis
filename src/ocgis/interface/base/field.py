@@ -365,7 +365,7 @@ class Field(Attributes):
                 raise ValueError(msg)
 
         try:
-            variable_crs = self.spatial.crs.write_to_rootgrp(dataset, meta=self.meta)
+            variable_crs = self.spatial.crs.write_to_rootgrp(dataset)
         except AttributeError:
             if self.spatial.crs is not None:
                 raise
@@ -380,10 +380,6 @@ class Field(Attributes):
 
             try:
                 nc_variable.grid_mapping = variable_crs._name
-            except AttributeError:
-                # no variables are creating in the case of lat/lon coordinate systems
-                if variable_crs is not None:
-                    raise
             except UnboundLocalError:
                 if self.spatial.crs is not None:
                     raise

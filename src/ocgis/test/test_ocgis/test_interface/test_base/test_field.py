@@ -519,7 +519,7 @@ class TestField(AbstractTestField):
                     variable_names = ['time', 'time_bounds', 'latitude', 'latitude_bounds', 'longitude', 'longitude_bounds', 'tmax', second_variable_alias]
                     dimension_names = ['time', 'bounds', 'latitude', 'longitude']
                     if k.crs is not None:
-                        variable_names.append(constants.default_coordinate_system_name)
+                        variable_names.append(k.crs.name)
                     if k.with_level:
                         variable_names += ['level', 'level_bounds']
                         dimension_names.append('level')
@@ -530,7 +530,7 @@ class TestField(AbstractTestField):
                     variable_names = ['time', 'time_bounds', 'yc', 'yc_bounds', 'xc', 'xc_bounds', 'tmax', second_variable_alias]
                     dimension_names = ['time', 'bounds', 'yc', 'xc']
                     if k.crs is not None:
-                        variable_names.append(constants.default_coordinate_system_name)
+                        variable_names.append(k.crs.name)
                     if k.with_level:
                         variable_names += ['level', 'level_bounds']
                         dimension_names.append('level')
@@ -541,7 +541,7 @@ class TestField(AbstractTestField):
                 try:
                     for field_variable in field.variables.itervalues():
                         self.assertEqual(ds.variables[field_variable.alias].grid_mapping,
-                                         constants.default_coordinate_system_name)
+                                         k.crs.name)
                 except AttributeError:
                     self.assertIsNone(k.crs)
 

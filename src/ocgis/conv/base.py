@@ -14,28 +14,27 @@ from csv import DictWriter
 
 
 class AbstractConverter(object):
-    '''Base converter object. Intended for subclassing.
-    
+    """
+    Base converter object. Intended for subclassing.
+
     :param colls: A sequence of `~ocgis.OcgCollection` objects.
     :type colls: sequence of `~ocgis.OcgCollection` objects
     :param str outdir: Path to the output directory.
     :param str prefix: The string prepended to the output file or directory.
-    :param :class:~`ocgis.OcgOperations ops: Optional operations definition. This
-     is required for some converters.
+    :param :class:~`ocgis.OcgOperations ops: Optional operations definition. This is required for some converters.
     :param bool add_meta: If False, do not add a source and OCGIS metadata file.
-    :param bool add_auxiliary_files: If False, do not create an output folder. Write
-     only the target ouput file.
+    :param bool add_auxiliary_files: If False, do not create an output folder. Write only the target ouput file.
     :parm bool overwrite: If True, attempt to overwrite any existing output files.
-    '''
+    """
+
     __metaclass__ = abc.ABCMeta
     _ext = None
-    _add_did_file = True ## add a descriptor file for the request datasets
-    _add_ugeom = False ## added user geometry in the output folder
-    _add_ugeom_nest = True ## nest the user geometry in a shp folder
-    _add_source_meta = True ## add a source metadata file
-        
-    def __init__(self,colls,outdir,prefix,ops=None,add_meta=True,add_auxiliary_files=True,
-                 overwrite=False):
+    _add_did_file = True  # add a descriptor file for the request datasets
+    _add_ugeom = False  # added user geometry in the output folder
+    _add_ugeom_nest = True  # nest the user geometry in a shp folder
+    _add_source_meta = True  # add a source metadata file
+
+    def __init__(self, colls, outdir, prefix, ops=None, add_meta=True, add_auxiliary_files=True, overwrite=False):
         self.colls = colls
         self.ops = ops
         self.prefix = prefix
@@ -44,17 +43,17 @@ class AbstractConverter(object):
         self.add_auxiliary_files = add_auxiliary_files
         self.overwrite = overwrite
         self._log = ocgis_lh.get_logger('conv')
-        
+
         if self._ext is None:
             self.path = self.outdir
         else:
-            self.path = os.path.join(self.outdir,prefix+'.'+self._ext)
+            self.path = os.path.join(self.outdir, prefix + '.' + self._ext)
             if os.path.exists(self.path):
                 if not self.overwrite:
                     msg = 'Output path exists "{0}" and must be removed before proceeding. Set "overwrite" argument or env.OVERWRITE to True to overwrite.'.format(self.path)
-                    ocgis_lh(logger=self._log,exc=IOError(msg))
-            
-        ocgis_lh('converter initialized',level=logging.DEBUG,logger=self._log)
+                    raise IOError(msg)
+
+        ocgis_lh('converter initialized', level=logging.DEBUG, logger=self._log)
         
     def _build_(self,*args,**kwds): raise(NotImplementedError)
     

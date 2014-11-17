@@ -1601,11 +1601,6 @@ class TestSimpleProjected(TestSimpleBase):
     def test_nc_projection(self):
         dataset = self.get_dataset()
         ret = self.get_ret(kwds={'output_format': 'nc'})
-        # field = RequestDataset(uri=dataset['uri']).get()
-        # import ipdb;ipdb.set_trace()
-        # print Inspect(dataset['uri'])
-        # print Inspect(ret)
-        # import ipdb;ipdb.set_trace()
         self.assertNcEqual(dataset['uri'], ret, ignore_attributes={'global': ['history']})
         
     def test_nc_projection_to_shp(self):
