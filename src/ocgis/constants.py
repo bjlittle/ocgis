@@ -15,6 +15,12 @@ default_temporal_units = 'days since 0000-01-01 00:00:00'
 #: Default name for coordinate systems in netCDF file if none is provided.
 default_coordinate_system_name = 'coordinate_system'
 
+#: Default sample size variable standard name.
+default_sample_size_standard_name = 'sample_size'
+
+#: Default sample size variable long name.
+default_sample_size_long_name = 'Statistical Sample Size'
+
 #: Standard headers for subset operations.
 raw_headers = ['did','vid','ugid','tid','lid','gid','variable','alias','time','year','month','day','level','value']
 #: Standard headers for computation.
