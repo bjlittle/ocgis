@@ -136,11 +136,11 @@ def run_tests(target='all', branch='next', failed='false'):
         fcmd(run, cmd)
 
 
-class RunNesiiAwsTests(Task):
+class RunAwsTests(Task):
     """
     Run tests on remote server and return the path to a local log file of tests results.
     """
-    name = 'run_nesii_aws_tests'
+    name = 'run_aws_tests'
 
     def run(self, path_local_log=None, branch='next', sched='false', launch_pause='false'):
         """
@@ -190,6 +190,7 @@ class RunNesiiAwsTests(Task):
         test_image_id = parser.get(aws_testing_section, 'test_image_id')
         dest_email = parser.get(aws_testing_section, 'dest_email')
         dir_clone = parser.get('server', 'dir_clone')
+        key_name = parser.get('simple-aws', 'key_name')
 
         import sys
         sys.path.append(aws_src)
@@ -216,6 +217,8 @@ class RunNesiiAwsTests(Task):
 
                     if self.launch_pause == 'true':
                         self.log.info('pausing. continue to terminate instance...')
+                        msg = 'ssh -i ~/.ssh/{0}.pem ubuntu@{1}'.format(key_name, instance.public_dns_name)
+                        self.log.info(msg)
                         ipdb.set_trace()
                     else:
                         path = os.path.join(dir_clone, parser.get('git', 'name'))
@@ -237,7 +240,7 @@ class RunNesiiAwsTests(Task):
 
                 finally:
                     self.log.info('detaching volume')
-                    volume.detach()
+                    volume.detach(force=True)
                     am.wait_for_status(volume, 'available')
                     self.log.info('deleting volume')
                     volume.delete()
@@ -253,7 +256,7 @@ class RunNesiiAwsTests(Task):
 
         self.log.info('success')
 
-r = RunNesiiAwsTests()
+r = RunAwsTests()
 
 
 @task
