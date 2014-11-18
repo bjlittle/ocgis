@@ -71,16 +71,6 @@ class TestCoordinateReferenceSystem(TestBase):
             self.assertIsInstance(variable, nc.Variable)
             self.assertEqual(variable.proj4, crs.proj4)
 
-    def test_write_to_rootgrp_no_grid_mapping_name(self):
-        """Test no grid mapping name on the metadata dictionary."""
-
-        path = os.path.join(self.current_dir_output, 'foo.nc')
-        meta = {'nonsense': []}
-        crs = CFWGS84()
-        with nc_scope(path, 'w') as ds:
-            crs.write_to_rootgrp(ds, meta=meta)
-            self.assertEqual(len(ds.variables), 0)
-
 
 class TestWrappableCoordinateSystem(TestBase):
     create_dir = False
@@ -444,12 +434,6 @@ class TestCFRotatedPole(TestBase):
 
         with nc_scope(path, 'w') as ds:
             variable = rd.crs.write_to_rootgrp(ds)
-            self.assertIsInstance(variable, nc.Variable)
-            self.assertEqual(variable.proj4, '')
-            self.assertEqual(variable.proj4_transform, rd.crs._trans_proj)
-
-        with nc_scope(path, 'w') as ds:
-            variable = rd.crs.write_to_rootgrp(ds, meta=rd.source_metadata)
             self.assertIsInstance(variable, nc.Variable)
             self.assertEqual(variable.proj4, '')
             self.assertEqual(variable.proj4_transform, rd.crs._trans_proj)
