@@ -666,12 +666,12 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
 
         return new_spatial
 
-    def write_to_rootgrp(self, rootgrp, meta=None):
+    def write_to_rootgrp(self, rootgrp):
         """
         .. note:: See :meth:`~ocgis.interface.base.crs.CoordinateReferenceSystem.write_to_rootgrp`.
         """
 
-        variable = super(CFRotatedPole, self).write_to_rootgrp(rootgrp, meta=meta)
+        variable = super(CFRotatedPole, self).write_to_rootgrp(rootgrp)
         variable.proj4 = ''
         variable.proj4_transform = self._trans_proj
         return variable
