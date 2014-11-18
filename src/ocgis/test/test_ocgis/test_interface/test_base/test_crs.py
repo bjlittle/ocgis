@@ -71,58 +71,6 @@ class TestCoordinateReferenceSystem(TestBase):
             self.assertIsInstance(variable, nc.Variable)
             self.assertEqual(variable.proj4, crs.proj4)
 
-    def test_write_to_rootgrp_old(self):
-        rd_lambert_conformal = self.test_data.get_rd('narccap_lambert_conformal')
-
-        path = os.path.join(self.current_dir_output, 'foo.nc')
-        cs_options = [CoordinateReferenceSystem(epsg=4326), CFWGS84(), rd_lambert_conformal.crs, rd_lambert_conformal]
-
-        kwds = dict(cs=cs_options,
-                    meta_as_dict=[False, True],
-                    with_none_attr_value=[False, True])
-
-        for k in itr_products_keywords(kwds, as_namedtuple=True):
-            cs = k.cs
-            with nc_scope(path, 'w') as ds:
-                try:
-                    # may be passing request datasets through the test...
-                    meta = cs.source_metadata
-                    cs = cs.crs
-                    if k.with_none_attr_value:
-                        meta['variables']['Lambert_Conformal']['attrs']['foo'] = None
-                except AttributeError:
-                    # if not a request dataset, assume it is a coordinate reference system object
-                    if k.meta_as_dict:
-                        meta = {}
-                    else:
-                        meta = None
-                created_variable = cs.write_to_rootgrp(ds, meta=meta)
-                try:
-                    self.assertIsInstance(created_variable, nc.Variable)
-                except AssertionError:
-                    self.assertIsNone(created_variable)
-                    with self.assertRaises(AttributeError):
-                        cs.grid_mapping_name
-                    continue
-                if k.with_none_attr_value and meta is not None and len(meta) > 1:
-                    self.assertEqual(created_variable.foo, '')
-                try:
-                    variable = ds.variables[constants.default_coordinate_system_name]
-                except KeyError:
-                    try:
-                        variable = ds.variables[cs.grid_mapping_name]
-                    except KeyError:
-                        variable = ds.variables[meta['grid_mapping_variable_name']]
-                self.assertEqual(variable.proj4, cs.proj4)
-                try:
-                    for k, v in cs.map_parameters_values.iteritems():
-                        try:
-                            self.assertEqual(variable.__dict__[k], v)
-                        except ValueError:
-                            self.assertNumpyAll(variable.__dict__[k], v)
-                except AttributeError:
-                    self.assertFalse(hasattr(cs, 'map_parameters_values'))
-
     def test_write_to_rootgrp_no_grid_mapping_name(self):
         """Test no grid mapping name on the metadata dictionary."""
 
