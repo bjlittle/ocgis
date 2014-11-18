@@ -10,8 +10,7 @@ from ocgis.exc import EmptySubsetError, ResolutionError
 from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension, AbstractValueDimension
 from copy import deepcopy
 from cfunits.cfunits import Units
-from ocgis.test.base import TestBase
-from ocgis.test.test_simple.test_simple import nc_scope
+from ocgis.test.base import TestBase, nc_scope
 from ocgis.util.helpers import get_bounds_from_1d
 from ocgis.util.itester import itr_products_keywords
 

@@ -1,8 +1,8 @@
+from ocgis.test.base import nc_scope
 from ocgis.util.itester import itr_products_keywords
 from ocgis.api.operations import OcgOperations
 from ocgis.conv.nc import NcConverter
 import numpy as np
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.test.test_ocgis.test_conv.test_base import AbstractTestConverter
 import ocgis
 from ocgis import constants

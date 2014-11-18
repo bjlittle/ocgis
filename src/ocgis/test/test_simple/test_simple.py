@@ -1,67 +1,44 @@
 import re
 import unittest
-from fiona.crs import from_string
-from ocgis.util.inspect import Inspect
-from osgeo.osr import SpatialReference
-from ocgis.api.operations import OcgOperations
-from ocgis.api.interpreter import OcgInterpreter
 import itertools
-import numpy as np
 import datetime
-from ocgis.api.parms.definition import SpatialOperation
-from ocgis.util.helpers import make_poly, project_shapely_geometry
-from ocgis import exc, env, constants
 import os.path
 from abc import ABCMeta, abstractproperty
 import netCDF4 as nc
-from ocgis.test.base import TestBase
-from shapely.geometry.point import Point
-import ocgis
-from ocgis.exc import ExtentError, DefinitionValidationError
-from shapely.geometry.polygon import Polygon
 import csv
-import fiona
 from collections import OrderedDict
-from ocgis.interface.base import crs
+from copy import deepcopy
+from csv import DictReader
+import tempfile
+
+from fiona.crs import from_string
+from osgeo.osr import SpatialReference
+import numpy as np
+from shapely.geometry.point import Point
+from shapely.geometry.polygon import Polygon
+import fiona
 from shapely.geometry.geo import mapping
 from shapely import wkt
+
+from ocgis.api.operations import OcgOperations
+from ocgis.api.interpreter import OcgInterpreter
+from ocgis.api.parms.definition import SpatialOperation
+from ocgis.util.helpers import make_poly, project_shapely_geometry
+from ocgis import exc, env, constants
+from ocgis.test.base import TestBase, nc_scope
+import ocgis
+from ocgis.exc import ExtentError, DefinitionValidationError
+from ocgis.interface.base import crs
 from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, CFWGS84
 from ocgis.api.request.base import RequestDataset, RequestDatasetCollection
-from copy import deepcopy
-from contextlib import contextmanager
 from ocgis.test.test_simple.make_test_data import SimpleNcNoLevel, SimpleNc, SimpleNcNoBounds, SimpleMaskNc, \
     SimpleNc360, SimpleNcProjection, SimpleNcNoSpatialBounds, SimpleNcMultivariate
-from csv import DictReader
 from ocgis.test.test_base import longrunning
-import tempfile
 from ocgis.api.parms.definition import OutputFormat
 from ocgis.interface.base.field import DerivedMultivariateField
 from ocgis.util.itester import itr_products_keywords
 from ocgis.util.shp_cabinet import ShpCabinetIterator
 from ocgis.util.spatial.fiona_maker import FionaMaker
-
-
-@contextmanager
-def nc_scope(path, mode='r'):
-    """
-    Provide a transactional scope around a :class:`netCDF4.Dataset` object.
-
-    >>> with nc_scope('/my/file.nc') as ds:
-    >>>     print ds.variables
-
-    :param str path: The full path to the netCDF dataset.
-    :param str mode: The file mode to use when opening the dataset.
-    :returns: An open dataset object that will be closed after leaving the ``with statement``.
-    :rtype: :class:`netCDF4.Dataset`
-    """
-
-    ds = nc.Dataset(path, mode=mode)
-    try:
-        yield ds
-    except:
-        raise
-    finally:
-        ds.close()
 
 
 class TestSimpleBase(TestBase):
@@ -412,24 +389,24 @@ class TestSimple(TestSimpleBase):
         ## pass only three slices
         with self.assertRaises(DefinitionValidationError):
             self.get_ops(kwds={'slice':[None,[1,3],[1,3]]})
-        
+
     def test_file_only(self):
-        ret = self.get_ret(kwds={'output_format':'nc','file_only':True,
-                                 'calc':[{'func':'mean','name':'my_mean'}],
-                                 'calc_grouping':['month']})
+        ret = self.get_ret(
+            kwds={'output_format': 'nc', 'file_only': True, 'calc': [{'func': 'mean', 'name': 'my_mean'}],
+                  'calc_grouping': ['month']})
         try:
-            ds = nc.Dataset(ret,'r')
-            self.assertTrue(isinstance(ds.variables['my_mean'][:].sum(),
-                            np.ma.core.MaskedConstant))
-            self.assertEqual(set(ds.variables['my_mean'].ncattrs()),set([u'_FillValue', u'units', u'long_name', u'standard_name']))
+            ds = nc.Dataset(ret, 'r')
+            self.assertTrue(isinstance(ds.variables['my_mean'][:].sum(), np.ma.core.MaskedConstant))
+            self.assertEqual(set(ds.variables['my_mean'].ncattrs()),
+                             set([u'_FillValue', u'units', u'long_name', u'standard_name', 'grid_mapping']))
         finally:
             ds.close()
-            
+
         with self.assertRaises(DefinitionValidationError):
-            self.get_ret(kwds={'file_only':True,'output_format':'shp'})
-            
+            self.get_ret(kwds={'file_only': True, 'output_format': 'shp'})
+
         with self.assertRaises(DefinitionValidationError):
-            self.get_ret(kwds={'file_only':True})
+            self.get_ret(kwds={'file_only': True})
 
     def test_return_all(self):
         ret = self.get_ret()
@@ -596,26 +573,26 @@ class TestSimple(TestSimpleBase):
         with self.assertRaises(DefinitionValidationError):
             rd = self.get_dataset(time_region={'month':[1]})
             OcgOperations(dataset=rd,snippet=True)
-        
-    def test_calc(self):
-        calc = [{'func':'mean','name':'my_mean'}]
-        group = ['month','year']
-        
-        ## raw
-        ret = self.get_ret(kwds={'calc':calc,'calc_grouping':group})
-        ref = ret.gvu(1,'my_mean')
-        self.assertEqual(ref.shape,(1,2,2,4,4))
-        with self.assertRaises(KeyError):
-            ret.gvu(1,'n')
 
-        ## aggregated
-        for calc_raw in [True,False]:
-            ret = self.get_ret(kwds={'calc':calc,'calc_grouping':group,
-                                     'aggregate':True,'calc_raw':calc_raw})
-            ref = ret.gvu(1,'my_mean')
-            self.assertEqual(ref.shape,(1,2,2,1,1))
-            self.assertEqual(ref.flatten().mean(),2.5)
-            self.assertDictEqual(ret[1]['foo'].variables['my_mean'].meta['attrs'], {'long_name': 'Mean', 'standard_name': 'mean'})
+    def test_calc(self):
+        calc = [{'func': 'mean', 'name': 'my_mean'}]
+        group = ['month', 'year']
+
+        # raw
+        ret = self.get_ret(kwds={'calc': calc, 'calc_grouping': group})
+        ref = ret.gvu(1, 'my_mean')
+        self.assertEqual(ref.shape, (1, 2, 2, 4, 4))
+        with self.assertRaises(KeyError):
+            ret.gvu(1, 'n')
+
+        # aggregated
+        for calc_raw in [True, False]:
+            ret = self.get_ret(kwds={'calc': calc, 'calc_grouping': group, 'aggregate': True, 'calc_raw': calc_raw})
+            ref = ret.gvu(1, 'my_mean')
+            self.assertEqual(ref.shape, (1, 2, 2, 1, 1))
+            self.assertEqual(ref.flatten().mean(), 2.5)
+            self.assertDictEqual(ret[1]['foo'].variables['my_mean'].attrs,
+                                 {'long_name': 'Mean', 'standard_name': 'mean'})
 
     def test_calc_multivariate(self):
         rd1 = self.get_dataset()
@@ -750,7 +727,8 @@ class TestSimple(TestSimpleBase):
         ops = OcgOperations(dataset=rd, output_format='nc')
         ret = self.get_ret(ops)
         
-        self.assertNcEqual(rd['uri'], ret, ignore_attributes={'global': ['history']})
+        self.assertNcEqual(ret, rd['uri'], ignore_attributes={'global': ['history'], 'time_bnds': ['calendar', 'units'], rd['variable']: 'grid_mapping'},
+                           ignore_variables=['latitude_longitude'])
         
     def test_nc_conversion_calc(self):
         calc_grouping = ['month']

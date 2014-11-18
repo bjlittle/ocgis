@@ -14,8 +14,7 @@ from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension,\
     SpatialDimension
 from ocgis.exc import SpatialWrappingError
-from ocgis.test.base import TestBase
-from ocgis.test.test_simple.test_simple import nc_scope
+from ocgis.test.base import TestBase, nc_scope
 from ocgis.util.helpers import make_poly
 from ocgis.interface.metadata import NcMetadata
 import ocgis

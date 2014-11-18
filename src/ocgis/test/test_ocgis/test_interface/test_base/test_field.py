@@ -17,12 +17,11 @@ from ocgis import RequestDataset
 from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.crs import WGS84, Spherical
 from ocgis.interface.nc.temporal import NcTemporalDimension
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import get_date_list, make_poly
 from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.field import Field, DerivedField
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 from ocgis.exc import EmptySubsetError
 from ocgis.interface.base.variable import Variable, VariableCollection
 from ocgis.interface.base.dimension.temporal import TemporalDimension

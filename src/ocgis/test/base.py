@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import unittest
 import abc
 import tempfile
@@ -109,7 +110,7 @@ class TestBase(unittest.TestCase):
             self.assertTrue(np.all(arr1 == arr2))
 
     def assertNcEqual(self, uri_src, uri_dest, check_types=True, close=False, metadata_only=False,
-                      ignore_attributes=None):
+                      ignore_attributes=None, ignore_variables=None):
         """
         Assert two netCDF files are equal according to the test criteria.
 
@@ -124,8 +125,10 @@ class TestBase(unittest.TestCase):
 
         >>> ignore_attributes = {'global': ['history']}
 
-        :raises: AssertionError
+        :param list ignore_variables: A list of variable names to ignore.
         """
+
+        ignore_variables = ignore_variables or []
 
         src = nc.Dataset(uri_src)
         dest = nc.Dataset(uri_dest)
@@ -138,6 +141,10 @@ class TestBase(unittest.TestCase):
             self.assertEqual(set(src.dimensions.keys()), set(dest.dimensions.keys()))
 
             for varname, var in src.variables.iteritems():
+
+                if varname in ignore_variables:
+                    continue
+
                 dvar = dest.variables[varname]
 
                 var_value = var[:]
@@ -178,7 +185,11 @@ class TestBase(unittest.TestCase):
                     except AttributeError:
                         self.assertEqual(v, to_test_attr)
                 self.assertEqual(var.dimensions, dvar.dimensions)
-            self.assertEqual(set(src.variables.keys()), set(dest.variables.keys()))
+
+            src_variables = src.variables.keys()
+            for xx in ignore_variables:
+                src_variables.remove(xx)
+            self.assertEqual(set(src_variables), set(dest.variables.keys()))
 
             if 'global' not in ignore_attributes:
                 self.assertDictEqual(src.__dict__, dest.__dict__)
@@ -365,6 +376,9 @@ class TestBase(unittest.TestCase):
     def iter_product_keywords(self, keywords, as_namedtuple=True):
         return itr_products_keywords(keywords, as_namedtuple=as_namedtuple)
 
+    def nc_scope(self, *args, **kwargs):
+        return nc_scope(*args, **kwargs)
+
     def setUp(self):
         self.current_dir_output = None
         if self.reset_env:
@@ -499,3 +513,26 @@ class TestData(OrderedDict):
 
         OrderedDict.update(self, {key or filename: {'collection': collection,
                                                     'filename': filename, 'variable': variable}})
+
+
+@contextmanager
+def nc_scope(path, mode='r'):
+    """
+    Provide a transactional scope around a :class:`netCDF4.Dataset` object.
+
+    >>> with nc_scope('/my/file.nc') as ds:
+    >>>     print ds.variables
+
+    :param str path: The full path to the netCDF dataset.
+    :param str mode: The file mode to use when opening the dataset.
+    :returns: An open dataset object that will be closed after leaving the ``with statement``.
+    :rtype: :class:`netCDF4.Dataset`
+    """
+
+    ds = nc.Dataset(path, mode=mode)
+    try:
+        yield ds
+    except:
+        raise
+    finally:
+        ds.close()

@@ -6,8 +6,8 @@ from cfunits.cfunits import Units
 from ocgis.api.parms.definition import Calc
 from ocgis.calc.library.statistics import Mean, FrequencyPercentile, MovingWindow
 from ocgis.interface.base.variable import DerivedVariable, Variable
+from ocgis.test.base import nc_scope
 from ocgis.test.test_ocgis.test_interface.test_base.test_field import AbstractTestField
-from ocgis.test.test_simple.test_simple import nc_scope
 import ocgis
 from ocgis.util.itester import itr_products_keywords
 

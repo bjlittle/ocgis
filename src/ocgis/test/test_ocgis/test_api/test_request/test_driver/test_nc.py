@@ -7,7 +7,7 @@ import unittest
 from ocgis import RequestDataset
 from ocgis.api.request.driver.nc import DriverNetcdf, get_dimension_map
 from ocgis.interface.metadata import NcMetadata
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 import netCDF4 as nc
 from ocgis.interface.base.crs import WGS84, CFWGS84, CFLambertConformal
 import numpy as np
@@ -20,7 +20,6 @@ from ocgis.exc import EmptySubsetError, DimensionNotFound
 import datetime
 from unittest.case import SkipTest
 import ocgis
-from ocgis.test.test_simple.test_simple import nc_scope
 from importlib import import_module
 from collections import OrderedDict
 from ocgis.util.logging_ocgis import ocgis_lh

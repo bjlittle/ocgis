@@ -9,10 +9,9 @@ import itertools
 import netcdftime
 import numpy as np
 
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.itester import itr_products_keywords
 from ocgis import constants
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 from ocgis.interface.base.dimension.temporal import TemporalDimension, get_is_interannual, get_sorted_seasons, \
     get_time_regions, iter_boolean_groups_from_time_regions, get_datetime_conversion_state, \
     get_datetime_from_months_time_units, get_difference_in_months, get_num_from_months_time_units, \
@@ -354,17 +353,29 @@ class TestTemporalDimension(TestBase):
         td = TemporalDimension(value=field.temporal.value_datetime)
         tg = td.get_grouping([[3,4,5]])
         self.assertEqual(tg.value[0],dt(2005,4,16))
-    
+
     def test_get_grouping_seasonal_empty_with_year_missing_month(self):
-        dt1 = datetime.datetime(1900,01,01)
-        dt2 = datetime.datetime(1903,1,31)
-        dates = get_date_list(dt1,dt2,days=1)
+        dt1 = datetime.datetime(1900, 01, 01)
+        dt2 = datetime.datetime(1903, 1, 31)
+        dates = get_date_list(dt1, dt2, days=1)
         td = TemporalDimension(value=dates)
-        group = [[12,1,2],'unique']
+        group = [[12, 1, 2], 'unique']
         tg = td.get_grouping(group)
-        ## there should be a month missing from the last season (february) and it should not be
-        ## considered complete
-        self.assertEqual(tg.value.shape[0],2)
+        # there should be a month missing from the last season (february) and it should not be considered complete
+        self.assertEqual(tg.value.shape[0], 2)
+
+    def test_get_grouping_seasonal_real_data_all_seasons(self):
+        """Test with real data and full seasons."""
+
+        calc_grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]]
+        rd = self.test_data.get_rd('cancm4_tas')
+        field = rd.get()
+        tgd = field.temporal.get_grouping(calc_grouping)
+        self.assertEqual(tgd.shape, (4,))
+        self.assertEqual([xx[1] for xx in calc_grouping], [xx.month for xx in tgd.value.flat])
+        self.assertEqual(set([xx.day for xx in tgd.value.flat]), {constants.calc_month_centroid})
+        self.assertEqual([2006, 2005, 2005, 2005], [xx.year for xx in tgd.value.flat])
+        self.assertNumpyAll(tgd.bounds_numtime, np.array([[55152.0, 58804.0], [55211.0, 58590.0], [55303.0, 58682.0], [55395.0, 58773.0]]))
 
     def test_get_grouping_seasonal_unique_flag(self):
         """Test the unique flag for seasonal groups."""

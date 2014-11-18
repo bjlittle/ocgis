@@ -1,12 +1,11 @@
 import unittest
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 import os
 from ocgis.api.request.base import RequestDataset
 import ocgis
 from ocgis.api.operations import OcgOperations
 import numpy as np
 from ocgis.exc import DefinitionValidationError, ExtentError
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.test.test_base import longrunning
 from ocgis.interface.base.crs import CFRotatedPole, CFWGS84
 

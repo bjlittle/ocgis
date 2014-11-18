@@ -7,12 +7,11 @@ from ocgis.api.request.base import RequestDataset, RequestDatasetCollection, get
 import ocgis
 from ocgis import env, constants
 from ocgis.interface.base.crs import CoordinateReferenceSystem, CFWGS84
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 import os
 import pickle
 from datetime import datetime as dt
 import shutil
-from ocgis.test.test_simple.test_simple import nc_scope
 import datetime
 from ocgis.api.operations import OcgOperations
 import numpy as np

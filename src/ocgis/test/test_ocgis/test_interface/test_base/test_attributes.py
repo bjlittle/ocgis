@@ -1,8 +1,7 @@
 from collections import OrderedDict
 import os
 from ocgis.interface.base.attributes import Attributes
-from ocgis.test.base import TestBase
-from ocgis.test.test_simple.test_simple import nc_scope
+from ocgis.test.base import TestBase, nc_scope
 
 
 class TestAttributes(TestBase):

@@ -1,13 +1,12 @@
 import unittest
 from ocgis.api.parms.definition import RegridOptions
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, nc_scope
 from ocgis.exc import DefinitionValidationError, DimensionNotFound, RequestValidationError
 from ocgis.api.parms import definition
 from ocgis import env, constants
 import os
 from datetime import datetime as dt
 from ocgis.api.operations import OcgOperations
-from ocgis.test.test_simple.test_simple import nc_scope
 from ocgis.util.helpers import make_poly
 import itertools
 import ocgis

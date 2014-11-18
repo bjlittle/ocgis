@@ -1,4 +1,6 @@
 import datetime
+from netCDF4 import Dataset
+import os
 from ocgis.interface.base.field import Field
 from ocgis.test.base import TestBase, TestData
 import ocgis
@@ -58,6 +60,11 @@ class TestTestBase(TestBase):
     def test_multifile(self):
         rd = self.test_data.get_rd('narccap_pr_wrfg_ncep')
         self.assertEqual(len(rd.uri),2)
+
+    def test_ncscope(self):
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with self.nc_scope(path, 'w') as ds:
+            self.assertIsInstance(ds, Dataset)
 
 
 class TestTestData(TestBase):

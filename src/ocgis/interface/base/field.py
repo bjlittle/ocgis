@@ -442,18 +442,15 @@ class Field(Attributes):
 
 class DerivedField(Field):
     
-    def _get_variable_iter_yield_(self,variable):
-        yld = {}
-        yld['cid'] = variable.uid
-        yld['calc_key'] = variable.name
-        yld['calc_alias'] = variable.alias
-        
+    def _get_variable_iter_yield_(self, variable):
+        yld = {'cid': variable.uid, 'calc_key': variable.name, 'calc_alias': variable.alias}
+
         raw_variable = variable.parents.values()[0]
         yld['did'] = self.uid
         yld['variable'] = raw_variable.name
         yld['alias'] = raw_variable.alias
         yld['vid'] = raw_variable.uid
-        return(yld)
+        return yld
 
 
 class DerivedMultivariateField(Field):
