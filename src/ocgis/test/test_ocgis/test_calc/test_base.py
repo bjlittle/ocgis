@@ -78,17 +78,16 @@ class TestAbstractFunction(AbstractTestField):
                 fb = FooNeedsUnits(field=field, meta_attrs=meta_attrs)
                 ret = fb.execute()
                 if oload:
-                    actual = {'attrs': {'long_name': 'Foo Needs Units', 'standard_name': 'never!',
-                                         'something_new': 'is about to happen'}}
+                    actual = {'long_name': 'Foo Needs Units', 'standard_name': 'never!',
+                              'something_new': 'is about to happen'}
                 else:
-                    actual = {'attrs': {'long_name': 'Foo Needs Units', 'standard_name': 'foo_needs_units',
-                                         'something_new': 'is about to happen'}}
-                self.assertEqual(ret['fnu'].meta, actual)
+                    actual = {'long_name': 'Foo Needs Units', 'standard_name': 'foo_needs_units',
+                              'something_new': 'is about to happen'}
+                self.assertDictEqual(ret['fnu'].attrs, actual)
                 if oload:
                     self.assertDictEqual(meta_attrs, {'something_new': 'is about to happen', 'standard_name': 'never!'})
                 else:
                     self.assertDictEqual(meta_attrs, {'something_new': 'is about to happen'})
-
 
             
 class TestAbstractUnivariateFunction(AbstractTestField):
