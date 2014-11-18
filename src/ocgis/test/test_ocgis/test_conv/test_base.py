@@ -20,7 +20,7 @@ class AbstractTestConverter(TestBase):
         field = field or rd.get()[:, 0, :, 0, 0]
         coll = SpatialCollection()
         coll.add_field(1, None, field)
-        return(coll)
+        return coll
 
 
 class TestAbstractConverter(AbstractTestConverter):

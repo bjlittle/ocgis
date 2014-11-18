@@ -17,8 +17,8 @@ class AbstractConverter(object):
     """
     Base converter object. Intended for subclassing.
 
-    :param colls: A sequence of `~ocgis.OcgCollection` objects.
-    :type colls: sequence of `~ocgis.OcgCollection` objects
+    :param colls: A sequence of :class:`~ocgis.SpatialCollection` objects.
+    :type colls: sequence of :class:`~ocgis.SpatialCollection`
     :param str outdir: Path to the output directory.
     :param str prefix: The string prepended to the output file or directory.
     :param :class:~`ocgis.OcgOperations ops: Optional operations definition. This is required for some converters.
@@ -34,7 +34,8 @@ class AbstractConverter(object):
     _add_ugeom_nest = True  # nest the user geometry in a shp folder
     _add_source_meta = True  # add a source metadata file
 
-    def __init__(self, colls, outdir, prefix, ops=None, add_meta=True, add_auxiliary_files=True, overwrite=False):
+    def __init__(self, colls, outdir=None, prefix=None, ops=None, add_meta=True, add_auxiliary_files=True,
+                 overwrite=False):
         self.colls = colls
         self.ops = ops
         self.prefix = prefix

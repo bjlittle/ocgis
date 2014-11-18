@@ -103,7 +103,7 @@ class SpatialCollection(AbstractCollection):
         
         # self._uid_ctr_field = 1
         # self._ugid = OrderedDict()
-        
+
     @property
     def _archetype_field(self):
         ukey = self.keys()[0]

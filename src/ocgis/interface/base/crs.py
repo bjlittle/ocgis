@@ -96,62 +96,9 @@ class CoordinateReferenceSystem(object):
         :rtype: :class:`netCDF4.Variable`
         """
 
-        variable = rootgrp.createVariable(self.name, 'uint8')
+        variable = rootgrp.createVariable(self.name, 'c')
         variable.proj4 = self.proj4
         return variable
-
-        # # flag to indicate if a coordinate system variable was added
-        # need_variable = False
-        #
-        # # be able to handle none values and empty dictionaries
-        # if meta is None or len(meta) == 0:
-        #     # attempt to get the grid mapping name, otherwise use a default value
-        #     try:
-        #         name = self.grid_mapping_name
-        #         need_variable = True
-        #     except AttributeError:
-        #         # this does not require a coordinate system variable
-        #         pass
-        #     else:
-        #         dtype = str
-        #         attrs = OrderedDict()
-        #         # always add the proj4 string
-        #         attrs['proj4'] = self.proj4
-        # else:
-        #     try:
-        #         name = meta['grid_mapping_variable_name']
-        #         need_variable = True
-        #     except KeyError:
-        #         # this coordinate system does not require a coordinate system variable
-        #         pass
-        #     else:
-        #         dtype = meta['variables'][name]['dtype']
-        #         attrs = meta['variables'][name]['attrs'].copy()
-        #         # always add the proj4 string
-        #         attrs['proj4'] = self.proj4
-        #
-        # if need_variable:
-        #     try:
-        #         # ensure the map parameters are part of the attributes but respect the original metadata values if they
-        #         # are already there.
-        #         for k, v in self.map_parameters_values.iteritems():
-        #             if k not in attrs:
-        #                 attrs[k] = v
-        #     except AttributeError:
-        #         # if map parameters are not present on the object, continue
-        #         pass
-        #
-        #     variable = rootgrp.createVariable(name, dtype)
-        #
-        #     # look for nonetype values
-        #     for k, v in attrs.iteritems():
-        #         if v is None:
-        #             v = ''
-        #         setattr(variable, k, v)
-        # else:
-        #     variable = None
-        #
-        # return variable
 
 
 class WrappableCoordinateReferenceSystem(object):

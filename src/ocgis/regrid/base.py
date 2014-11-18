@@ -103,7 +103,7 @@ def get_esmf_grid_from_sdim(sdim, with_corners=True, value_mask=None):
     else:
         value_mask = ogrid.value.mask[0]
     # follows SCRIP convention where 1 is unmasked and 0 is masked
-    esmf_mask = np.invert(value_mask).astype(np.int8)
+    esmf_mask = np.invert(value_mask).astype(np.int32)
     egrid.add_item(ESMF.GridItem.MASK, staggerloc=ESMF.StaggerLoc.CENTER, from_file=False)
     egrid.mask[0][:] = esmf_mask
 

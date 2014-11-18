@@ -17,6 +17,7 @@ from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis.interface.base.dimension.temporal import TemporalDimension
 from ocgis.interface.base.variable import Variable
 from ocgis.util.helpers import get_iter
+from ocgis.util.itester import itr_products_keywords
 
 
 class ToTest(Exception):
@@ -75,7 +76,7 @@ class TestBase(unittest.TestCase):
                 self.assertEqual(v, d2[k], msg=msg)
             self.assertEqual(set(d1.keys()), set(d2.keys()))
 
-    def assertNumpyAll(self, arr1, arr2, check_fill_value_dtype=True, check_arr_dtype=True):
+    def assertNumpyAll(self, arr1, arr2, check_fill_value_dtype=True, check_arr_dtype=True, check_arr_type=True):
         """
         Asserts arrays are equal according to the test criteria.
 
@@ -85,10 +86,15 @@ class TestBase(unittest.TestCase):
         :type arr2: :class:`numpy.ndarray`
         :param bool check_fill_value_dtype: If ``True``, check that the data type for masked array fill values are equal.
         :param bool check_arr_dtype: If ``True``, check the data types of the arrays are equal.
+        :param bool check_arr_type: If ``True``, check the types of the incoming arrays:
+
+        >>> type(arr1) == type(arr2)
+
         :raises: AssertionError
         """
 
-        self.assertEqual(type(arr1), type(arr2))
+        if check_arr_type:
+            self.assertEqual(type(arr1), type(arr2))
         self.assertEqual(arr1.shape, arr2.shape)
         if check_arr_dtype:
             self.assertEqual(arr1.dtype, arr2.dtype)
@@ -244,20 +250,36 @@ class TestBase(unittest.TestCase):
         else:
             raise AssertionError('Arrays are equivalent within precision.')
 
-    def get_field(self):
+    def get_field(self, nlevel=None, nrlz=None):
         """
+        :param int nlevel: The number of level elements.
+        :param int nrlz: The number of realization elements.
         :returns: A small field object for testing.
         :rtype: `~ocgis.Field`
         """
 
         np.random.seed(1)
-        row = VectorDimension(value=[4., 5.])
-        col = VectorDimension(value=[40., 50.])
+        row = VectorDimension(value=[4., 5.], name='row')
+        col = VectorDimension(value=[40., 50.], name='col')
         grid = SpatialGridDimension(row=row, col=col)
         sdim = SpatialDimension(grid=grid)
         temporal = TemporalDimension(value=[datetime.datetime(2000, 1, 1), datetime.datetime(2000, 2, 1)])
-        variable = Variable(name='foo', value=np.random.rand(1, 2, 1, 2, 2))
-        field = Field(spatial=sdim, temporal=temporal, variables=variable)
+
+        if nlevel is None:
+            nlevel = 1
+            level = None
+        else:
+            level = VectorDimension(value=range(1, nlevel+1), name='level')
+
+        if nrlz is None:
+            nrlz = 1
+            realization = None
+        else:
+            realization = VectorDimension(value=range(1, nrlz+1), name='realization')
+
+        variable = Variable(name='foo', value=np.random.rand(nrlz, 2, nlevel, 2, 2))
+        field = Field(spatial=sdim, temporal=temporal, variables=variable, level=level, realization=realization)
+
         return field
 
     def get_temporary_output_directory(self):
@@ -339,6 +361,9 @@ class TestBase(unittest.TestCase):
         test_data.update(['nc', 'snippets'], 'bias', 'seasonalbias.nc', key='snippet_seasonalbias')
 
         return test_data
+
+    def iter_product_keywords(self, keywords, as_namedtuple=True):
+        return itr_products_keywords(keywords, as_namedtuple=as_namedtuple)
 
     def setUp(self):
         self.current_dir_output = None
