@@ -184,6 +184,26 @@ class TestBase(unittest.TestCase):
                         self.assertNumpyAll(v, to_test_attr)
                     except AttributeError:
                         self.assertEqual(v, to_test_attr)
+
+                # check values of attributes on all variables
+                for k, v in dvar.__dict__.iteritems():
+                    try:
+                        to_test_attr = getattr(var, k)
+                    except AttributeError:
+                        # if the variable and attribute are flagged to ignore, continue to the next attribute
+                        if var._name in ignore_attributes:
+                            if k in ignore_attributes[var._name]:
+                                continue
+
+                        # notify if an attribute is missing
+                        msg = 'The attribute "{0}" is not found on the variable "{1}" for URI "{2}".'\
+                            .format(k, var._name, uri_dest)
+                        raise AttributeError(msg)
+                    try:
+                        self.assertNumpyAll(v, to_test_attr)
+                    except AttributeError:
+                        self.assertEqual(v, to_test_attr)
+
                 self.assertEqual(var.dimensions, dvar.dimensions)
 
             src_variables = src.variables.keys()
@@ -372,6 +392,10 @@ class TestBase(unittest.TestCase):
         test_data.update(['nc', 'snippets'], 'bias', 'seasonalbias.nc', key='snippet_seasonalbias')
 
         return test_data
+
+    def inspect(self, uri, variable=None):
+        from ocgis.util.inspect import Inspect
+        print Inspect(uri, variable=None)
 
     def iter_product_keywords(self, keywords, as_namedtuple=True):
         return itr_products_keywords(keywords, as_namedtuple=as_namedtuple)

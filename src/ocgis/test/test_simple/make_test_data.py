@@ -409,7 +409,7 @@ class SimpleNcProjection(NcFactory):
         value.units = 'huge'
         value.grid_mapping = 'crs'
 
-        grid_mapping = rootgrp.createVariable('crs','u1')
+        grid_mapping = rootgrp.createVariable('crs','c')
         grid_mapping.grid_mapping_name = "lambert_conformal_conic"
         grid_mapping.standard_parallel = [30., 60.]
         grid_mapping.longitude_of_central_meridian = -97.

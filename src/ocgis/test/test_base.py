@@ -33,6 +33,19 @@ def dev(f):
 
 class TestTestBase(TestBase):
 
+    def test_assertNcEqual(self):
+
+        def _write_(fn):
+            path = os.path.join(self.current_dir_output, fn)
+            with self.nc_scope(path, 'w') as ds:
+                var = ds.createVariable('crs', 'c')
+                var.name = 'something'
+            return path
+
+        path1 = _write_('foo1.nc')
+        path2 = _write_('foo2.nc')
+        self.assertNcEqual(path1, path2)
+
     def test_assertNumpyAll_bad_mask(self):
         arr = np.ma.array([1,2,3],mask=[True,False,True])
         arr2 = np.ma.array([1,2,3],mask=[False,True,False])
