@@ -1,4 +1,6 @@
 from copy import deepcopy
+import csv
+import os
 import pickle
 import datetime
 from ocgis.interface.base.field import Field
@@ -55,7 +57,7 @@ class TestSubsetOperation(TestBase):
     def test_dataset_as_field(self):
         """Test with dataset as field not loaded from file - hence, no metadata."""
 
-        #todo: test writing to all output formats and inspecting them
+        #todo: test writing and inspecting output formats: csv, csv+, geojson, shapefile
         #todo: test interpolate spatial bounds with a field object that only has points
         #todo: test with a calculation
         #todo: test with a time range and time region
@@ -69,9 +71,27 @@ class TestSubsetOperation(TestBase):
 
         ops = OcgOperations(dataset=field, output_format='nc')
         ret = ops.execute()
-        import ipdb;ipdb.set_trace()
-        raise
-        import ipdb;ipdb.set_trace()
+        folder = os.path.split(ret)[0]
+
+        path_did = os.path.join(folder, 'ocgis_output_did.csv')
+        with open(path_did, 'r') as f:
+            rows = list(csv.DictReader(f))
+        self.assertEqual(rows, [{'ALIAS': 'foo', 'DID': '1', 'URI': '', 'UNITS': '', 'STANDARD_NAME': '', 'VARIABLE': 'foo', 'LONG_NAME': ''}])
+
+        path_source_metadata = os.path.join(folder, 'ocgis_output_source_metadata.txt')
+        with open(path_source_metadata, 'r') as f:
+            rows = f.readlines()
+        self.assertEqual(rows, [])
+
+        with self.nc_scope(ret) as ds:
+            self.assertAsSetEqual(ds.variables.keys(), [u'time', u'row', u'col', u'foo'])
+            self.assertNumpyAll(ds.variables['time'][:], field.temporal.value_numtime)
+            self.assertNumpyAll(ds.variables['row'][:], field.spatial.grid.row.value)
+            self.assertNumpyAll(ds.variables['col'][:], field.spatial.grid.col.value)
+            self.assertNumpyAll(ds.variables['foo'][:], field.variables['foo'].value.data.squeeze())
+
+        contents = os.listdir(folder)
+        self.assertAsSetEqual(contents, ['ocgis_output_source_metadata.txt', 'ocgis_output_did.csv', 'ocgis_output.log', 'ocgis_output_metadata.txt', 'ocgis_output.nc'])
 
     def test_dataset_as_field_from_file(self):
         """Test with dataset argument coming in as a field as opposed to a request dataset collection."""

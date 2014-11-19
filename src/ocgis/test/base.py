@@ -3,6 +3,7 @@ import unittest
 import abc
 import tempfile
 import datetime
+import subprocess
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis import env
@@ -54,6 +55,9 @@ class TestBase(unittest.TestCase):
         base_dir = os.path.split(__file__)[0]
         ret = os.path.join(base_dir, 'bin')
         return ret
+
+    def assertAsSetEqual(self, sequence1, sequence2, msg=None):
+        self.assertSetEqual(set(sequence1), set(sequence2), msg=msg)
 
     def assertDictEqual(self, d1, d2, msg=None):
         """
@@ -399,6 +403,11 @@ class TestBase(unittest.TestCase):
 
     def iter_product_keywords(self, keywords, as_namedtuple=True):
         return itr_products_keywords(keywords, as_namedtuple=as_namedtuple)
+
+    def nautilus(self, path):
+        if not os.path.isdir(path):
+            path = os.path.split(path)[0]
+        subprocess.call(['nautilus', path])
 
     def nc_scope(self, *args, **kwargs):
         return nc_scope(*args, **kwargs)

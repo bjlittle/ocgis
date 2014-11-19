@@ -1,3 +1,5 @@
+from collections import OrderedDict
+from ocgis.interface.base.field import Field
 from ocgis.conv.meta import MetaConverter
 import os.path
 import abc
@@ -216,25 +218,32 @@ class AbstractConverter(object):
                 with open(out_path,'w') as f:
                     f.write(lines)
             
-            ## add the dataset descriptor file if specified and OCGIS operations
-            ## are present.
+            # add the dataset descriptor file if requested
             if self._add_did_file:
-                ocgis_lh('writing dataset description (DID) file','conv',logging.DEBUG)
+                ocgis_lh('writing dataset description (DID) file', 'conv', logging.DEBUG)
                 from ocgis.conv.csv_ import OcgDialect
-                
-                headers = ['DID','VARIABLE','ALIAS','URI','STANDARD_NAME','UNITS','LONG_NAME']
-                out_path = os.path.join(self.outdir,self.prefix+'_did.csv')
-                with open(out_path,'w') as f:
-                    writer = csv.writer(f,dialect=OcgDialect)
+
+                headers = ['DID', 'VARIABLE', 'ALIAS', 'URI', 'STANDARD_NAME', 'UNITS', 'LONG_NAME']
+                out_path = os.path.join(self.outdir, self.prefix + '_did.csv')
+                with open(out_path, 'w') as f:
+                    writer = csv.writer(f, dialect=OcgDialect)
                     writer.writerow(headers)
                     for rd in self.ops.dataset.itervalues():
-                        for d in rd:
-                            row = [rd.did,d['variable'],d['alias'],rd.uri]
-                            ref_variable = rd.source_metadata['variables'][d['variable']]['attrs']
-                            row.append(ref_variable.get('standard_name',None))
-                            row.append(ref_variable.get('units',None))
-                            row.append(ref_variable.get('long_name',None))
-                            writer.writerow(row)
+                        try:
+                            for d in rd:
+                                row = [rd.did, d['variable'], d['alias'], rd.uri]
+                                ref_variable = rd.source_metadata['variables'][d['variable']]['attrs']
+                                row.append(ref_variable.get('standard_name', None))
+                                row.append(ref_variable.get('units', None))
+                                row.append(ref_variable.get('long_name', None))
+                                writer.writerow(row)
+                        except NotImplementedError:
+                            if isinstance(rd, Field):
+                                for variable in rd.variables.itervalues():
+                                    row = [rd.uid, variable.name, variable.alias, None, variable.attrs.get('standard_name'), variable.units, variable.attrs.get('long_name')]
+                                    writer.writerow(row)
+                            else:
+                                raise
 
             # add source metadata if requested
             if self._add_source_meta:
@@ -246,9 +255,8 @@ class AbstractConverter(object):
                     try:
                         metadata = rd.source_metadata
                     except AttributeError:
-                        # assume this is a field object
-                        msg = str(rd)
-                        to_write.append(msg)
+                        # assume field object and do not write anything
+                        continue
                     else:
                         ip = Inspect(meta=metadata, uri=rd.uri)
                         to_write += ip.get_report_no_variable()
@@ -258,7 +266,7 @@ class AbstractConverter(object):
         ## return the internal path unless overloaded by subclasses.
         ret = self._get_return_()
         
-        return(ret)
+        return ret
     
     @classmethod
     def get_converter_map(cls):

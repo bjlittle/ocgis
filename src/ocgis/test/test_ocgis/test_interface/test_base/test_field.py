@@ -119,6 +119,8 @@ class TestField(AbstractTestField):
     def test_init(self):
         for b, wv in itertools.product([True, False], [True, False]):
             field = self.get_field(with_bounds=b, with_value=wv)
+            with self.assertRaises(NotImplementedError):
+                list(field)
             self.assertIsInstance(field, Attributes)
             self.assertEqual(field.attrs, OrderedDict())
             self.assertFalse(field.regrid_destination)

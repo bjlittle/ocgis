@@ -62,6 +62,9 @@ class Field(Attributes):
         # flag used in regridding to indicate if a coordinate system was assigned by the user in the driver.
         self._has_assigned_coordinate_system = False
 
+    def __iter__(self):
+        raise NotImplementedError
+
     def __getitem__(self, slc):
         slc = get_formatted_slice(slc, 5)
         ret = copy(self)
