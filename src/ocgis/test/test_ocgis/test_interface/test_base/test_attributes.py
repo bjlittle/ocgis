@@ -18,6 +18,8 @@ class TestAttributes(TestBase):
         a, attrs = self.get_attributes()
         self.assertIsInstance(a.attrs, OrderedDict)
         self.assertEqual(a.attrs, attrs)
+        attrs['c'] = 'another'
+        self.assertNotIn('c', a.attrs)
 
     def test_write_to_netcdf_object(self):
         path = os.path.join(self.current_dir_output, 'foo.nc')
