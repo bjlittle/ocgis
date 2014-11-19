@@ -21,12 +21,15 @@ class TestCombinatorial(TestBase):
 
     def test(self):
         import logbook
-        log = logbook.log()
 
+        log = logbook.Logger(name='combos', level=logbook.DEBUG)
+
+        slc = [None, [10, 20], None, None, None]
         for key, dataset in self.iter_dataset():
-            print key
-            ops = OcgOperations(dataset=dataset, output_format='nc', prefix='nc1')
+            log.debug('processing: {0}'.format(key))
+            ops = OcgOperations(dataset=dataset, output_format='nc', prefix='nc1', slice=slc)
             try:
+                log.debug('initial write...')
                 ret1 = ops.execute()
             except ValueError:
                 # realization dimensions may not be written to netCDF yet
@@ -36,10 +39,13 @@ class TestCombinatorial(TestBase):
                     raise
             else:
                 try:
-                    ops2 = OcgOperations(dataset={'uri': ret1}, output_format='nc', prefix='nc2')
+                    ops2 = OcgOperations(dataset={'uri': ret1}, output_format='nc', prefix='nc2', slice=slc)
+                    log.debug('second write...')
                     ret2 = ops2.execute()
+                    log.debug('comparing...')
                     self.assertNcEqual(ret1, ret2, ignore_attributes={'global': ['history']})
                 finally:
                     for path in [ret1, ret2]:
                         folder = os.path.split(path)[0]
                         shutil.rmtree(folder)
+        log.debug('success')
