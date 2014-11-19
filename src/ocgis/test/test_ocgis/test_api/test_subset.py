@@ -69,6 +69,7 @@ class TestSubsetOperation(TestBase):
 
         ops = OcgOperations(dataset=field, output_format='nc')
         ret = ops.execute()
+        import ipdb;ipdb.set_trace()
         raise
         import ipdb;ipdb.set_trace()
 

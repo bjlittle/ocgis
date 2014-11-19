@@ -235,18 +235,26 @@ class AbstractConverter(object):
                             row.append(ref_variable.get('units',None))
                             row.append(ref_variable.get('long_name',None))
                             writer.writerow(row)
-                
-            ## add source metadata if requested
+
+            # add source metadata if requested
             if self._add_source_meta:
-                ocgis_lh('writing source metadata file','conv',logging.DEBUG)
-                out_path = os.path.join(self.outdir,self.prefix+'_source_metadata.txt')
+                ocgis_lh('writing source metadata file', 'conv', logging.DEBUG)
+                out_path = os.path.join(self.outdir, self.prefix + '_source_metadata.txt')
                 to_write = []
+
                 for rd in self.ops.dataset.itervalues():
-                    ip = Inspect(meta=rd.source_metadata, uri=rd.uri)
-                    to_write += ip.get_report_no_variable()
-                with open(out_path,'w') as f:
+                    try:
+                        metadata = rd.source_metadata
+                    except AttributeError:
+                        # assume this is a field object
+                        msg = str(rd)
+                        to_write.append(msg)
+                    else:
+                        ip = Inspect(meta=metadata, uri=rd.uri)
+                        to_write += ip.get_report_no_variable()
+                with open(out_path, 'w') as f:
                     f.writelines('\n'.join(to_write))
-        
+
         ## return the internal path unless overloaded by subclasses.
         ret = self._get_return_()
         
