@@ -639,9 +639,11 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
 
         try:
             rc_original = {'row': {'name': spatial.grid.row.name,
-                                   'meta': spatial.grid.row.meta},
+                                   'meta': spatial.grid.row.meta,
+                                   'attrs': spatial.grid.row.attrs},
                            'col': {'name': spatial.grid.col.name,
-                                   'meta': spatial.grid.col.meta}}
+                                   'meta': spatial.grid.col.meta,
+                                   'attrs': spatial.grid.col.attrs}}
         # a previously transformed rotated pole spatial dimension will not have row and columns. these should be
         # available in the state dictionary
         except AttributeError:
@@ -761,9 +763,11 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
             new_row = new_row[:, 0]
             new_col = new_col[0, :]
             new_grid.row = VectorDimension(value=new_row, name=dict_row['name'],
-                                           meta=dict_row['meta'])
+                                           meta=dict_row['meta'],
+                                           attrs=dict_row['attrs'])
             new_grid.col = VectorDimension(value=new_col, name=dict_col['name'],
-                                           meta=dict_col['meta'])
+                                           meta=dict_col['meta'],
+                                           attrs=dict_col['attrs'])
             new_col, new_row = np.meshgrid(new_col, new_row)
         else:
             new_grid._row_src_idx = new_grid.row._src_idx
@@ -784,10 +788,12 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
         try:
             meta = rc_original[key]['meta']
             name = rc_original[key]['name']
+            attrs = rc_original[key]['attrs']
         except TypeError:
             if rc_original is None:
                 meta = None
                 name = None
+                attrs = None
             else:
                 raise
-        return {'meta': meta, 'name': name}
+        return {'meta': meta, 'name': name, 'attrs': attrs}

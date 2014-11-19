@@ -406,6 +406,10 @@ class TestCFRotatedPole(TestBase):
         self.assertNumpyAll(field.variables['tas'].value, field_copy.variables['tas'].value)
 
         inverse_spatial = original_crs.get_rotated_pole_transformation(new_spatial, inverse=True)
+        for attr in ['row', 'col']:
+            target = getattr(inverse_spatial.grid, attr)
+            target_actual = getattr(spatial.grid, attr)
+            self.assertDictEqual(target.attrs, target_actual.attrs)
         inverse_spatial.assert_uniform_mask()
 
         self.assertNumpyAll(inverse_spatial.uid, spatial.uid)
