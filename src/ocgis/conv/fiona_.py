@@ -88,7 +88,16 @@ class FionaConverter(AbstractConverter):
         # pull the fiona schema properties together by mapping fiona types to the data types of the first row of the
         # output data file
         archetype_field = coll._archetype_field
-        fiona_crs = archetype_field.spatial.crs.value
+
+        try:
+            crs = archetype_field.spatial.crs
+            fiona_crs = crs.value
+        except AttributeError:
+            if crs is None:
+                raise ValueError('"crs" is None. A coordinate systems is required for writing to Fiona output.')
+            else:
+                raise
+
         geom, arch_row = coll.get_iter_dict().next()
         fiona_properties = OrderedDict()
         for header in coll.headers:

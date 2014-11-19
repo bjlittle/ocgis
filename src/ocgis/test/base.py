@@ -285,10 +285,12 @@ class TestBase(unittest.TestCase):
         else:
             raise AssertionError('Arrays are equivalent within precision.')
 
-    def get_field(self, nlevel=None, nrlz=None):
+    def get_field(self, nlevel=None, nrlz=None, crs=None):
         """
         :param int nlevel: The number of level elements.
         :param int nrlz: The number of realization elements.
+        :param crs: The coordinate system for the field.
+        :type crs: :class:`ocgis.interface.base.crs.CoordinateReferenceSystem`
         :returns: A small field object for testing.
         :rtype: `~ocgis.Field`
         """
@@ -297,7 +299,7 @@ class TestBase(unittest.TestCase):
         row = VectorDimension(value=[4., 5.], name='row')
         col = VectorDimension(value=[40., 50.], name='col')
         grid = SpatialGridDimension(row=row, col=col)
-        sdim = SpatialDimension(grid=grid)
+        sdim = SpatialDimension(grid=grid, crs=crs)
         temporal = TemporalDimension(value=[datetime.datetime(2000, 1, 1), datetime.datetime(2000, 2, 1)])
 
         if nlevel is None:

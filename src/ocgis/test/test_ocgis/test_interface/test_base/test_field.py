@@ -33,27 +33,29 @@ class AbstractTestField(TestBase):
     def setUp(self):
         np.random.seed(1)
         super(AbstractTestField,self).setUp()
-    
-    def get_col(self,bounds=True):
-        value = [-100.,-99.,-98.,-97.]
+
+    def get_col(self, bounds=True, with_name=True):
+        value = [-100., -99., -98., -97.]
         if bounds:
-            bounds = [[v-0.5,v+0.5] for v in value]
+            bounds = [[v - 0.5, v + 0.5] for v in value]
         else:
             bounds = None
-        row = VectorDimension(value=value,bounds=bounds,name='longitude')
-        return(row)
-    
-    def get_row(self,bounds=True):
-        value = [40.,39.,38.]
+        name = 'longitude' if with_name else None
+        col = VectorDimension(value=value, bounds=bounds, name=name)
+        return col
+
+    def get_row(self, bounds=True, with_name=True):
+        value = [40., 39., 38.]
         if bounds:
-            bounds = [[v+0.5,v-0.5] for v in value]
+            bounds = [[v + 0.5, v - 0.5] for v in value]
         else:
             bounds = None
-        row = VectorDimension(value=value,bounds=bounds,name='latitude')
-        return(row)
+        name = 'latitude' if with_name else None
+        row = VectorDimension(value=value, bounds=bounds, name=name)
+        return row
 
     def get_field(self, with_bounds=True, with_value=False, with_level=True, with_temporal=True, with_realization=True,
-                  month_count=1, name='tmax', units='kelvin', field_name=None, crs=None):
+                  month_count=1, name='tmax', units='kelvin', field_name=None, crs=None, with_dimension_names=True):
 
         if with_temporal:
             temporal_start = dt(2000, 1, 1, 12)
@@ -69,7 +71,8 @@ class AbstractTestField(TestBase):
                 temporal_bounds = [[v - delta_bounds, v + delta_bounds] for v in temporal_value]
             else:
                 temporal_bounds = None
-            temporal = TemporalDimension(value=temporal_value, bounds=temporal_bounds, name='time', units='days')
+            dname = 'time' if with_dimension_names else None
+            temporal = TemporalDimension(value=temporal_value, bounds=temporal_bounds, name=dname, units='days')
             t_shape = temporal.shape[0]
         else:
             temporal = None
@@ -81,21 +84,24 @@ class AbstractTestField(TestBase):
                 level_bounds = [[0, 100], [100, 200]]
             else:
                 level_bounds = None
-            level = VectorDimension(value=level_value, bounds=level_bounds, name='level', units='meters')
+            dname = 'level' if with_dimension_names else None
+            level = VectorDimension(value=level_value, bounds=level_bounds, name=dname, units='meters')
             l_shape = level.shape[0]
         else:
             level = None
             l_shape = 1
 
-        row = self.get_row(bounds=with_bounds)
-        col = self.get_col(bounds=with_bounds)
+        with_name = True if with_dimension_names else False
+        row = self.get_row(bounds=with_bounds, with_name=with_name)
+        col = self.get_col(bounds=with_bounds, with_name=with_name)
         grid = SpatialGridDimension(row=row, col=col)
         spatial = SpatialDimension(grid=grid, crs=crs)
         row_shape = row.shape[0]
         col_shape = col.shape[0]
 
         if with_realization:
-            realization = VectorDimension(value=[1, 2], name='realization')
+            dname = 'realization' if with_dimension_names else None
+            realization = VectorDimension(value=[1, 2], name=dname)
             r_shape = realization.shape[0]
         else:
             realization = None
@@ -118,7 +124,10 @@ class TestField(AbstractTestField):
 
     def test_init(self):
         for b, wv in itertools.product([True, False], [True, False]):
-            field = self.get_field(with_bounds=b, with_value=wv)
+            field = self.get_field(with_bounds=b, with_value=wv, with_dimension_names=False)
+            self.assertEqual(field.level.name, 'level')
+            self.assertEqual(field.level.name_uid, 'level_uid')
+            self.assertEqual(field.spatial.grid.row.name, 'yc')
             with self.assertRaises(NotImplementedError):
                 list(field)
             self.assertIsInstance(field, Attributes)
@@ -255,6 +264,11 @@ class TestField(AbstractTestField):
             self.assertEqual(real[k], v)
         self.assertEqual(set(real.keys()), set(rows[100].keys()))
         self.assertEqual(set(field.variables['tmax'].value.flatten().tolist()), set([r['value'] for r in rows]))
+
+        # test without names
+        field = self.get_field(with_value=True, with_dimension_names=False)
+        rows = list(field.get_iter())
+        self.assertAsSetEqual(rows[10].keys(), ['vid', 'spatial_uid', 'month', 'year', 'alias', 'geom', 'realization', 'realization_uid', 'time_bounds_lower', 'level_bounds_upper', 'variable', 'day', 'realization_bounds_lower', 'name', 'level', 'did', 'level_bounds_lower', 'value', 'realization_bounds_upper', 'level_uid', 'time', 'time_uid', 'time_bounds_upper'])
 
     def test_get_intersects_domain_polygon(self):
         regular = make_poly((36.61,41.39),(-101.41,-95.47))

@@ -1,12 +1,14 @@
 import abc
+from copy import copy, deepcopy
+from operator import mul
+
 import numpy as np
+
 from ocgis import constants
 from ocgis.interface.base.attributes import Attributes
 from ocgis.util.helpers import get_none_or_1d, get_none_or_2d, get_none_or_slice,\
-    get_formatted_slice, assert_raise, get_bounds_from_1d
-from copy import copy, deepcopy
+    get_formatted_slice, get_bounds_from_1d
 from ocgis.exc import EmptySubsetError, ResolutionError
-from operator import mul
 from ocgis.interface.base.variable import AbstractValueVariable,\
     AbstractSourcedVariable
 
@@ -100,8 +102,17 @@ class AbstractUidDimension(AbstractDimension):
 
         super(AbstractUidDimension, self).__init__(*args, **kwargs)
 
-        if self.name_uid is None:
-            self.name_uid = '{0}_uid'.format(self.name)
+    @property
+    def name_uid(self):
+        if self._name_uid is None:
+            ret = '{0}_uid'.format(self.name)
+        else:
+            ret = self._name_uid
+        return ret
+
+    @name_uid.setter
+    def name_uid(self, value):
+        self._name_uid = value
 
     @property
     def uid(self):
@@ -316,32 +327,35 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
             ret = (ret,indices[select])
         
         return(ret)
-    
-    def get_iter(self):        
-        ref_value,ref_bounds = self._get_iter_value_bounds_()
-        
+
+    def get_iter(self):
+        ref_value, ref_bounds = self._get_iter_value_bounds_()
+
         if ref_bounds is None:
             has_bounds = False
         else:
             has_bounds = True
-            
+
         ref_uid = self.uid
         ref_name_value = self.name_value
-        assert_raise(self.name_value != None,logger='interface.dimension.base',
-                     exc=ValueError('The "name_value" attribute is required for iteration.'))
+
+        if self.name_value is None:
+            msg = 'The "name_value" attribute is required for iteration.'
+            raise ValueError(msg)
+
         ref_name_uid = self.name_uid
         ref_name_bounds_lower = '{0}_lower'.format(self.name_bounds)
         ref_name_bounds_upper = '{0}_upper'.format(self.name_bounds)
-        
+
         for ii in range(self.value.shape[0]):
-            yld = {ref_name_value:ref_value[ii],ref_name_uid:ref_uid[ii]}
+            yld = {ref_name_value: ref_value[ii], ref_name_uid: ref_uid[ii]}
             if has_bounds:
-                yld.update({ref_name_bounds_lower:ref_bounds[ii,0],
-                            ref_name_bounds_upper:ref_bounds[ii,1]})
+                yld.update({ref_name_bounds_lower: ref_bounds[ii, 0],
+                            ref_name_bounds_upper: ref_bounds[ii, 1]})
             else:
-                yld.update({ref_name_bounds_lower:None,
-                            ref_name_bounds_upper:None})
-            yield(ii,yld)
+                yld.update({ref_name_bounds_lower: None,
+                            ref_name_bounds_upper: None})
+            yield ii, yld
 
     def set_extrapolated_bounds(self):
         """Set the bounds variable using extrapolation."""

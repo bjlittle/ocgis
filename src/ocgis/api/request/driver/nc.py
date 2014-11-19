@@ -7,14 +7,14 @@ import numpy as np
 from ocgis import constants
 from ocgis.api.request.driver.base import AbstractDriver
 from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound
-from ocgis.interface.base.crs import CFWGS84, CFCoordinateReferenceSystem
+from ocgis.interface.base.crs import CFCoordinateReferenceSystem
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.variable import VariableCollection, Variable
 from ocgis.interface.metadata import NcMetadata
 from ocgis.interface.nc.dimension import NcVectorDimension
 from ocgis.interface.nc.field import NcField
 from ocgis.interface.nc.temporal import NcTemporalDimension
-from ocgis.util.helpers import assert_raise, itersubclasses
+from ocgis.util.helpers import itersubclasses
 from ocgis.util.logging_ocgis import ocgis_lh
 
 
@@ -168,9 +168,8 @@ class DriverNetcdf(AbstractDriver):
 
             loaded[k] = fill
 
-        assert_raise({'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v != None])),
-                     logger='request',
-                     exc=ValueError('Target variable must at least have temporal, row, and column dimensions.'))
+        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v != None])):
+            raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
 
         grid = SpatialGridDimension(row=loaded['row'], col=loaded['col'])
 

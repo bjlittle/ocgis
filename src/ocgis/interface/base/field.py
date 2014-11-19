@@ -1,20 +1,22 @@
 from contextlib import contextmanager
-from ocgis.interface.base.attributes import Attributes
-from ocgis.util.helpers import get_default_or_apply, get_none_or_slice, get_formatted_slice, get_reduced_slice, \
-    assert_raise
-import numpy as np
 from copy import copy, deepcopy
 from collections import deque
 import itertools
+import logging
+
+import numpy as np
 from shapely.ops import cascaded_union
 from shapely.geometry.multipoint import MultiPoint
 from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.point import Point
+
+from ocgis.interface.base.attributes import Attributes
+from ocgis.util.helpers import get_default_or_apply, get_none_or_slice, get_formatted_slice, get_reduced_slice, \
+    set_name_attributes
 from ocgis.interface.base.variable import Variable, VariableCollection
 from ocgis import constants
-from shapely.geometry.point import Point
-import logging
 from ocgis.util.logging_ocgis import ocgis_lh
-        
+
 
 class Field(Attributes):
     """
@@ -61,6 +63,10 @@ class Field(Attributes):
         self._should_regrid = False
         # flag used in regridding to indicate if a coordinate system was assigned by the user in the driver.
         self._has_assigned_coordinate_system = False
+
+        # set default names for the dimensions
+        name_mapping = {self.realization: 'realization', self.level: 'level'}
+        set_name_attributes(name_mapping)
 
     def __iter__(self):
         raise NotImplementedError
@@ -130,8 +136,10 @@ class Field(Attributes):
     def variables(self, value):
         if isinstance(value, Variable):
             value = VariableCollection(variables=[value])
-        assert_raise(isinstance(value, VariableCollection),
-                     exc=ValueError('The "variables" keyword must be a Variable object.'))
+
+        if not isinstance(value, VariableCollection):
+            raise ValueError('The "variables" keyword must be a Variable object.')
+
         self._variables = value
         for v in value.itervalues():
             v._field = self
@@ -156,27 +164,27 @@ class Field(Attributes):
     def get_intersects(self, polygon, use_spatial_index=True, select_nearest=False):
         return(self._get_spatial_operation_('get_intersects', polygon, use_spatial_index=use_spatial_index,
                                             select_nearest=select_nearest))
-    
-    def get_iter(self,add_masked_value=True,value_keys=None):
-        
+
+    def get_iter(self, add_masked_value=True, value_keys=None):
+
         def _get_dimension_iterator_1d_(target):
-            attr = getattr(self,target)
+            attr = getattr(self, target)
             if attr is None:
-                ret = [(0,{})]
+                ret = [(0, {})]
             else:
                 ret = attr.get_iter()
-            return(ret)
-        
+            return ret
+
         is_masked = np.ma.is_masked
-        
-        ## there is not level, these keys will need to be provided a None value
+
+        # there is not level, these keys will need to be provided a None value
         has_level = True if self.level is not None else False
         r_level_defaults = dict.fromkeys(constants.level_headers)
-        
-        ## value keys occur when the value array is in fact a structured array with
-        ## field definitions. this occurs with keyed output functions...
+
+        # value keys occur when the value array is in fact a structured array with field definitions. this occurs with
+        # keyed output functions...
         has_value_keys = False if value_keys is None else True
-        
+
         r_gid_name = self.spatial.name_uid
         r_name = self.name
 
@@ -185,49 +193,47 @@ class Field(Attributes):
             yld['name'] = r_name
             ref_value = variable.value
             masked_value = ref_value.fill_value
-            iters = map(_get_dimension_iterator_1d_,['realization','temporal','level'])
+            iters = map(_get_dimension_iterator_1d_, ['realization', 'temporal', 'level'])
             iters.append(self.spatial.get_geom_iter())
-            for [(ridx,rlz),(tidx,t),(lidx,l),(sridx,scidx,geom,gid)] in itertools.product(*iters):
+            for [(ridx, rlz), (tidx, t), (lidx, l), (sridx, scidx, geom, gid)] in itertools.product(*iters):
                 to_yld = deepcopy(yld)
-                ref_idx = ref_value[ridx,tidx,lidx,sridx,scidx]
-                
-                ## determine if the data is masked
+                ref_idx = ref_value[ridx, tidx, lidx, sridx, scidx]
+
+                # determine if the data is masked
                 if is_masked(ref_idx):
                     if add_masked_value:
                         ref_idx = masked_value
                     else:
                         continue
-                    
-                ## realization, time, and level values.
+
+                # realization, time, and level values.
                 to_yld.update(rlz)
                 to_yld.update(t)
                 to_yld.update(l)
-                
-                ## add geometries to the output
+
+                # add geometries to the output
                 to_yld['geom'] = geom
                 to_yld[r_gid_name] = gid
-                
-                ## if there is no level, defaults are needs to satisfy converters
+
+                # if there is no level, defaults are needs to satisfy converters
                 if not has_level:
                     to_yld.update(r_level_defaults)
-                
-                ## the target value is a structure array, multiple value elements
-                ## need to be added. these outputs do not a specific value, so
-                ## it is not added. there may also be multiple elements in the
-                ## structure which changes how the loop progresses.
+
+                # the target value is a structure array, multiple value elements need to be added. these outputs do not
+                # a specific value, so it is not added. there may also be multiple elements in the structure which
+                # changes how the loop progresses.
                 if has_value_keys:
                     for ii in range(ref_idx.shape[0]):
                         for vk in value_keys:
                             try:
                                 to_yld[vk] = ref_idx[vk][ii]
-                            ## attempt to access the data directly. masked determination
-                            ## is done above.
+                            # attempt to access the data directly. masked determination is done above.
                             except ValueError:
                                 to_yld[vk] = ref_idx.data[vk][ii]
-                        yield(to_yld)
+                        yield (to_yld)
                 else:
                     to_yld['value'] = ref_idx
-                    yield(to_yld)
+                    yield to_yld
                 
     def get_shallow_copy(self):
         return(copy(self))

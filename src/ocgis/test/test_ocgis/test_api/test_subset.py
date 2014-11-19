@@ -3,12 +3,13 @@ import csv
 import os
 import pickle
 import datetime
+from ocgis.api.parms.definition import OutputFormat
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.variable import Variable
 from ocgis.api.operations import OcgOperations
 from ocgis.conv.numpy_ import NumpyConverter
 from ocgis.exc import DimensionNotFound
-from ocgis.interface.base.crs import Spherical, CFWGS84, CFPolarStereographic
+from ocgis.interface.base.crs import Spherical, CFWGS84, CFPolarStereographic, WGS84
 from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension, SpatialGridDimension
 from ocgis.interface.base.dimension.temporal import TemporalDimension
@@ -63,35 +64,49 @@ class TestSubsetOperation(TestBase):
         #todo: test with a time range and time region
         #todo: test with mix of fields and request datasets
 
-        field = self.get_field()
+        kwds = dict(output_format=list(OutputFormat.iter_possible()),
+                    crs=[None, WGS84()])
 
-        ops = OcgOperations(dataset=field)
-        ret = ops.execute()
-        self.assertNumpyAll(ret.gvu(1, 'foo'), field.variables['foo'].value)
+        for k in self.iter_product_keywords(kwds):
+            field = self.get_field(crs=k.crs)
 
-        ops = OcgOperations(dataset=field, output_format='nc')
-        ret = ops.execute()
-        folder = os.path.split(ret)[0]
+            ops = OcgOperations(dataset=field)
+            ret = ops.execute()
+            self.assertNumpyAll(ret.gvu(1, 'foo'), field.variables['foo'].value)
 
-        path_did = os.path.join(folder, 'ocgis_output_did.csv')
-        with open(path_did, 'r') as f:
-            rows = list(csv.DictReader(f))
-        self.assertEqual(rows, [{'ALIAS': 'foo', 'DID': '1', 'URI': '', 'UNITS': '', 'STANDARD_NAME': '', 'VARIABLE': 'foo', 'LONG_NAME': ''}])
+            ops = OcgOperations(dataset=field, output_format=k.output_format, prefix=k.output_format)
+            try:
+                ret = ops.execute()
+            except ValueError as ve:
+                self.assertIsNone(k.crs)
+                self.assertIn(k.output_format, ['csv', 'csv+', 'geojson', 'shp'])
+                continue
 
-        path_source_metadata = os.path.join(folder, 'ocgis_output_source_metadata.txt')
-        with open(path_source_metadata, 'r') as f:
-            rows = f.readlines()
-        self.assertEqual(rows, [])
+            if k.output_format == 'numpy':
+                self.assertIsInstance(ret[1]['foo'], Field)
+                continue
 
-        with self.nc_scope(ret) as ds:
-            self.assertAsSetEqual(ds.variables.keys(), [u'time', u'row', u'col', u'foo'])
-            self.assertNumpyAll(ds.variables['time'][:], field.temporal.value_numtime)
-            self.assertNumpyAll(ds.variables['row'][:], field.spatial.grid.row.value)
-            self.assertNumpyAll(ds.variables['col'][:], field.spatial.grid.col.value)
-            self.assertNumpyAll(ds.variables['foo'][:], field.variables['foo'].value.data.squeeze())
+            folder = os.path.split(ret)[0]
 
-        contents = os.listdir(folder)
-        self.assertAsSetEqual(contents, ['ocgis_output_source_metadata.txt', 'ocgis_output_did.csv', 'ocgis_output.log', 'ocgis_output_metadata.txt', 'ocgis_output.nc'])
+            path_did = os.path.join(folder, '{0}_did.csv'.format(k.output_format))
+            with open(path_did, 'r') as f:
+                rows = list(csv.DictReader(f))
+            self.assertEqual(rows, [{'ALIAS': 'foo', 'DID': '1', 'URI': '', 'UNITS': '', 'STANDARD_NAME': '', 'VARIABLE': 'foo', 'LONG_NAME': ''}])
+
+            path_source_metadata = os.path.join(folder, '{0}_source_metadata.txt'.format(k.output_format))
+            with open(path_source_metadata, 'r') as f:
+                rows = f.readlines()
+            self.assertEqual(rows, [])
+
+            with self.nc_scope(ret) as ds:
+                self.assertAsSetEqual(ds.variables.keys(), [u'time', u'row', u'col', u'foo'])
+                self.assertNumpyAll(ds.variables['time'][:], field.temporal.value_numtime)
+                self.assertNumpyAll(ds.variables['row'][:], field.spatial.grid.row.value)
+                self.assertNumpyAll(ds.variables['col'][:], field.spatial.grid.col.value)
+                self.assertNumpyAll(ds.variables['foo'][:], field.variables['foo'].value.data.squeeze())
+
+            contents = os.listdir(folder)
+            self.assertAsSetEqual(contents, [xx.format(k.output_format) for xx in '{0}_source_metadata.txt', '{0}_did.csv', '{0}.log', '{0}_metadata.txt', '{0}.nc'])
 
     def test_dataset_as_field_from_file(self):
         """Test with dataset argument coming in as a field as opposed to a request dataset collection."""

@@ -8,7 +8,7 @@ from ocgis.interface.base.variable import AbstractSourcedVariable, AbstractValue
 from ocgis import constants
 from ocgis.exc import EmptySubsetError, ResolutionError
 from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension, AbstractValueDimension, \
-    AbstractDimension
+    AbstractDimension, AbstractUidDimension
 from copy import deepcopy
 from cfunits.cfunits import Units
 from ocgis.test.base import TestBase, nc_scope
@@ -32,6 +32,23 @@ class TestAbstractDimension(TestBase):
         self.assertEqual(ad.name, 'time')
 
         self.assertEqual(ad.meta, {})
+
+
+class FakeAbstractUidDimension(AbstractUidDimension):
+    _attrs_slice = None
+    _ndims = 1
+
+
+class TestAbstractUidDimension(TestBase):
+
+    def test_init(self):
+        au = FakeAbstractUidDimension(uid=[1, 2, 3])
+        self.assertEqual(au.name_uid, 'None_uid')
+        au = FakeAbstractUidDimension(uid=[1, 2, 3], name='foo')
+        self.assertEqual(au.name_uid, 'foo_uid')
+        self.assertIsNone(au._name_uid)
+        au = FakeAbstractUidDimension(uid=[1, 2, 3], name='foo', name_uid='hello')
+        self.assertEqual(au.name_uid, 'hello')
 
 
 class TestAbstractValueDimension(TestBase):

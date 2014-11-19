@@ -5,7 +5,7 @@ from ocgis.interface.base.crs import CFWGS84, CoordinateReferenceSystem, WGS84, 
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.util.helpers import iter_array, get_none_or_slice, \
     get_formatted_slice, get_reduced_slice, get_trimmed_array_by_mask,\
-    get_added_slice, make_poly
+    get_added_slice, make_poly, set_name_attributes
 from shapely.geometry.point import Point
 from ocgis import constants, env
 import itertools
@@ -606,9 +606,12 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
         self.row = kwargs.pop('row', None)
         self.col = kwargs.pop('col', None)
+
         self.corners = kwargs.pop('corners', None)
         self._row_src_idx = kwargs.pop('row_src_idx', None)
         self._col_src_idx = kwargs.pop('col_src_idx', None)
+
+        kwargs['name'] = kwargs.get('name') or 'grid'
 
         super(SpatialGridDimension, self).__init__(*args, **kwargs)
 
@@ -616,6 +619,10 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
             if self.row is None or self.col is None:
                 msg = 'Without a value, a row and column dimension are required.'
                 raise ValueError(msg)
+
+        # set names of row and column if available
+        name_mapping = {self.row: 'yc', self.col: 'xc'}
+        set_name_attributes(name_mapping)
         
     def __getitem__(self,slc):
         slc = get_formatted_slice(slc,2)
@@ -887,6 +894,8 @@ class SpatialGeometryDimension(base.AbstractUidDimension):
         self._polygon = kwargs.pop('polygon', None)
         self._abstraction = kwargs.pop('abstraction', None)
 
+        kwargs['name'] = kwargs.get('name') or 'geometry'
+
         super(SpatialGeometryDimension, self).__init__(*args, **kwargs)
 
         if self.grid is None and self._point is None and self._polygon is None:
@@ -962,12 +971,12 @@ class SpatialGeometryDimension(base.AbstractUidDimension):
         return ret
     
     def get_iter(self):
-        raise(NotImplementedError)
-        
-    def _get_slice_(self,state,slc):
-        state._point = get_none_or_slice(state._point,slc)
-        state._polygon = get_none_or_slice(state._polygon,slc)
-        return(state)
+        raise NotImplementedError
+
+    def _get_slice_(self, state, slc):
+        state._point = get_none_or_slice(state._point, slc)
+        state._polygon = get_none_or_slice(state._polygon, slc)
+        return state
         
     def _get_uid_(self):
         if self._point is not None:
@@ -981,13 +990,15 @@ class SpatialGeometryDimension(base.AbstractUidDimension):
 
 class SpatialGeometryPointDimension(base.AbstractUidValueDimension):
     _ndims = 2
-    _attrs_slice = ('uid','_value','grid')
+    _attrs_slice = ('uid', '_value', 'grid')
     _geom_type = 'Point'
-    
-    def __init__(self,*args,**kwds):
-        self.grid = kwds.pop('grid',None)
 
-        super(SpatialGeometryPointDimension,self).__init__(*args,**kwds)
+    def __init__(self, *args, **kwargs):
+        self.grid = kwargs.pop('grid', None)
+
+        kwargs['name'] = kwargs.get('name') or self._geom_type.lower()
+
+        super(SpatialGeometryPointDimension, self).__init__(*args, **kwargs)
         
     @property
     def weights(self):
@@ -1137,6 +1148,7 @@ class SpatialGeometryPolygonDimension(SpatialGeometryPointDimension):
     _geom_type = 'MultiPolygon'
 
     def __init__(self, *args, **kwargs):
+        kwargs['name'] = kwargs.get('name') or 'polygon'
         super(SpatialGeometryPolygonDimension, self).__init__(*args, **kwargs)
 
         if self._value is None:

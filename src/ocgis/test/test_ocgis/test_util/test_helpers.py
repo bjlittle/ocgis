@@ -8,7 +8,7 @@ from ocgis.util.helpers import format_bool, iter_array, validate_time_subset,\
     get_formatted_slice, get_is_date_between, get_trimmed_array_by_mask,\
     get_added_slice, get_iter, get_ordered_dicts_from_records_array, get_sorted_uris_by_time_dimension, \
     get_bounds_from_1d, get_date_list, get_bounds_vector_from_centroids, get_extrapolated_corners_esmf, get_is_increasing, \
-    get_extrapolated_corners_esmf_vector
+    get_extrapolated_corners_esmf_vector, set_name_attributes
 import itertools
 from ocgis.test.base import TestBase
 from datetime import datetime as dt, datetime
@@ -402,6 +402,22 @@ class Test2(TestBase):
         ret = get_formatted_slice((1,),1)
         self.assertEqual(ret,slice(1))
     
+    def test_set_name_attributes(self):
+
+        class Foo(object):
+
+            def __init__(self, name):
+                self.name = name
+
+        a = Foo(None)
+        b = Foo('harbringer')
+
+        name_mapping = {a: 'evil_twin', b: 'again', None: 'whatever'}
+        set_name_attributes(name_mapping)
+
+        self.assertEqual(a.name, 'evil_twin')
+        self.assertEqual(b.name, 'harbringer')
+
     def test_validate_time_subset(self):
         time_range = [dt(2000,1,1),dt(2001,1,1)]
         self.assertTrue(validate_time_subset(time_range,{'year':[2000,2001]}))

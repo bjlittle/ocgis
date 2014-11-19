@@ -16,7 +16,7 @@ from shapely.geometry.point import Point
 from ocgis.exc import EmptySubsetError, SpatialWrappingError, MultipleElementsFound
 from ocgis.test.base import TestBase
 from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, CFWGS84, CFRotatedPole
-from ocgis.interface.base.dimension.base import VectorDimension
+from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension
 import datetime
 from importlib import import_module
 from unittest.case import SkipTest
@@ -1090,6 +1090,10 @@ class TestSpatialGeometryDimension(TestBase):
         gdim2 = SpatialGeometryDimension(point=gdim.point)
         self.assertIsNone(gdim2.abstraction)
 
+        self.assertEqual(gdim.name, 'geometry')
+        self.assertEqual(gdim.point.name, 'point')
+        self.assertEqual(gdim.polygon.name, 'polygon')
+
     def test_abstraction(self):
         gdim = self.get()
         with self.assertRaises(ValueError):
@@ -1132,6 +1136,13 @@ class TestSpatialGeometryDimension(TestBase):
 
 class TestSpatialGeometryPointDimension(AbstractTestSpatialDimension):
 
+    def test_init(self):
+        row = VectorDimension(value=[5])
+        col = VectorDimension(value=[7])
+        grid = SpatialGridDimension(row=row, col=col)
+        sgpd = SpatialGeometryPointDimension(grid=grid)
+        self.assertEqual(sgpd.name, 'point')
+
     def test_get_intersects_masked(self):
         sdim = self.get_sdim(crs=WGS84())
         self.assertIsNotNone(sdim.grid)
@@ -1167,6 +1178,15 @@ class TestSpatialGeometryPolygonDimension(AbstractTestSpatialDimension):
         grid = SpatialGridDimension(value=value)
         with self.assertRaises(ValueError):
             SpatialGeometryPolygonDimension(grid=grid)
+
+        row = VectorDimension(value=[2, 3])
+        row.set_extrapolated_bounds()
+        col = VectorDimension(value=[4, 5])
+        col.set_extrapolated_bounds()
+        grid = SpatialGridDimension(row=row, col=col)
+        gd = SpatialGeometryPolygonDimension(grid=grid)
+        self.assertEqual(gd.name, 'polygon')
+        self.assertIsInstance(gd, SpatialGeometryPointDimension)
 
     def test_get_value(self):
         # the ordering of vertices when creating from corners is slightly different
@@ -1283,6 +1303,13 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
     def test_init(self):
         with self.assertRaises(ValueError):
             SpatialGridDimension()
+        row = VectorDimension(value=[5])
+        col = VectorDimension(value=[6])
+        grid = SpatialGridDimension(row=row, col=col)
+        self.assertEqual(grid.name, 'grid')
+        self.assertIsInstance(grid, AbstractUidValueDimension)
+        self.assertEqual(grid.row.name, 'yc')
+        self.assertEqual(grid.col.name, 'xc')
 
     def test_corners(self):
         for grid in self.iter_grid_combinations_for_corners():
