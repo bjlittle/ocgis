@@ -39,7 +39,7 @@ class TestCombinatorial(TestBase):
                     raise
             else:
                 try:
-                    ops2 = OcgOperations(dataset={'uri': ret1}, output_format='nc', prefix='nc2', slice=slc)
+                    ops2 = OcgOperations(dataset={'uri': ret1}, output_format='nc', prefix='nc2')
                     log.debug('second write...')
                     ret2 = ops2.execute()
                     log.debug('comparing...')
