@@ -24,7 +24,7 @@ class TestCombinatorial(TestBase):
             print key
             ops = OcgOperations(dataset=dataset, output_format='nc', prefix='nc1')
             try:
-                ret = ops.execute()
+                ret1 = ops.execute()
             except ValueError:
                 # realization dimensions may not be written to netCDF yet
                 if key == 'cmip3_extraction':
@@ -33,9 +33,10 @@ class TestCombinatorial(TestBase):
                     raise
             else:
                 try:
-                    ops2 = OcgOperations(dataset={'uri': ret}, output_format='nc', prefix='nc2')
+                    ops2 = OcgOperations(dataset={'uri': ret1}, output_format='nc', prefix='nc2')
                     ret2 = ops2.execute()
-                    self.assertNcEqual(ret, ret2, ignore_attributes={'global': ['history']})
+                    self.assertNcEqual(ret1, ret2, ignore_attributes={'global': ['history']})
                 finally:
-                    folder = os.path.split(ret)[0]
-                    shutil.rmtree(folder)
+                    for path in [ret1, ret2]:
+                        folder = os.path.split(path)[0]
+                        shutil.rmtree(folder)
