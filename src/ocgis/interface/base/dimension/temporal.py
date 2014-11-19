@@ -29,11 +29,12 @@ class TemporalDimension(base.VectorDimension):
 
     _attrs_slice = ('uid', '_value', '_src_idx', '_value_datetime', '_value_numtime')
     _date_parts = ('year', 'month', 'day', 'hour', 'minute', 'second')
-    _axis = 'T'
 
     def __init__(self, *args, **kwargs):
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
         self.format_time = kwargs.pop('format_time', True)
+
+        kwargs['axis'] = kwargs.get('axis', 'T')
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 

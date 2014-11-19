@@ -249,7 +249,7 @@ class Variable(AbstractSourcedVariable, Attributes):
         shape = shape or self.value.shape
         value = np.ma.array(np.zeros(shape), dtype=self.dtype, fill_value=self.fill_value, mask=mask)
         ret = Variable(name=self.name, units=self.units, meta=deepcopy(self.meta), value=value, did=self.did,
-                       alias=self.alias, uid=self.uid)
+                       alias=self.alias, uid=self.uid, attrs=deepcopy(self.attrs))
         return ret
     
     def _format_private_value_(self,value):

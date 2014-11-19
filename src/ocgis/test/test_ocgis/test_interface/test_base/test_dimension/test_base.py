@@ -7,12 +7,31 @@ from ocgis.interface.base.attributes import Attributes
 from ocgis.interface.base.variable import AbstractSourcedVariable, AbstractValueVariable
 from ocgis import constants
 from ocgis.exc import EmptySubsetError, ResolutionError
-from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension, AbstractValueDimension
+from ocgis.interface.base.dimension.base import VectorDimension, AbstractUidValueDimension, AbstractValueDimension, \
+    AbstractDimension
 from copy import deepcopy
 from cfunits.cfunits import Units
 from ocgis.test.base import TestBase, nc_scope
 from ocgis.util.helpers import get_bounds_from_1d
 from ocgis.util.itester import itr_products_keywords
+
+
+class FakeAbstractDimension(AbstractDimension):
+    _ndims = None
+    _attrs_slice = None
+
+
+class TestAbstractDimension(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        ad = FakeAbstractDimension()
+        self.assertEqual(ad.name, None)
+
+        ad = FakeAbstractDimension(name='time')
+        self.assertEqual(ad.name, 'time')
+
+        self.assertEqual(ad.meta, {})
 
 
 class TestAbstractValueDimension(TestBase):
@@ -46,11 +65,13 @@ class TestVectorDimension(TestBase):
         self.assertEqual(vd.name_uid, 'None_uid')
         self.assertEqual(vd.name_bounds, 'None_bounds')
         self.assertEqual(vd.name_bounds_suffix, constants.ocgis_bounds)
+        self.assertIsNone(vd.axis)
 
         # test passing attributes to the constructor
         attrs = {'something': 'underground'}
-        vd = VectorDimension(value=[4, 5], attrs=attrs)
+        vd = VectorDimension(value=[4, 5], attrs=attrs, axis='D')
         self.assertEqual(vd.attrs, attrs)
+        self.assertEqual(vd.axis, 'D')
 
     def test_bad_dtypes(self):
         vd = VectorDimension(value=181.5,bounds=[181,182])
@@ -233,22 +254,38 @@ class TestVectorDimension(TestBase):
                         unlimited=[False, True],
                         kwargs=[{}, {'zlib': True}],
                         bounds_dimension_name=[None, other_bounds_name],
-                        name_bounds_suffix=[None, 'asuffix'])
+                        name_bounds_suffix=[None, 'asuffix'],
+                        axis=[None, 'GG'],
+                        name=[None, 'temporal'],
+                        name_bounds=[None, 'time_bounds'],
+                        name_value=[None, 'time'])
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             if k.with_attrs:
                 attrs = {'a': 5, 'b': np.array([5, 6])}
             else:
                 attrs = None
-            vd = VectorDimension(value=[2., 4.], attrs=attrs, name='temporal', name_bounds='time_bounds',
-                                 name_value='time', name_bounds_suffix=k.name_bounds_suffix)
+            vd = VectorDimension(value=[2., 4.], attrs=attrs, name=k.name, name_bounds=k.name_bounds,
+                                 name_value=k.name_value, name_bounds_suffix=k.name_bounds_suffix, axis=k.axis)
             if k.with_bounds:
                 vd.set_extrapolated_bounds()
             with nc_scope(path, 'w') as ds:
-                vd.write_to_netcdf_dataset(ds, unlimited=k.unlimited, bounds_dimension_name=k.bounds_dimension_name,
-                                           **k.kwargs)
+                try:
+                    vd.write_to_netcdf_dataset(ds, unlimited=k.unlimited, bounds_dimension_name=k.bounds_dimension_name,
+                                               **k.kwargs)
+                except ValueError:
+                    self.assertIsNone(vd.name)
+                    continue
 
             with nc_scope(path, 'r') as ds:
+                var = ds.variables[vd.name_value]
+
+                if k.axis is None:
+                    axis_actual = ''
+                else:
+                    axis_actual = vd.axis
+                self.assertEqual(var.axis, axis_actual)
+
                 try:
                     self.assertIn(constants.ocgis_bounds, ds.dimensions)
                 except AssertionError:
@@ -265,20 +302,20 @@ class TestVectorDimension(TestBase):
                     self.assertFalse(ds.dimensions[vd.name].isunlimited())
                 except AssertionError:
                     self.assertTrue(k.unlimited)
-                variable = ds.variables['time']
+
                 try:
-                    self.assertEqual(variable.a, attrs['a'])
-                    self.assertNumpyAll(variable.b, attrs['b'])
+                    self.assertEqual(var.a, attrs['a'])
+                    self.assertNumpyAll(var.b, attrs['b'])
                 except AttributeError:
                     self.assertFalse(k.with_attrs)
                 try:
-                    self.assertEqual(variable.bounds, vd.name_bounds)
+                    self.assertEqual(var.bounds, vd.name_bounds)
                     self.assertNumpyAll(vd.bounds, ds.variables[vd.name_bounds][:])
                 except (AttributeError, KeyError):
                     self.assertFalse(k.with_bounds)
-                self.assertEqual(variable._name, vd.name_value)
-                self.assertEqual(variable.dimensions, (vd.name,))
-                self.assertNumpyAll(vd.value, variable[:])
+                self.assertEqual(var._name, vd.name_value)
+                self.assertEqual(var.dimensions, (vd.name,))
+                self.assertNumpyAll(vd.value, var[:])
 
     def test_write_to_netcdf_dataset_bounds_dimension_exists(self):
         """Test writing with bounds when the bounds dimension has already been created."""

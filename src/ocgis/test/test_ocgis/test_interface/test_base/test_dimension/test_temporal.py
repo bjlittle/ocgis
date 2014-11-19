@@ -133,14 +133,16 @@ class TestTemporalDimension(TestBase):
 
     def test_init(self):
         td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)])
+        self.assertEqual(td.axis, 'T')
         self.assertEqual(td.calendar, constants.default_temporal_calendar)
         self.assertEqual(td.units, constants.default_temporal_units)
         self.assertIsInstance(td, VectorDimension)
         self.assertFalse(td._has_months_units)
         self.assertTrue(td.format_time)
 
-        td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12")
+        td = TemporalDimension(value=[datetime.datetime(2000, 1, 1)], units="months since 1978-12", axis='foo')
         self.assertTrue(td._has_months_units)
+        self.assertEqual(td.axis, 'foo')
 
     def test_getitem(self):
         td = self.get_temporal_dimension()

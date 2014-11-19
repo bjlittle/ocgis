@@ -12,60 +12,61 @@ from ocgis.interface.base.variable import AbstractValueVariable,\
 
 
 class AbstractDimension(object):
-    __metaclass__ = abc.ABCMeta
-    '''
+    """
     :param dict meta:
     :param str name:
     :param array-like properties:
-    '''
-    
+    """
+    __metaclass__ = abc.ABCMeta
+
     @abc.abstractproperty
-    def _axis(self): ['R','T','Z','X','Y','GEOM','GRID','POINT','POLYGON',None]
+    def _ndims(self):
+        """int"""
+
     @abc.abstractproperty
-    def _ndims(self): int
-    @abc.abstractproperty
-    def _attrs_slice(self): 'sequence of strings'
-    
-    def __init__(self,meta=None,name=None,properties=None):
+    def _attrs_slice(self):
+        """sequence of strings"""
+
+    def __init__(self, meta=None, name=None, properties=None):
         self.meta = meta or {}
-        self.name = name or self._axis
+        self.name = name
         self.properties = properties
-        
+
         if self.properties is not None:
-            assert(isinstance(self.properties,np.ndarray))
-    
-    def __getitem__(self,slc):
-        slc = get_formatted_slice(slc,self._ndims)
+            assert isinstance(self.properties, np.ndarray)
+
+    def __getitem__(self, slc):
+        slc = get_formatted_slice(slc, self._ndims)
         ret = copy(self)
         for attr in self._attrs_slice:
-            ref_set = get_none_or_slice(getattr(ret,attr),slc)
-            setattr(ret,attr,ref_set)
+            ref_set = get_none_or_slice(getattr(ret, attr), slc)
+            setattr(ret, attr, ref_set)
         ret.properties = self._get_sliced_properties_(slc)
-        ret = self._format_slice_state_(ret,slc)
-        return(ret)
-    
+        ret = self._format_slice_state_(ret, slc)
+        return ret
+
     def get_iter(self):
-        raise(NotImplementedError)
-        
-    def _format_slice_state_(self,state,slc):
-        return(state)
-    
-    def _get_none_or_array_(self,arr,masked=False):
+        raise NotImplementedError
+
+    def _format_slice_state_(self, state, slc):
+        return state
+
+    def _get_none_or_array_(self, arr, masked=False):
         if self._ndims == 1:
             ret = get_none_or_1d(arr)
         elif self._ndims == 2:
             ret = get_none_or_2d(arr)
         else:
-            raise(NotImplementedError)
-        if ret is not None and masked and not isinstance(ret,np.ma.MaskedArray):
-            ret = np.ma.array(ret,mask=False)
-        return(ret)
-    
-    def _get_sliced_properties_(self,slc):
+            raise (NotImplementedError)
+        if ret is not None and masked and not isinstance(ret, np.ma.MaskedArray):
+            ret = np.ma.array(ret, mask=False)
+        return ret
+
+    def _get_sliced_properties_(self, slc):
         if self.properties is not None:
-            raise(NotImplementedError)
+            raise NotImplementedError
         else:
-            return(None)
+            return None
 
 
 class AbstractValueDimension(AbstractValueVariable):
@@ -141,7 +142,6 @@ class AbstractUidValueDimension(AbstractValueDimension,AbstractUidDimension):
 
 
 class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attributes):
-    _axis = None
     _attrs_slice = ('uid', '_value', '_src_idx')
     _ndims = 1
     
@@ -150,7 +150,7 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
         # used for creating name_bounds as well as the name of the bounds dimension in netCDF
         self.name_bounds_suffix = kwargs.pop('name_bounds_suffix', None) or constants.ocgis_bounds
         self._name_bounds = kwargs.pop('name_bounds', None)
-        self._axis = kwargs.pop('axis', None)
+        self.axis = kwargs.pop('axis', None)
         # if True, an attempt will be made to interpolate bounds if None are provided.
         self._interpolate_bounds = kwargs.pop('interpolate_bounds', False)
         # if True, bounds were interpolated. if False, they were loaded from source data
@@ -163,12 +163,14 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
                 
         # setting bounds requires checking the data type of value set in a superclass.
         self.bounds = bounds
-        
-        if self._axis is None:
-            self._axis = 'undefined'
             
     def __len__(self):
         return self.shape[0]
+
+    @property
+    def _axis(self):
+        raise AttributeError
+
     
     @property
     def bounds(self):
@@ -362,6 +364,9 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
          http://unidata.github.io/netcdf4-python/netCDF4.Dataset-class.html#createVariable
         """
 
+        if self.name is None:
+            raise ValueError('Writing to netCDF requires a "name" be set to a string value. It is currently None.')
+
         bounds_dimension_name = bounds_dimension_name or self.name_bounds_suffix
 
         if unlimited:
@@ -372,6 +377,7 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
         kwargs['dimensions'] = (self.name,)
         variable = dataset.createVariable(self.name_value, self.value.dtype, **kwargs)
         variable[:] = self.value
+        variable.axis = self.axis if self.axis is not None else ''
 
         if self.bounds is not None:
             try:

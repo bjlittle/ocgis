@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from numpy.ma import MaskedArray
 from cfunits import Units
 from ocgis.exc import VariableInCollectionError, NoUnitsError
@@ -101,10 +102,14 @@ class TestVariable(TestBase):
         value = np.array([1, 2, 3, 4, 5])
         value = np.ma.array(value, mask=[False, True, False, True, False])
         kwargs['value'] = value
+        kwargs['attrs'] = OrderedDict(foo=5)
         var = Variable(**kwargs)
 
         for shape in [None, (2, 2)]:
             new_var = var.get_empty_like(shape=shape)
+            self.assertDictEqual(new_var.attrs, kwargs['attrs'])
+            new_var.attrs['hi'] = 'wow'
+            self.assertNotEqual(new_var.attrs, kwargs['attrs'])
             self.assertEqual(new_var.uid, var.uid)
             if shape is None:
                 actual = np.ma.array(np.zeros(5), dtype=var.dtype, fill_value=var.fill_value, mask=value.mask)
