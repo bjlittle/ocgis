@@ -142,10 +142,13 @@ class DriverNetcdf(AbstractDriver):
                     else:
                         raise
 
+                # get the name of the dimension
+                name = ref_variable['axis']['dimension']
+
                 # assemble parameters for creating the dimension class then initialize the class.
                 kwds = dict(name_uid=v['name_uid'], src_idx=src_idx, data=self.rd, meta=ref_variable, axis=axis_value,
                             name_value=ref_variable.get('name'), dtype=dtype, attrs=ref_variable['attrs'].copy(),
-                            name=ref_variable['dimensions'][0], name_bounds=ref_variable['axis'].get('bounds'))
+                            name=name, name_bounds=ref_variable['axis'].get('bounds'))
 
                 # there may be additional parameters for each dimension.
                 if v['adds'] is not None:
