@@ -255,11 +255,11 @@ class TestField(AbstractTestField):
         self.assertEqual(len(rows), 2 * 31 * 2 * 3 * 4)
         rows[100]['geom'] = rows[100]['geom'].bounds
         real = {'realization_bounds_lower': None, 'vid': 1, 'time_bounds_upper': datetime.datetime(2000, 1, 6, 0, 0),
-                'realization_bounds_upper': None, 'year': 2000, 'spatial_uid': 5, 'level_bounds_upper': 100,
+                'realization_bounds_upper': None, 'year': 2000, 'gid': 5, 'level_bounds_upper': 100,
                 'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bounds_lower': 0,
                 'variable': 'tmax', 'month': 1, 'time_bounds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5,
                 'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1,
-                'time': datetime.datetime(2000, 1, 5, 12, 0), 'time_uid': 5, 'name': 'tmax'}
+                'time': datetime.datetime(2000, 1, 5, 12, 0), 'tid': 5, 'name': 'tmax'}
         for k, v in rows[100].iteritems():
             self.assertEqual(real[k], v)
         self.assertEqual(set(real.keys()), set(rows[100].keys()))
@@ -268,7 +268,7 @@ class TestField(AbstractTestField):
         # test without names
         field = self.get_field(with_value=True, with_dimension_names=False)
         rows = list(field.get_iter())
-        self.assertAsSetEqual(rows[10].keys(), ['vid', 'spatial_uid', 'month', 'year', 'alias', 'geom', 'realization', 'realization_uid', 'time_bounds_lower', 'level_bounds_upper', 'variable', 'day', 'realization_bounds_lower', 'name', 'level', 'did', 'level_bounds_lower', 'value', 'realization_bounds_upper', 'level_uid', 'time', 'time_uid', 'time_bounds_upper'])
+        self.assertAsSetEqual(rows[10].keys(), ['vid', 'gid', 'month', 'year', 'alias', 'geom', 'realization', 'realization_uid', 'time_bounds_lower', 'level_bounds_upper', 'variable', 'day', 'realization_bounds_lower', 'name', 'level', 'did', 'level_bounds_lower', 'value', 'realization_bounds_upper', 'level_uid', 'time', 'tid', 'time_bounds_upper'])
 
     def test_get_intersects_domain_polygon(self):
         regular = make_poly((36.61,41.39),(-101.41,-95.47))
