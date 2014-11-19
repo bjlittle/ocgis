@@ -197,7 +197,7 @@ class TestBase(unittest.TestCase):
 
                         # notify if an attribute is missing
                         msg = 'The attribute "{0}" is not found on the variable "{1}" for URI "{2}".'\
-                            .format(k, var._name, uri_dest)
+                            .format(k, var._name, uri_src)
                         raise AttributeError(msg)
                     try:
                         self.assertNumpyAll(v, to_test_attr)

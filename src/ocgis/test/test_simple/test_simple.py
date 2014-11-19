@@ -270,13 +270,13 @@ class TestSimple(TestSimpleBase):
         """Test units and calendar are copied to the time bounds."""
 
         rd = self.get_dataset()
-        ops = ocgis.OcgOperations(dataset=rd,output_format='nc')
+        ops = ocgis.OcgOperations(dataset=rd, output_format='nc')
         ret = ops.execute()
         with nc_scope(ret) as ds:
             time_attrs = deepcopy(ds.variables['time'].__dict__)
             time_attrs.pop('bounds')
-            self.assertEqual(dict(time_attrs),
-                             dict(ds.variables['time_bnds'].__dict__))
+            time_attrs.pop('axis')
+            self.assertEqual(dict(time_attrs), dict(ds.variables['time_bnds'].__dict__))
             
     def test_units_calendar_on_time_bounds_calculation(self):
         rd = self.get_dataset()
@@ -727,8 +727,20 @@ class TestSimple(TestSimpleBase):
         ops = OcgOperations(dataset=rd, output_format='nc')
         ret = self.get_ret(ops)
         
-        self.assertNcEqual(ret, rd['uri'], ignore_attributes={'global': ['history'], 'time_bnds': ['calendar', 'units'], rd['variable']: 'grid_mapping'},
+        self.assertNcEqual(ret, rd['uri'], ignore_attributes={'global': ['history'],
+                                                              'time_bnds': ['calendar', 'units'],
+                                                              rd['variable']: ['grid_mapping'],
+                                                              'time': ['axis'],
+                                                              'level': ['axis'],
+                                                              'latitude': ['axis'],
+                                                              'longitude': ['axis']},
                            ignore_variables=['latitude_longitude'])
+
+        with self.nc_scope(ret) as ds:
+            expected = {'time': 'T', 'level': 'Z', 'latitude': 'Y', 'longitude': 'X'}
+            for k, v in expected.iteritems():
+                var = ds.variables[k]
+                self.assertEqual(var.axis, v)
         
     def test_nc_conversion_calc(self):
         calc_grouping = ['month']
