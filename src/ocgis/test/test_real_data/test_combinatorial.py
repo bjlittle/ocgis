@@ -1,6 +1,6 @@
 import os
 import shutil
-from ocgis import OcgOperations
+from ocgis import OcgOperations, RequestDataset
 from ocgis.test.base import TestBase
 
 
@@ -24,9 +24,31 @@ class TestCombinatorial(TestBase):
 
         log = logbook.Logger(name='combos', level=logbook.DEBUG)
 
-        slc = [None, [10, 20], None, None, None]
         for key, dataset in self.iter_dataset():
-            log.debug('processing: {0}'.format(key))
+
+            # if key != 'qed_2013_TNn_annual_min': continue
+
+            # these datasets have only one time element
+            if key in ('qed_2013_TNn_annual_min',
+                       'qed_2013_TasMin_seasonal_max_of_seasonal_means',
+                       'qed_2013_climatology_Tas_annual_max_of_annual_means',
+                       'qed_2013_maurer02v2_median_txxmmedm_january_1971-2000',
+                       'qed_2013_maurer02v2_median_txxmmedm_february_1971-2000',
+                       'qed_2013_maurer02v2_median_txxmmedm_march_1971-2000',
+                       'snippet_maurer_dtr',
+                       'snippet_seasonalbias'):
+                slc = None
+            else:
+                slc = [None, [10, 20], None, None, None]
+
+            # this has different data types on the bounds for the coordinate variables. they currently get casted by the
+            # software.
+            if key == 'maurer_bcca_1991':
+                check_types = False
+            else:
+                check_types = True
+
+            log.debug('processing: {0} ({1})'.format(key, dataset.__class__.__name__))
             ops = OcgOperations(dataset=dataset, output_format='nc', prefix='nc1', slice=slc)
             try:
                 log.debug('initial write...')
@@ -43,7 +65,7 @@ class TestCombinatorial(TestBase):
                     log.debug('second write...')
                     ret2 = ops2.execute()
                     log.debug('comparing...')
-                    self.assertNcEqual(ret1, ret2, ignore_attributes={'global': ['history']})
+                    self.assertNcEqual(ret1, ret2, ignore_attributes={'global': ['history']}, check_types=check_types)
                 finally:
                     for path in [ret1, ret2]:
                         folder = os.path.split(path)[0]
