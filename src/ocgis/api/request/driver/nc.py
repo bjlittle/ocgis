@@ -110,7 +110,7 @@ class DriverNetcdf(AbstractDriver):
 
         for k, v in to_load.iteritems():
             # this is the string axis representation
-            axis_value = v['axis'] or v['cls']._axis
+            axis_value = v['axis']
             # pull the axis information out of the dimension map
             ref_axis = source_metadata['dim_map'].get(axis_value)
             ref_axis = source_metadata['dim_map'].get(axis_value)

@@ -233,33 +233,34 @@ class OcgOperations(object):
             msg = 'Base request size not supported with a regrid destination.'
             raise DefinitionValidationError(RegridDestination, msg)
 
-        def _get_kb_(dtype,elements):
-            nbytes = np.array([1],dtype=dtype).nbytes
-            return(float((elements*nbytes)/1024.0))
-        
+        def _get_kb_(dtype, elements):
+            nbytes = np.array([1], dtype=dtype).nbytes
+            return float((elements * nbytes) / 1024.0)
+
         def _get_zero_or_kb_(dimension):
-            ret = {'shape':None,'kb':0.0,'dtype':None}
+            ret = {'shape': None, 'kb': 0.0, 'dtype': None}
             if dimension is not None:
                 try:
                     ret['dtype'] = dimension.dtype
                     ret['shape'] = dimension.shape
-                    ret['kb'] = _get_kb_(dimension.dtype,dimension.shape[0])
-                ## dtype may not be available, check if it is the realization dimension.
-                ## this is often not associated with a variable.
+                    ret['kb'] = _get_kb_(dimension.dtype, dimension.shape[0])
+                # dtype may not be available, check if it is the realization dimension. this is often not associated
+                # with a variable.
                 except ValueError:
-                    if dimension._axis != 'R':
+                    if dimension.axis != 'R':
                         raise
-            return(ret)
-        
+            return ret
+
         ops_size = deepcopy(self)
-        subset = SubsetOperation(ops_size,request_base_size_only=True)
+        subset = SubsetOperation(ops_size, request_base_size_only=True)
         ret = dict(variables={})
         for coll in subset:
             for row in coll.get_iter_melted():
-                elements = reduce(lambda x,y: x*y,row['field'].shape)
-                kb = _get_kb_(row['variable'].dtype,elements)
+                elements = reduce(lambda x, y: x * y, row['field'].shape)
+                kb = _get_kb_(row['variable'].dtype, elements)
                 ret['variables'][row['variable_alias']] = {}
-                ret['variables'][row['variable_alias']]['value'] = {'shape':row['field'].shape,'kb':kb,'dtype':row['variable'].dtype}
+                ret['variables'][row['variable_alias']]['value'] = {'shape': row['field'].shape, 'kb': kb,
+                                                                    'dtype': row['variable'].dtype}
                 ret['variables'][row['variable_alias']]['realization'] = _get_zero_or_kb_(row['field'].realization)
                 ret['variables'][row['variable_alias']]['temporal'] = _get_zero_or_kb_(row['field'].temporal)
                 ret['variables'][row['variable_alias']]['level'] = _get_zero_or_kb_(row['field'].level)
@@ -272,7 +273,7 @@ class OcgOperations(object):
                 for v3 in v2.itervalues():
                     total += float(v3['kb'])
         ret['total'] = total
-        return(ret)
+        return ret
     
     def get_meta(self):
         meta_converter = MetaConverter(self)

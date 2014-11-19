@@ -598,7 +598,6 @@ class SpatialDimension(base.AbstractUidDimension):
 
     
 class SpatialGridDimension(base.AbstractUidValueDimension):
-    _axis = 'GRID'
     _ndims = 2
     _attrs_slice = None
 
@@ -879,7 +878,6 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
     
     
 class SpatialGeometryDimension(base.AbstractUidDimension):
-    _axis = 'GEOM'
     _ndims = 2
     _attrs_slice = ('uid', 'grid', '_point', '_polygon')
 
@@ -982,7 +980,6 @@ class SpatialGeometryDimension(base.AbstractUidDimension):
 
 
 class SpatialGeometryPointDimension(base.AbstractUidValueDimension):
-    _axis = 'POINT'
     _ndims = 2
     _attrs_slice = ('uid','_value','grid')
     _geom_type = 'Point'
@@ -1138,7 +1135,6 @@ class SpatialGeometryPointDimension(base.AbstractUidValueDimension):
     
 class SpatialGeometryPolygonDimension(SpatialGeometryPointDimension):
     _geom_type = 'MultiPolygon'
-    _axis = 'POLYGON'
 
     def __init__(self, *args, **kwargs):
         super(SpatialGeometryPolygonDimension, self).__init__(*args, **kwargs)

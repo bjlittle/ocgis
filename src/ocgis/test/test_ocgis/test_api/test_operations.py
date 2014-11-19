@@ -147,10 +147,10 @@ class TestOcgOperations(TestBase):
             rd = self.test_data.get_rd(key)
             try:
                 ops = OcgOperations(dataset=rd)
-            ## the project cmip data may raise an exception since projection is
-            ## not associated with a variable
+            # the project cmip data may raise an exception since projection is not associated with a variable
             except DimensionNotFound:
-                rd = self.test_data.get_rd(key,kwds=dict(dimension_map={'R':'projection','T':'time','X':'longitude','Y':'latitude'}))
+                rd = self.test_data.get_rd(key, kwds=dict(
+                    dimension_map={'R': 'projection', 'T': 'time', 'X': 'longitude', 'Y': 'latitude'}))
                 ops = OcgOperations(dataset=rd)
             ret = ops.get_base_request_size()
             self.assertTrue(ret['total'] > 1)

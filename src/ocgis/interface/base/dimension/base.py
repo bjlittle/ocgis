@@ -168,11 +168,6 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
             
     def __len__(self):
         return self.shape[0]
-
-    @property
-    def _axis(self):
-        raise AttributeError
-
     
     @property
     def bounds(self):
