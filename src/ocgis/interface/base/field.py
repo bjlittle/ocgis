@@ -331,21 +331,25 @@ class Field(Attributes):
             raise ValueError(msg)
 
         @contextmanager
-        def name_scope(target, name):
+        def name_scope(target, name, axis):
             previous_name = target.name
+            previous_axis = target.axis
             try:
                 if target.name is None:
                     target.name = name
+                if target.axis is None:
+                    target.axis = axis
                 yield target
             finally:
                 target.name = previous_name
+                target.axis = previous_axis
 
         value_dimensions = []
-        with name_scope(self.temporal, 'time'):
+        with name_scope(self.temporal, 'time', 'T'):
             self.temporal.write_to_netcdf_dataset(dataset, **kwargs)
             value_dimensions.append(self.temporal.name)
         try:
-            with name_scope(self.level, 'level'):
+            with name_scope(self.level, 'level', 'Z'):
                 self.level.write_to_netcdf_dataset(dataset, **kwargs)
                 if self.level is not None:
                     value_dimensions.append(self.level.name)
@@ -353,10 +357,10 @@ class Field(Attributes):
             if self.level is not None:
                 raise
         try:
-            with name_scope(self.spatial.grid.row, 'yc'):
+            with name_scope(self.spatial.grid.row, 'yc', 'Y'):
                 self.spatial.grid.row.write_to_netcdf_dataset(dataset, **kwargs)
                 value_dimensions.append(self.spatial.grid.row.name)
-            with name_scope(self.spatial.grid.col, 'xc'):
+            with name_scope(self.spatial.grid.col, 'xc', 'X'):
                 self.spatial.grid.col.write_to_netcdf_dataset(dataset, **kwargs)
                 value_dimensions.append(self.spatial.grid.col.name)
         except AttributeError:

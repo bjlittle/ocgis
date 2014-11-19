@@ -552,6 +552,7 @@ class TestField(AbstractTestField):
                     self.assertTrue(nc_second_variable[:].mask.all())
                 self.assertEqual(ds.variables['tmax'].units, field.variables['tmax'].units)
                 self.assertEqual(nc_second_variable.units, '')
+
             new_field = RequestDataset(path).get()
             self.assertEqual(new_field.variables.keys(), ['tmax', second_variable_alias])
             if k.with_level:
