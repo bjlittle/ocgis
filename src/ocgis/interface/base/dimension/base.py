@@ -90,35 +90,37 @@ class AbstractValueDimension(AbstractValueVariable):
     @name_value.setter
     def name_value(self, value):
         self._name_value = value
-    
-    
+
+
 class AbstractUidDimension(AbstractDimension):
-    
-    def __init__(self,*args,**kwds):
-        self.uid = kwds.pop('uid',None)
-        self.name_uid = kwds.pop('name_uid',None)
-        
-        super(AbstractUidDimension,self).__init__(*args,**kwds)
-        
+
+    def __init__(self, *args, **kwargs):
+        self.uid = kwargs.pop('uid', None)
+        self.name_uid = kwargs.pop('name_uid', None)
+
+        super(AbstractUidDimension, self).__init__(*args, **kwargs)
+
         if self.name_uid is None:
             self.name_uid = '{0}_uid'.format(self.name)
-            
+
     @property
     def uid(self):
         if self._uid is None:
             self._uid = self._get_uid_()
-        return(self._uid)
+        return self._uid
+
     @uid.setter
-    def uid(self,value):
-        self._uid = self._get_none_or_array_(value,masked=True)
+    def uid(self, value):
+        self._uid = self._get_none_or_array_(value, masked=True)
+
     def _get_uid_(self):
         if self.value is None:
             ret = None
         else:
-            n = reduce(mul,self.value.shape)
-            ret = np.arange(1,n+1,dtype=constants.np_int).reshape(self.value.shape)
-            ret = np.ma.array(ret,mask=False)
-        return(ret)
+            n = reduce(mul, self.value.shape)
+            ret = np.arange(1, n + 1, dtype=constants.np_int).reshape(self.value.shape)
+            ret = np.ma.array(ret, mask=False)
+        return ret
 
 
 class AbstractUidValueDimension(AbstractValueDimension,AbstractUidDimension):

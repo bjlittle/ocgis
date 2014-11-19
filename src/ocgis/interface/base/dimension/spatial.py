@@ -74,8 +74,7 @@ class SpatialDimension(base.AbstractUidDimension):
     """
 
     _ndims = 2
-    _axis = 'SPATIAL'
-    _attrs_slice = ('uid','grid','_geom')
+    _attrs_slice = ('uid', 'grid', '_geom')
 
     def __init__(self, *args, **kwargs):
         self.grid = kwargs.pop('grid', None)
@@ -91,11 +90,14 @@ class SpatialDimension(base.AbstractUidDimension):
         row = kwargs.pop('row', None)
         col = kwargs.pop('col', None)
 
+        # always provide a default name for iteration
+        kwargs['name'] = kwargs.get('name') or 'spatial'
+
         ## attempt to build the geometry dimension
         point = kwargs.pop('point', None)
         polygon = kwargs.pop('polygon', None)
         geom_kwds = dict(point=point, polygon=polygon)
-        if any([g != None for g in geom_kwds.values()]):
+        if any([g is not None for g in geom_kwds.values()]):
             self._geom = SpatialGeometryDimension(**geom_kwds)
 
         # attempt to construct some core dimensions if they are not passed at initialization

@@ -244,7 +244,7 @@ class TestField(AbstractTestField):
         self.assertEqual(len(rows), 2 * 31 * 2 * 3 * 4)
         rows[100]['geom'] = rows[100]['geom'].bounds
         real = {'realization_bounds_lower': None, 'vid': 1, 'time_bounds_upper': datetime.datetime(2000, 1, 6, 0, 0),
-                'realization_bounds_upper': None, 'year': 2000, 'SPATIAL_uid': 5, 'level_bounds_upper': 100,
+                'realization_bounds_upper': None, 'year': 2000, 'spatial_uid': 5, 'level_bounds_upper': 100,
                 'realization_uid': 1, 'realization': 1, 'geom': (-100.5, 38.5, -99.5, 39.5), 'level_bounds_lower': 0,
                 'variable': 'tmax', 'month': 1, 'time_bounds_lower': datetime.datetime(2000, 1, 5, 0, 0), 'day': 5,
                 'level': 50, 'did': None, 'value': 0.32664490177209615, 'alias': 'tmax', 'level_uid': 1,

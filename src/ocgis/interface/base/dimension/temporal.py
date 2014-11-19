@@ -34,7 +34,7 @@ class TemporalDimension(base.VectorDimension):
         self.calendar = kwargs.pop('calendar', constants.default_temporal_calendar)
         self.format_time = kwargs.pop('format_time', True)
 
-        kwargs['axis'] = kwargs.get('axis', 'T')
+        kwargs['axis'] = kwargs.get('axis') or 'T'
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 

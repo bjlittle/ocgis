@@ -54,10 +54,10 @@ class AbstractTestSpatialDimension(TestBase):
         row = VectorDimension(value=value,bounds=bounds,name='row')
         return(row)
 
-    def get_sdim(self, bounds=True, crs=None):
+    def get_sdim(self, bounds=True, crs=None, name=None):
         row = self.get_row(bounds=bounds)
         col = self.get_col(bounds=bounds)
-        sdim = SpatialDimension(row=row, col=col, crs=crs)
+        sdim = SpatialDimension(row=row, col=col, crs=crs, name=name)
         return sdim
 
     @property
@@ -143,6 +143,7 @@ class TestSpatialDimension(AbstractTestSpatialDimension):
 
     def test_init(self):
         sdim = self.get_sdim(bounds=True)
+        self.assertEqual(sdim.name, 'spatial')
         self.assertIsNone(sdim.abstraction)
         self.assertNumpyAll(sdim.grid.value, self.grid_value_regular)
 
@@ -155,6 +156,9 @@ class TestSpatialDimension(AbstractTestSpatialDimension):
         to_test = vfunc(sdim.geom.polygon.value.data, self.polygon_value.data)
         self.assertTrue(to_test.all())
         self.assertFalse(sdim.geom.polygon.value.mask.any())
+
+        sdim = self.get_sdim(name='foobuar')
+        self.assertEqual(sdim.name, 'foobuar')
 
     def test_abstraction(self):
         sdim = self.get_sdim()
