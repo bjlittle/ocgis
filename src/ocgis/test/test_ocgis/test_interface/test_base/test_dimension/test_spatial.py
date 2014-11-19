@@ -144,6 +144,7 @@ class TestSpatialDimension(AbstractTestSpatialDimension):
     def test_init(self):
         sdim = self.get_sdim(bounds=True)
         self.assertEqual(sdim.name, 'spatial')
+        self.assertEqual(sdim.name_uid, 'gid')
         self.assertIsNone(sdim.abstraction)
         self.assertNumpyAll(sdim.grid.value, self.grid_value_regular)
 

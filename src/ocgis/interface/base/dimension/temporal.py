@@ -36,6 +36,7 @@ class TemporalDimension(base.VectorDimension):
 
         kwargs['axis'] = kwargs.get('axis') or 'T'
         kwargs['name'] = kwargs.get('name') or 'time'
+        kwargs['name_uid'] = kwargs.get('name_uid') or 'tid'
 
         super(TemporalDimension, self).__init__(*args, **kwargs)
 

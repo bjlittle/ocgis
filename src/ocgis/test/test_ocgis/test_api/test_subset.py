@@ -58,23 +58,17 @@ class TestSubsetOperation(TestBase):
     def test_dataset_as_field(self):
         """Test with dataset as field not loaded from file - hence, no metadata."""
 
-        #todo: test writing and inspecting output formats: csv, csv+, geojson, shapefile
-        #todo: test interpolate spatial bounds with a field object that only has points
-        #todo: test with a calculation
-        #todo: test with a time range and time region
-        #todo: test with mix of fields and request datasets
-
         kwds = dict(output_format=list(OutputFormat.iter_possible()),
                     crs=[None, WGS84()])
 
-        for k in self.iter_product_keywords(kwds):
+        for ii, k in enumerate(self.iter_product_keywords(kwds)):
             field = self.get_field(crs=k.crs)
 
             ops = OcgOperations(dataset=field)
             ret = ops.execute()
             self.assertNumpyAll(ret.gvu(1, 'foo'), field.variables['foo'].value)
 
-            ops = OcgOperations(dataset=field, output_format=k.output_format, prefix=k.output_format)
+            ops = OcgOperations(dataset=field, output_format=k.output_format, prefix=str(ii))
             try:
                 ret = ops.execute()
             except ValueError as ve:
@@ -88,25 +82,44 @@ class TestSubsetOperation(TestBase):
 
             folder = os.path.split(ret)[0]
 
-            path_did = os.path.join(folder, '{0}_did.csv'.format(k.output_format))
+            path_did = os.path.join(folder, '{0}_did.csv'.format(ops.prefix))
             with open(path_did, 'r') as f:
                 rows = list(csv.DictReader(f))
             self.assertEqual(rows, [{'ALIAS': 'foo', 'DID': '1', 'URI': '', 'UNITS': '', 'STANDARD_NAME': '', 'VARIABLE': 'foo', 'LONG_NAME': ''}])
 
-            path_source_metadata = os.path.join(folder, '{0}_source_metadata.txt'.format(k.output_format))
+            path_source_metadata = os.path.join(folder, '{0}_source_metadata.txt'.format(ops.prefix))
             with open(path_source_metadata, 'r') as f:
                 rows = f.readlines()
             self.assertEqual(rows, [])
 
-            with self.nc_scope(ret) as ds:
-                self.assertAsSetEqual(ds.variables.keys(), [u'time', u'row', u'col', u'foo'])
-                self.assertNumpyAll(ds.variables['time'][:], field.temporal.value_numtime)
-                self.assertNumpyAll(ds.variables['row'][:], field.spatial.grid.row.value)
-                self.assertNumpyAll(ds.variables['col'][:], field.spatial.grid.col.value)
-                self.assertNumpyAll(ds.variables['foo'][:], field.variables['foo'].value.data.squeeze())
+            if k.output_format == 'nc':
+                with self.nc_scope(ret) as ds:
+                    variables_expected = [u'time', u'row', u'col', u'foo']
+                    try:
+                        self.assertAsSetEqual(ds.variables.keys(), variables_expected)
+                    except AssertionError:
+                        self.assertIsNotNone(k.crs)
+                        variables_expected.append('latitude_longitude')
+                        self.assertAsSetEqual(ds.variables.keys(), variables_expected)
+                    self.assertNumpyAll(ds.variables['time'][:], field.temporal.value_numtime)
+                    self.assertNumpyAll(ds.variables['row'][:], field.spatial.grid.row.value)
+                    self.assertNumpyAll(ds.variables['col'][:], field.spatial.grid.col.value)
+                    self.assertNumpyAll(ds.variables['foo'][:], field.variables['foo'].value.data.squeeze())
 
             contents = os.listdir(folder)
-            self.assertAsSetEqual(contents, [xx.format(k.output_format) for xx in '{0}_source_metadata.txt', '{0}_did.csv', '{0}.log', '{0}_metadata.txt', '{0}.nc'])
+
+            expected_contents = [xx.format(ops.prefix) for xx in '{0}_source_metadata.txt', '{0}_did.csv', '{0}.log', '{0}_metadata.txt']
+            if k.output_format == 'nc':
+                expected_contents.append('{0}.nc'.format(ops.prefix))
+                self.assertAsSetEqual(contents, expected_contents)
+            elif k.output_format == 'csv+':
+                expected_contents.append('{0}.csv'.format(ops.prefix))
+                expected_contents.append('shp')
+                self.assertAsSetEqual(contents, expected_contents)
+            elif k.output_format == 'shp':
+                expected_contents = ['{0}.shp', '{0}.dbf', '{0}.shx', '{0}.cpg', '{0}.log', '{0}_metadata.txt', '{0}_source_metadata.txt', '{0}_did.csv', '{0}.prj']
+                expected_contents = [xx.format(ops.prefix) for xx in expected_contents]
+                self.assertAsSetEqual(contents, expected_contents)
 
     def test_dataset_as_field_from_file(self):
         """Test with dataset argument coming in as a field as opposed to a request dataset collection."""

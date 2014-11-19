@@ -92,6 +92,7 @@ class SpatialDimension(base.AbstractUidDimension):
 
         # always provide a default name for iteration
         kwargs['name'] = kwargs.get('name') or 'spatial'
+        kwargs['name_uid'] = kwargs.get('name_uid') or 'gid'
 
         ## attempt to build the geometry dimension
         point = kwargs.pop('point', None)
