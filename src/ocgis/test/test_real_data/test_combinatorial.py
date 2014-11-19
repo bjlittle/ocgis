@@ -20,6 +20,9 @@ class TestCombinatorial(TestBase):
                     yield k, rd.get()
 
     def test(self):
+        import logbook
+        log = logbook.log()
+
         for key, dataset in self.iter_dataset():
             print key
             ops = OcgOperations(dataset=dataset, output_format='nc', prefix='nc1')
