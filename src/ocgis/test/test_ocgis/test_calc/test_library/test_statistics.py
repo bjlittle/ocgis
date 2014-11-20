@@ -28,7 +28,6 @@ class TestMovingWindow(AbstractTestField):
         self.assertEqual(ret[4], np.mean(values[2:7]))
 
     def test_execute(self):
-        #todo: add to docs
         field = self.get_field(month_count=1, with_value=True)
         field = field[:, 0:4, :, :, :]
         field.variables['tmax'].value[:] = 1

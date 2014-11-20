@@ -1,5 +1,6 @@
 import os
 import shutil
+from ocgis.test.test_base import longrunning
 from ocgis import OcgOperations, RequestDataset
 from ocgis.test.base import TestBase
 
@@ -19,10 +20,11 @@ class TestCombinatorial(TestBase):
                 else:
                     yield k, rd.get()
 
+    @longrunning
     def test(self):
         import logbook
 
-        log = logbook.Logger(name='combos', level=logbook.DEBUG)
+        log = logbook.Logger(name='combos', level=logbook.INFO)
 
         for key, dataset in self.iter_dataset():
 

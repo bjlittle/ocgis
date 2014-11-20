@@ -474,7 +474,7 @@ class SubsetOperation(object):
         :param bool with_buffer: If ``True``, buffer the geometry used to subset the destination grid.
         """
 
-        # todo: cache spatial operations on regrid destination field
+        #todo: cache spatial operations on regrid destination field
 
         from ocgis.regrid.base import iter_regridded_fields
         from ocgis.util.spatial.spatial_subset import SpatialSubsetOperation

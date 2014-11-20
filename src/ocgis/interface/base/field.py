@@ -145,17 +145,16 @@ class Field(Attributes):
             v._field = self
             if v._value is not None:
                 assert v._value.shape == self.shape
-    
-    def get_between(self,dim,lower,upper):
+
+    def get_between(self, dim, lower, upper):
         pos = self._axis_map[dim]
-        ref = getattr(self,dim)
-        ## TODO: minor redundancy in slicing and returning dimension
-        new_dim,indices = ref.get_between(lower,upper,return_indices=True)
+        ref = getattr(self, dim)
+        _, indices = ref.get_between(lower, upper, return_indices=True)
         slc = get_reduced_slice(indices)
-        slc_field = [slice(None)]*5
+        slc_field = [slice(None)] * 5
         slc_field[pos] = slc
         ret = self[slc_field]
-        return(ret)
+        return ret
     
     def get_clip(self, polygon, use_spatial_index=True, select_nearest=False):
         return(self._get_spatial_operation_('get_clip', polygon, use_spatial_index=use_spatial_index,

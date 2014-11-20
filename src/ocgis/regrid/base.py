@@ -148,6 +148,7 @@ def iter_esmf_fields(ofield, with_corners=True, value_mask=None):
 
     :raises: AssertionError
     """
+
     #todo: provide other options for calculating value_mask
     # only one level and realization allowed
     assert ofield.shape[0] == 1
