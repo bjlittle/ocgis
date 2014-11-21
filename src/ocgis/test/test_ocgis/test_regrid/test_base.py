@@ -1,13 +1,14 @@
 from copy import deepcopy, copy
 import ESMF
 import itertools
+from ocgis.api.operations import OcgOperations
 from ocgis.conv.esmpy_ import ESMPyConverter
 from ocgis.api.collection import SpatialCollection
 from ocgis.interface.base.dimension.temporal import TemporalDimension
 from ocgis.interface.base.dimension.base import VectorDimension
 from shapely.geometry import Polygon, MultiPolygon
 import ocgis
-from ocgis.exc import RegriddingError, CornersInconsistentError
+from ocgis.exc import RegriddingError, CornersInconsistentError, CannotFormatTimeError
 from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, Spherical
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.field import Field
@@ -622,19 +623,30 @@ class TestRegrid(TestSimpleBase):
         np.random.seed(1)
         row = VectorDimension(value=[1., 2.])
         col = VectorDimension(value=[3., 4.])
-        grid = SpatialGridDimension(row=row, col=col)
         temporal = TemporalDimension(value=[3000., 4000., 5000.])
         level = VectorDimension(value=[10, 20, 30, 40])
         realization = VectorDimension(value=[1, 2])
-        value_tmin = np.random.rand(2, 3, 4, 2, 2)
-        tmin = Variable(value=value_tmin, name='tmin')
-        variables = VariableCollection([tmin])
 
-        kwds = dict(crs=[None, CoordinateReferenceSystem(epsg=4326), Spherical()])
+        kwds = dict(crs=[None, CoordinateReferenceSystem(epsg=4326), Spherical()],
+                    with_mask=[False, True])
 
         for k in self.iter_product_keywords(kwds):
+            value_tmin = np.random.rand(2, 3, 4, 2, 2)
+            tmin = Variable(value=value_tmin, name='tmin')
+            variables = VariableCollection([tmin])
+            grid = SpatialGridDimension(row=row, col=col)
             sdim = SpatialDimension(grid=grid, crs=k.crs)
             field = Field(variables=variables, spatial=sdim, temporal=temporal, level=level, realization=realization)
+            if k.with_mask:
+                mask = np.zeros(value_tmin.shape[-2:], dtype=bool)
+                mask[0, 1] = True
+                field._set_new_value_mask_(field, mask)
+                sdim.set_mask(mask)
+                self.assertTrue(tmin.value.mask.any())
+                self.assertTrue(sdim.get_mask().any())
+            else:
+                self.assertFalse(tmin.value.mask.any())
+                self.assertFalse(sdim.get_mask().any())
             coll = SpatialCollection()
             coll[1] = {field.name: field}
             conv = ESMPyConverter([coll])
@@ -645,7 +657,10 @@ class TestRegrid(TestSimpleBase):
             self.assertIsInstance(ofield, Field)
             self.assertEqual(ofield.shape, efield.shape)
             self.assertNumpyAll(ofield.realization.value, np.array([1, 2]))
-            self.assertNumpyAll(ofield.temporal.value, np.array([1, 2, 3]))
+            self.assertNumpyAll(ofield.temporal.value, np.array([1, 1, 1]))
+            self.assertFalse(ofield.temporal.format_time)
+            with self.assertRaises(CannotFormatTimeError):
+                ofield.temporal.value_datetime
             self.assertNumpyAll(ofield.level.value, np.array([1, 2, 3, 4]))
             self.assertNumpyAll(field.spatial.grid.value, ofield.spatial.grid.value)
             self.assertEqual(ofield.spatial.crs, sdim.crs)
@@ -655,10 +670,17 @@ class TestRegrid(TestSimpleBase):
                 self.assertNumpyAll(arr1, arr2, check_arr_type=False)
 
             rows = list(ofield.get_iter())
-            self.assertEqual(len(rows), 50)
+            try:
+                self.assertEqual(len(rows), len(value_tmin.flatten()))
+            except AssertionError:
+                self.assertTrue(k.with_mask)
+                self.assertEqual(len(rows), len(tmin.value.compressed()))
 
             self.assertTrue(np.may_share_memory(ofield_tmin_value, efield))
             self.assertFalse(np.may_share_memory(ofield_tmin_value, tmin.value))
+
+            ops = OcgOperations(dataset=ofield, output_format='nc')
+            ret = ops.execute()
 
         import ipdb;ipdb.set_trace()
         raise self.ToTest

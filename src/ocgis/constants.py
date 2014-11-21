@@ -10,7 +10,7 @@ netCDF_default_data_model = 'NETCDF4_CLASSIC'
 default_temporal_calendar = 'standard'
 
 #: Default temporal units.
-default_temporal_units = 'days since 0000-01-01 00:00:00'
+default_temporal_units = 'days since 0001-01-01 00:00:00'
 
 #: Default name for coordinate systems in netCDF file if none is provided.
 default_coordinate_system_name = 'coordinate_system'

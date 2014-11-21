@@ -91,8 +91,8 @@ def get_ocgis_field_from_esmpy_field(efield, crs=None):
 
     realization_values = np.arange(1, efield.shape[0]+1)
     realization = VectorDimension(value=realization_values)
-    temporal_values = np.arange(1, efield.shape[1]+1)
-    temporal = TemporalDimension(value=temporal_values)
+    temporal_values = np.array([1]*efield.shape[1])
+    temporal = TemporalDimension(value=temporal_values, format_time=False)
     level_values = np.arange(1, efield.shape[2]+1)
     level = VectorDimension(value=level_values)
     variable = Variable(name='tmin', value=efield)
