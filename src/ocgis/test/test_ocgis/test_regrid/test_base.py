@@ -1,14 +1,19 @@
 from copy import deepcopy, copy
 import ESMF
+import itertools
+from ocgis.conv.esmpy_ import ESMPyConverter
+from ocgis.api.collection import SpatialCollection
+from ocgis.interface.base.dimension.temporal import TemporalDimension
+from ocgis.interface.base.dimension.base import VectorDimension
 from shapely.geometry import Polygon, MultiPolygon
 import ocgis
 from ocgis.exc import RegriddingError, CornersInconsistentError
 from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, Spherical
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.field import Field
-from ocgis.interface.base.variable import VariableCollection
+from ocgis.interface.base.variable import VariableCollection, Variable
 from ocgis.regrid.base import check_fields_for_regridding, iter_regridded_fields, get_esmf_grid_from_sdim, \
-    iter_esmf_fields, get_sdim_from_esmf_grid
+    iter_esmf_fields, get_sdim_from_esmf_grid, get_ocgis_field_from_esmpy_field
 from ocgis.test.test_simple.make_test_data import SimpleNc
 from ocgis.test.test_simple.test_simple import TestSimpleBase
 import numpy as np
@@ -411,7 +416,8 @@ class TestRegrid(TestSimpleBase):
         rd = ocgis.RequestDataset(**self.get_dataset())
 
         keywords = dict(has_corners=[True, False],
-                        has_mask=[True, False])
+                        has_mask=[True, False],
+                        crs=[None, CoordinateReferenceSystem(epsg=4326)])
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             field = rd.get()
@@ -432,7 +438,8 @@ class TestRegrid(TestSimpleBase):
                 egrid.coords[ESMF.StaggerLoc.CORNER] = [np.array(0.0), np.array(0.0)]
                 egrid.coords_done[ESMF.StaggerLoc.CORNER] = [False, False]
 
-            nsdim = get_sdim_from_esmf_grid(egrid)
+            nsdim = get_sdim_from_esmf_grid(egrid, crs=k.crs)
+            self.assertEqual(nsdim.crs, k.crs)
 
             self.assertNumpyAll(sdim.grid.value, nsdim.grid.value)
             if k.has_corners:
@@ -609,6 +616,51 @@ class TestRegrid(TestSimpleBase):
         self.assertNumpyAll(egrid.mask[0], np.invert(value_mask.astype(bool)).astype(egrid.mask[0].dtype))
 
     def test_get_ocgis_field_from_esmpy_field(self):
+        #todo: temporal
+        #todo: corners
+        #todo: mask
+        np.random.seed(1)
+        row = VectorDimension(value=[1., 2.])
+        col = VectorDimension(value=[3., 4.])
+        grid = SpatialGridDimension(row=row, col=col)
+        temporal = TemporalDimension(value=[3000., 4000., 5000.])
+        level = VectorDimension(value=[10, 20, 30, 40])
+        realization = VectorDimension(value=[1, 2])
+        value_tmin = np.random.rand(2, 3, 4, 2, 2)
+        tmin = Variable(value=value_tmin, name='tmin')
+        variables = VariableCollection([tmin])
+
+        kwds = dict(crs=[None, CoordinateReferenceSystem(epsg=4326), Spherical()])
+
+        for k in self.iter_product_keywords(kwds):
+            sdim = SpatialDimension(grid=grid, crs=k.crs)
+            field = Field(variables=variables, spatial=sdim, temporal=temporal, level=level, realization=realization)
+            coll = SpatialCollection()
+            coll[1] = {field.name: field}
+            conv = ESMPyConverter([coll])
+            efield = conv.write()
+
+            ofield = get_ocgis_field_from_esmpy_field(efield, crs=k.crs)
+
+            self.assertIsInstance(ofield, Field)
+            self.assertEqual(ofield.shape, efield.shape)
+            self.assertNumpyAll(ofield.realization.value, np.array([1, 2]))
+            self.assertNumpyAll(ofield.temporal.value, np.array([1, 2, 3]))
+            self.assertNumpyAll(ofield.level.value, np.array([1, 2, 3, 4]))
+            self.assertNumpyAll(field.spatial.grid.value, ofield.spatial.grid.value)
+            self.assertEqual(ofield.spatial.crs, sdim.crs)
+
+            ofield_tmin_value = ofield.variables['tmin'].value
+            for arr1, arr2 in itertools.combinations([tmin.value, efield, ofield_tmin_value], r=2):
+                self.assertNumpyAll(arr1, arr2, check_arr_type=False)
+
+            rows = list(ofield.get_iter())
+            self.assertEqual(len(rows), 50)
+
+            self.assertTrue(np.may_share_memory(ofield_tmin_value, efield))
+            self.assertFalse(np.may_share_memory(ofield_tmin_value, tmin.value))
+
+        import ipdb;ipdb.set_trace()
         raise self.ToTest
 
     def test_get_esmf_grid_from_sdim_with_corners(self):

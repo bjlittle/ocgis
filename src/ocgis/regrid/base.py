@@ -1,19 +1,23 @@
 from copy import deepcopy
 import ESMF
 import numpy as np
+from ocgis import TemporalDimension, Field
 from ocgis.exc import RegriddingError, CornersInconsistentError
 from ocgis.interface.base.crs import Spherical
+from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
-from ocgis.interface.base.variable import VariableCollection
+from ocgis.interface.base.variable import VariableCollection, Variable
 from ocgis.util.helpers import iter_array, make_poly
 
 
-def get_sdim_from_esmf_grid(egrid):
+def get_sdim_from_esmf_grid(egrid, crs=None):
     """
     Create an OCGIS :class:`~ocgis.interface.base.dimension.spatial.SpatialDimension` object from an ESMF
     :class:`~ESMF.api.grid.Grid`.
 
     :type egrid: :class:`ESMF.api.grid.Grid`
+    :param crs: The coordinate system to attach to the output spatial dimension.
+    :type crs: :class:`ocgis.interface.base.crs.CoordinateReferenceSystem`
     :rtype: :class:`~ocgis.interface.base.dimension.spatial.SpatialDimension`
     """
 
@@ -67,24 +71,34 @@ def get_sdim_from_esmf_grid(egrid):
 
     # make the spatial dimension object
     ogrid = SpatialGridDimension(value=grid_value, corners=grid_corners)
-    sdim = SpatialDimension(grid=ogrid)
+    sdim = SpatialDimension(grid=ogrid, crs=crs)
 
     return sdim
 
 
-def get_ocgis_field_from_esmpy_field(efield, temporal=None, crs=None):
+def get_ocgis_field_from_esmpy_field(efield, crs=None):
+    #todo: doc dvalues
     """
     :param efield: The ESMPy field object to convert to an OCGIS field.
     :type efield: :class:`ESMF.api.field.Field`
-    :param temporal: Time values to use for the temporal dimension. This may be a NumPy array of datetime objects with
-     length equivalent to the time dimension on ``efield`` or a :class:`~ocgis.TemporalDimension`.
     :param crs: The coordinate system of the ESMPy field. If ``None``, this will default to
      :class:`ocgis.crs.Spherical`.
-    :type temporal: :class:`numpy.ndarray` or :class:`~ocgis.TemporalDimension`
     :returns: An OCGIS field object.
     :rtype: :class:`~ocgis.Field`
     """
 
+    assert len(efield.shape) == 5
+
+    realization_values = np.arange(1, efield.shape[0]+1)
+    realization = VectorDimension(value=realization_values)
+    temporal_values = np.arange(1, efield.shape[1]+1)
+    temporal = TemporalDimension(value=temporal_values)
+    level_values = np.arange(1, efield.shape[2]+1)
+    level = VectorDimension(value=level_values)
+    variable = Variable(name='tmin', value=efield)
+    sdim = get_sdim_from_esmf_grid(efield.grid, crs=crs)
+    field = Field(variables=variable, realization=realization, temporal=temporal, level=level, spatial=sdim)
+    return field
 
 def get_esmf_grid_from_sdim(sdim, with_corners=True, value_mask=None):
     """
