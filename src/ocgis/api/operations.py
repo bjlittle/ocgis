@@ -1,3 +1,4 @@
+from ocgis.conv.base import AbstractConverter
 from ocgis.api.parms.definition import *
 from ocgis.api.interpreter import OcgInterpreter
 from ocgis import env
@@ -467,3 +468,7 @@ class OcgOperations(object):
             else:
                 for c in self.calc:
                     c['ref'].validate(self)
+
+        # validate the converter
+        converter_klass = AbstractConverter.get_converter(self.output_format)
+        converter_klass.validate_ops(self)

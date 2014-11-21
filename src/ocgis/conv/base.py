@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from ocgis.exc import DefinitionValidationError
 from ocgis.interface.base.field import Field
 from ocgis.conv.meta import MetaConverter
 import os.path
@@ -276,16 +277,18 @@ class AbstractConverter(object):
 #        from ocgis.conv.shpidx import ShpIdxConverter
 #        from ocgis.conv.keyed import KeyedConverter
         from ocgis.conv.nc import NcConverter
-        
-        mmap = {'shp':ShpConverter,
-                'csv':CsvConverter,
-                'csv+':CsvPlusConverter,
-                'numpy':NumpyConverter,
-                'geojson':GeoJsonConverter,
-#                'shpidx':ShpIdxConverter,
-#                'keyed':KeyedConverter,
-                'nc':NcConverter}
-        return(mmap)
+        from ocgis.conv.esmpy_ import ESMPyConverter
+
+        mmap = {'shp': ShpConverter,
+                'csv': CsvConverter,
+                'csv+': CsvPlusConverter,
+                'numpy': NumpyConverter,
+                'geojson': GeoJsonConverter,
+                # 'shpidx':ShpIdxConverter,
+                # 'keyed':KeyedConverter,
+                'nc': NcConverter,
+                'esmpy': ESMPyConverter}
+        return mmap
         
     @classmethod
     def get_converter(cls,output_format):
@@ -298,3 +301,13 @@ class AbstractConverter(object):
         AbstractConverter'''
         
         return(cls.get_converter_map()[output_format])
+
+    @classmethod
+    def validate_ops(cls, ops):
+        """
+        Validate an operations object.
+
+        :param ops: The input operations object to validate.
+        :type ops: :class:`ocgis.OcgOperations`
+        :raises: DefinitionValidationError
+        """

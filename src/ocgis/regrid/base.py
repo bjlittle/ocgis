@@ -72,6 +72,20 @@ def get_sdim_from_esmf_grid(egrid):
     return sdim
 
 
+def get_ocgis_field_from_esmpy_field(efield, temporal=None, crs=None):
+    """
+    :param efield: The ESMPy field object to convert to an OCGIS field.
+    :type efield: :class:`ESMF.api.field.Field`
+    :param temporal: Time values to use for the temporal dimension. This may be a NumPy array of datetime objects with
+     length equivalent to the time dimension on ``efield`` or a :class:`~ocgis.TemporalDimension`.
+    :param crs: The coordinate system of the ESMPy field. If ``None``, this will default to
+     :class:`ocgis.crs.Spherical`.
+    :type temporal: :class:`numpy.ndarray` or :class:`~ocgis.TemporalDimension`
+    :returns: An OCGIS field object.
+    :rtype: :class:`~ocgis.Field`
+    """
+
+
 def get_esmf_grid_from_sdim(sdim, with_corners=True, value_mask=None):
     """
     Create an ESMF :class:`~ESMF.api.grid.Grid` object from an OCGIS

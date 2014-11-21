@@ -608,6 +608,9 @@ class TestRegrid(TestSimpleBase):
         egrid = get_esmf_grid_from_sdim(field.spatial, value_mask=value_mask)
         self.assertNumpyAll(egrid.mask[0], np.invert(value_mask.astype(bool)).astype(egrid.mask[0].dtype))
 
+    def test_get_ocgis_field_from_esmpy_field(self):
+        raise self.ToTest
+
     def test_get_esmf_grid_from_sdim_with_corners(self):
         """Test with the with_corners option set to False."""
 

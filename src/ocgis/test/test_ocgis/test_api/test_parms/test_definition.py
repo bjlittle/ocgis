@@ -566,6 +566,14 @@ class TestLevelRange(TestBase):
             LevelRange([11,10])
 
 
+class TestOutputFormat(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        oo = OutputFormat('esmpy')
+        self.assertEqual(oo.value, 'esmpy')
+
+
 class TestRegridDestination(TestBase):
 
     @property

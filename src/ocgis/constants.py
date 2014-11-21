@@ -34,7 +34,7 @@ level_headers = ['lid','level']
 required_headers = ['did','ugid','gid']
 
 #: Key identifiers for output formats.
-output_formats = ['numpy','nc','csv','csv+','shp','geojson','meta']
+output_formats = ['numpy','nc','csv','csv+','shp','geojson','meta','esmpy']
 
 # Download URL for test datasets.
 test_data_download_url_prefix = None

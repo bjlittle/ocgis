@@ -2,6 +2,7 @@ import csv
 from datetime import datetime as dt
 import itertools
 import datetime
+import ESMF
 
 from numpy import dtype
 import numpy as np
@@ -335,6 +336,29 @@ class TestOcgOperations(TestBase):
         ops.level_range = lr
         for r in ops.dataset.itervalues():
             self.assertEqual(r.level_range,tuple(lr))
+
+    def test_keyword_output_format_esmpy(self):
+        """Test with the ESMPy output format."""
+
+        slc = [None, None, None, [0, 10], [0, 10]]
+        kwds = dict(as_field=[False, True],
+                    with_slice=[True, False])
+        for k in self.iter_product_keywords(kwds):
+            rd = self.test_data.get_rd('cancm4_tas')
+            if k.as_field:
+                rd = rd.get()
+            if k.with_slice:
+                slc = slc
+            else:
+                slc = None
+            ops = OcgOperations(dataset=rd, output_format='esmpy', slice=slc)
+            ret = ops.execute()
+            self.assertIsInstance(ret, ESMF.Field)
+            try:
+                self.assertEqual(ret.shape, (1, 3650, 1, 10, 10))
+            except AssertionError:
+                self.assertFalse(k.with_slice)
+                self.assertEqual(ret.shape, (1, 3650, 1, 64, 128))
 
     def test_keyword_output_format_nc_package_validation_raised_first(self):
         rd = self.test_data.get_rd('cancm4_tas')
