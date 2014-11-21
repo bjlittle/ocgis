@@ -618,7 +618,6 @@ class TestRegrid(TestSimpleBase):
 
     def test_get_ocgis_field_from_esmpy_field(self):
         #todo: temporal
-        #todo: corners
         np.random.seed(1)
         temporal = TemporalDimension(value=[3000., 4000., 5000.])
         level = VectorDimension(value=[10, 20, 30, 40])
@@ -669,6 +668,7 @@ class TestRegrid(TestSimpleBase):
 
             self.assertNumpyAll(field.spatial.grid.value, ofield.spatial.grid.value)
             if k.with_corners:
+                self.assertIsNotNone(ofield.spatial.grid.corners)
                 self.assertNumpyAll(field.spatial.grid.corners, ofield.spatial.grid.corners)
 
             self.assertEqual(ofield.spatial.crs, sdim.crs)

@@ -287,7 +287,8 @@ class AbstractConverter(object):
                 # 'shpidx':ShpIdxConverter,
                 # 'keyed':KeyedConverter,
                 'nc': NcConverter,
-                'esmpy': ESMPyConverter}
+                'esmpy': ESMPyConverter,
+                'meta': MetaConverter}
         return mmap
         
     @classmethod

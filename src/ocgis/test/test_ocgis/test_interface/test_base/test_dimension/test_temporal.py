@@ -250,7 +250,7 @@ class TestTemporalDimension(TestBase):
     def test_get_datetime(self):
         td = TemporalDimension(value=[5, 6])
         dts = np.array([dt(2000, 1, 15, 12), dt(2000, 2, 15, 12)])
-        arr = date2num(dts, 'days since 0000-01-01 00:00:00')
+        arr = date2num(dts, 'days since 0001-01-01 00:00:00')
         res = td.get_datetime(arr)
         self.assertNumpyAll(dts, res)
 
@@ -258,7 +258,7 @@ class TestTemporalDimension(TestBase):
         res = td.get_datetime(td.value)
         self.assertEqual(res[0], dt(1979, 5, 16))
 
-        units = 'days since 0000-01-01 00:00:00'
+        units = 'days since 0001-01-01 00:00:00'
         calendar = '365_day'
         ndt = netcdftime.datetime
         ndts = np.array([ndt(0000, 2, 30), ndt(0000, 2, 31)])

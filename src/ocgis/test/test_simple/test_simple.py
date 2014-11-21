@@ -1379,7 +1379,12 @@ class TestSimpleMultivariate(TestSimpleBase):
             if o == 'nc':
                 continue
             rds = self.get_multiple_request_datasets()
-            ops = OcgOperations(dataset=rds, output_format=o, prefix=o, slice=[None, [0, 2], None, None, None])
+            try:
+                ops = OcgOperations(dataset=rds, output_format=o, prefix=o, slice=[None, [0, 2], None, None, None])
+            except DefinitionValidationError:
+                # only one dataset for esmpy output
+                self.assertEqual(o, 'esmpy')
+                continue
             ret = ops.execute()
             path_source_metadata = os.path.join(self.current_dir_output, ops.prefix, '{0}_source_metadata.txt'.format(ops.prefix))
             if o != 'numpy':
