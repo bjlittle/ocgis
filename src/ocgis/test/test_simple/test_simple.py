@@ -621,7 +621,7 @@ class TestSimple(TestSimpleBase):
             if of == 'nc':
                 with nc_scope(ret) as ds:
                     self.assertEqual(ds.variables['foo2'][:].mean(),6.5)
-                    
+
     def test_calc_eval_multivariate(self):
         rd = self.get_dataset()
         rd2 = self.get_dataset()
@@ -629,14 +629,18 @@ class TestSimple(TestSimpleBase):
         calc = 'foo3=foo+foo2+4'
         ocgis.env.OVERWRITE = True
         for of in OutputFormat.iter_possible():
-            ops = ocgis.OcgOperations(dataset=[rd,rd2],calc=calc,output_format=of,
-                                      slice=[None,[0,10],None,None,None])
+            try:
+                ops = ocgis.OcgOperations(dataset=[rd, rd2], calc=calc, output_format=of,
+                                          slice=[None, [0, 10], None, None, None])
+            except DefinitionValidationError:
+                self.assertEqual(of, 'esmpy')
+                continue
             ret = ops.execute()
             if of == 'numpy':
-                self.assertIsInstance(ret[1]['foo_foo2'],DerivedMultivariateField)
+                self.assertIsInstance(ret[1]['foo_foo2'], DerivedMultivariateField)
             if of == 'nc':
                 with nc_scope(ret) as ds:
-                    self.assertEqual(ds.variables['foo3'][:].mean(),9.0)
+                    self.assertEqual(ds.variables['foo3'][:].mean(), 9.0)
     
     @longrunning   
     def test_calc_sample_size(self):
@@ -1181,35 +1185,44 @@ class TestSimple(TestSimpleBase):
                 reader2 = csv.DictReader(f2)
                 for row,row2 in zip(reader,reader2):
                     self.assertDictEqual(row,row2)
-    
+
     def test_calc_multivariate_conversion(self):
         rd1 = self.get_dataset()
         rd1['alias'] = 'var1'
         rd2 = self.get_dataset()
         rd2['alias'] = 'var2'
-        calc = [{'name':'divide','func':'divide','kwds':{'arr1':'var1','arr2':'var2'}}]
-                
+        calc = [{'name': 'divide', 'func': 'divide', 'kwds': {'arr1': 'var1', 'arr2': 'var2'}}]
+
         for o in constants.output_formats:
             calc_grouping = ['month']
-            ops = OcgOperations(dataset=[rd1,rd2],calc=calc,calc_grouping=calc_grouping,output_format=o,
-                                prefix=o+'yay')
+
+            try:
+                ops = OcgOperations(dataset=[rd1, rd2], calc=calc, calc_grouping=calc_grouping, output_format=o,
+                                    prefix=o + 'yay')
+            except DefinitionValidationError:
+                self.assertEqual(o, 'esmpy')
+                continue
+
             ret = ops.execute()
-            
-            if o in ['csv','csv+']:
-                with open(ret,'r') as f:
+
+            if o in ['csv', 'csv+']:
+                with open(ret, 'r') as f:
                     reader = csv.DictReader(f)
                     row = reader.next()
-                    self.assertDictEqual(row,{'LID': '1', 'UGID': '1', 'CID':'1', 'LEVEL': '50', 'DID': '', 'YEAR': '2000', 'TIME': '2000-03-16 00:00:00', 'CALC_ALIAS': 'divide', 'VALUE': '1.0', 'MONTH': '3', 'GID': '1', 'CALC_KEY': 'divide', 'TID': '1', 'DAY': '16'})
-    
+                    self.assertDictEqual(row,
+                                         {'LID': '1', 'UGID': '1', 'CID': '1', 'LEVEL': '50', 'DID': '', 'YEAR': '2000',
+                                          'TIME': '2000-03-16 00:00:00', 'CALC_ALIAS': 'divide', 'VALUE': '1.0',
+                                          'MONTH': '3', 'GID': '1', 'CALC_KEY': 'divide', 'TID': '1', 'DAY': '16'})
+
             if o == 'nc':
                 with nc_scope(ret) as ds:
-                    self.assertIn('divide',ds.variables)
+                    self.assertIn('divide', ds.variables)
                     self.assertTrue(np.all(ds.variables['divide'][:] == 1.))
-                    
+
             if o == 'shp':
                 with fiona.open(ret) as f:
                     row = f.next()
-                    self.assertIn('CID',row['properties'])
+                    self.assertIn('CID', row['properties'])
     
     def test_meta_conversion(self):
         ops = OcgOperations(dataset=self.get_dataset(),output_format='meta')
@@ -1387,7 +1400,7 @@ class TestSimpleMultivariate(TestSimpleBase):
                 continue
             ret = ops.execute()
             path_source_metadata = os.path.join(self.current_dir_output, ops.prefix, '{0}_source_metadata.txt'.format(ops.prefix))
-            if o != 'numpy':
+            if o not in ['numpy', 'meta']:
                 self.assertTrue(os.path.exists(ret))
                 with open(path_source_metadata, 'r') as f:
                     lines = f.readlines()

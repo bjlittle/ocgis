@@ -3,6 +3,7 @@ import csv
 import os
 import pickle
 import datetime
+import ESMF
 from ocgis.api.parms.definition import OutputFormat
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.variable import Variable
@@ -79,8 +80,18 @@ class TestSubsetOperation(TestBase):
             if k.output_format == 'numpy':
                 self.assertIsInstance(ret[1]['foo'], Field)
                 continue
+            if k.output_format == 'meta':
+                self.assertIsInstance(ret, basestring)
+                self.assertTrue(len(ret) > 50)
+                continue
+            if k.output_format == 'esmpy':
+                self.assertIsInstance(ret, ESMF.Field)
+                continue
 
-            folder = os.path.split(ret)[0]
+            try:
+                folder = os.path.split(ret)[0]
+            except Exception as e:
+                import ipdb;ipdb.set_trace()
 
             path_did = os.path.join(folder, '{0}_did.csv'.format(ops.prefix))
             with open(path_did, 'r') as f:
