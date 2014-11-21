@@ -619,18 +619,22 @@ class TestRegrid(TestSimpleBase):
     def test_get_ocgis_field_from_esmpy_field(self):
         #todo: temporal
         #todo: corners
-        #todo: mask
         np.random.seed(1)
-        row = VectorDimension(value=[1., 2.])
-        col = VectorDimension(value=[3., 4.])
         temporal = TemporalDimension(value=[3000., 4000., 5000.])
         level = VectorDimension(value=[10, 20, 30, 40])
         realization = VectorDimension(value=[1, 2])
 
         kwds = dict(crs=[None, CoordinateReferenceSystem(epsg=4326), Spherical()],
-                    with_mask=[False, True])
+                    with_mask=[False, True],
+                    with_corners=[False, True])
 
         for k in self.iter_product_keywords(kwds):
+            row = VectorDimension(value=[1., 2.])
+            col = VectorDimension(value=[3., 4.])
+            if k.with_corners:
+                row.set_extrapolated_bounds()
+                col.set_extrapolated_bounds()
+
             value_tmin = np.random.rand(2, 3, 4, 2, 2)
             tmin = Variable(value=value_tmin, name='tmin')
             variables = VariableCollection([tmin])
@@ -662,7 +666,11 @@ class TestRegrid(TestSimpleBase):
             with self.assertRaises(CannotFormatTimeError):
                 ofield.temporal.value_datetime
             self.assertNumpyAll(ofield.level.value, np.array([1, 2, 3, 4]))
+
             self.assertNumpyAll(field.spatial.grid.value, ofield.spatial.grid.value)
+            if k.with_corners:
+                self.assertNumpyAll(field.spatial.grid.corners, ofield.spatial.grid.corners)
+
             self.assertEqual(ofield.spatial.crs, sdim.crs)
 
             ofield_tmin_value = ofield.variables['tmin'].value
@@ -678,9 +686,6 @@ class TestRegrid(TestSimpleBase):
 
             self.assertTrue(np.may_share_memory(ofield_tmin_value, efield))
             self.assertFalse(np.may_share_memory(ofield_tmin_value, tmin.value))
-
-            ops = OcgOperations(dataset=ofield, output_format='nc')
-            ret = ops.execute()
 
         import ipdb;ipdb.set_trace()
         raise self.ToTest
