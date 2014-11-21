@@ -617,15 +617,18 @@ class TestRegrid(TestSimpleBase):
         self.assertNumpyAll(egrid.mask[0], np.invert(value_mask.astype(bool)).astype(egrid.mask[0].dtype))
 
     def test_get_ocgis_field_from_esmpy_field(self):
-        #todo: temporal
         np.random.seed(1)
         temporal = TemporalDimension(value=[3000., 4000., 5000.])
         level = VectorDimension(value=[10, 20, 30, 40])
-        realization = VectorDimension(value=[1, 2])
+        realization = VectorDimension(value=[100, 200])
 
         kwds = dict(crs=[None, CoordinateReferenceSystem(epsg=4326), Spherical()],
                     with_mask=[False, True],
-                    with_corners=[False, True])
+                    with_corners=[False, True],
+                    dimensions=[False, True],
+                    drealization=[False, True],
+                    dtemporal=[False, True],
+                    dlevel=[False, True])
 
         for k in self.iter_product_keywords(kwds):
             row = VectorDimension(value=[1., 2.])
@@ -655,16 +658,42 @@ class TestRegrid(TestSimpleBase):
             conv = ESMPyConverter([coll])
             efield = conv.write()
 
-            ofield = get_ocgis_field_from_esmpy_field(efield, crs=k.crs)
+            if k.dimensions:
+                dimensions = {}
+                if k.drealization:
+                    dimensions['realization'] = realization
+                if k.dtemporal:
+                    dimensions['temporal'] = temporal
+                if k.dlevel:
+                    dimensions['level'] = level
+            else:
+                dimensions = None
+
+            ofield = get_ocgis_field_from_esmpy_field(efield, crs=k.crs, dimensions=dimensions)
 
             self.assertIsInstance(ofield, Field)
             self.assertEqual(ofield.shape, efield.shape)
-            self.assertNumpyAll(ofield.realization.value, np.array([1, 2]))
-            self.assertNumpyAll(ofield.temporal.value, np.array([1, 1, 1]))
-            self.assertFalse(ofield.temporal.format_time)
-            with self.assertRaises(CannotFormatTimeError):
-                ofield.temporal.value_datetime
-            self.assertNumpyAll(ofield.level.value, np.array([1, 2, 3, 4]))
+
+            if k.drealization and k.dimensions:
+                target = realization.value
+            else:
+                target = np.array([1, 2])
+            self.assertNumpyAll(ofield.realization.value, target)
+
+            if k.dtemporal and k.dimensions:
+                target = temporal.value
+            else:
+                target = np.array([1, 1, 1])
+                with self.assertRaises(CannotFormatTimeError):
+                    ofield.temporal.value_datetime
+                self.assertFalse(ofield.temporal.format_time)
+            self.assertNumpyAll(ofield.temporal.value, target)
+
+            if k.dlevel and k.dimensions:
+                target = level.value
+            else:
+                target = np.array([1, 2, 3, 4])
+            self.assertNumpyAll(ofield.level.value, target)
 
             self.assertNumpyAll(field.spatial.grid.value, ofield.spatial.grid.value)
             if k.with_corners:
@@ -673,7 +702,7 @@ class TestRegrid(TestSimpleBase):
 
             self.assertEqual(ofield.spatial.crs, sdim.crs)
 
-            ofield_tmin_value = ofield.variables['tmin'].value
+            ofield_tmin_value = ofield.variables[efield.name].value
             for arr1, arr2 in itertools.combinations([tmin.value, efield, ofield_tmin_value], r=2):
                 self.assertNumpyAll(arr1, arr2, check_arr_type=False)
 
@@ -686,9 +715,6 @@ class TestRegrid(TestSimpleBase):
 
             self.assertTrue(np.may_share_memory(ofield_tmin_value, efield))
             self.assertFalse(np.may_share_memory(ofield_tmin_value, tmin.value))
-
-        import ipdb;ipdb.set_trace()
-        raise self.ToTest
 
     def test_get_esmf_grid_from_sdim_with_corners(self):
         """Test with the with_corners option set to False."""

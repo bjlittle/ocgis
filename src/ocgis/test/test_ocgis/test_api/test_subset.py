@@ -88,10 +88,7 @@ class TestSubsetOperation(TestBase):
                 self.assertIsInstance(ret, ESMF.Field)
                 continue
 
-            try:
-                folder = os.path.split(ret)[0]
-            except Exception as e:
-                import ipdb;ipdb.set_trace()
+            folder = os.path.split(ret)[0]
 
             path_did = os.path.join(folder, '{0}_did.csv'.format(ops.prefix))
             with open(path_did, 'r') as f:

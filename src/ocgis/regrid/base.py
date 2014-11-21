@@ -76,8 +76,8 @@ def get_sdim_from_esmf_grid(egrid, crs=None):
     return sdim
 
 
-def get_ocgis_field_from_esmpy_field(efield, crs=None):
-    #todo: doc dvalues
+def get_ocgis_field_from_esmpy_field(efield, crs=None, dimensions=None):
+    #todo: doc dimensions
     """
     :param efield: The ESMPy field object to convert to an OCGIS field.
     :type efield: :class:`ESMF.api.field.Field`
@@ -89,16 +89,32 @@ def get_ocgis_field_from_esmpy_field(efield, crs=None):
 
     assert len(efield.shape) == 5
 
-    realization_values = np.arange(1, efield.shape[0]+1)
-    realization = VectorDimension(value=realization_values)
-    temporal_values = np.array([1]*efield.shape[1])
-    temporal = TemporalDimension(value=temporal_values, format_time=False)
-    level_values = np.arange(1, efield.shape[2]+1)
-    level = VectorDimension(value=level_values)
-    variable = Variable(name='tmin', value=efield)
+    dimensions = dimensions or {}
+
+    try:
+        realization = dimensions['realization']
+    except KeyError:
+        realization_values = np.arange(1, efield.shape[0]+1)
+        realization = VectorDimension(value=realization_values)
+
+    try:
+        temporal = dimensions['temporal']
+    except KeyError:
+        temporal_values = np.array([1]*efield.shape[1])
+        temporal = TemporalDimension(value=temporal_values, format_time=False)
+
+    try:
+        level = dimensions['level']
+    except KeyError:
+        level_values = np.arange(1, efield.shape[2]+1)
+        level = VectorDimension(value=level_values)
+
+    variable = Variable(name=efield.name, value=efield)
     sdim = get_sdim_from_esmf_grid(efield.grid, crs=crs)
     field = Field(variables=variable, realization=realization, temporal=temporal, level=level, spatial=sdim)
+
     return field
+
 
 def get_esmf_grid_from_sdim(sdim, with_corners=True, value_mask=None):
     """
