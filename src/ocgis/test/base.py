@@ -319,6 +319,28 @@ class TestBase(unittest.TestCase):
 
         return field
 
+    def get_netcdf_path_no_row_column(self):
+        """
+        Create a NetCDF with no row and column dimensions.
+
+        :returns: Path to the created NetCDF in the current test directory.
+        :rtype: str
+        """
+
+        field = self.get_field()
+        field.spatial.grid.row.set_extrapolated_bounds()
+        field.spatial.grid.col.set_extrapolated_bounds()
+        field.spatial.grid.value
+        field.spatial.grid.corners
+        self.assertIsNotNone(field.spatial.grid.corners)
+        field.spatial.grid.row = field.spatial.grid.col = None
+        self.assertIsNone(field.spatial.grid.row)
+        self.assertIsNone(field.spatial.grid.col)
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with self.nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+        return path
+
     def get_temporary_output_directory(self):
         """
         :returns: A path to a temporary directory with an appropriate prefix.
