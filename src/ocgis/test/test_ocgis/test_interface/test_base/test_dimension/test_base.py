@@ -51,20 +51,26 @@ class TestAbstractUidDimension(TestBase):
         self.assertEqual(au.name_uid, 'hello')
 
 
+class FakeAbstractValueDimension(AbstractValueDimension):
+
+    def _get_value_(self):
+        pass
+
+
 class TestAbstractValueDimension(TestBase):
     create_dir = False
 
     def test_init(self):
-        avd = AbstractValueDimension()
-        self.assertIsInstance(avd, AbstractValueVariable)
+        FakeAbstractValueDimension()
+        self.assertEqual(AbstractValueDimension.__bases__, (AbstractValueVariable,))
 
     def test_name_value(self):
         name_value = 'foo'
-        avd = AbstractValueDimension(name_value=name_value)
+        avd = FakeAbstractValueDimension(name_value=name_value)
         self.assertEqual(avd.name_value, name_value)
 
         name = 'foobar'
-        avd = AbstractValueDimension(name=name)
+        avd = FakeAbstractValueDimension(name=name)
         self.assertEqual(avd.name_value, name)
         self.assertIsNone(avd._name_value)
 

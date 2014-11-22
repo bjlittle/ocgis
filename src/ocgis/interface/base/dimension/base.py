@@ -76,6 +76,7 @@ class AbstractValueDimension(AbstractValueVariable):
     :keyword str name_value: (``=None``) The name of the value for the dimension.
     """
     __metaclass__ = abc.ABCMeta
+    _name_value = None
 
     def __init__(self, *args, **kwargs):
         self.name_value = kwargs.pop('name_value', None)

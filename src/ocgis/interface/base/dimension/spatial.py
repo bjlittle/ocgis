@@ -878,48 +878,47 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
                 yc.corners = name_yc_corner
                 xc.corners = name_xc_corner
 
-    def _format_private_value_(self,value):
+    def _format_private_value_(self, value):
         if value is None:
             ret = None
         else:
-            assert(len(value.shape) == 3)
-            assert(value.shape[0] == 2)
-            assert(isinstance(value,np.ma.MaskedArray))
+            assert len(value.shape) == 3
+            assert value.shape[0] == 2
+            assert isinstance(value, np.ma.MaskedArray)
             ret = value
-        return(ret)
-        
-    def _get_slice_(self,state,slc):
+        return ret
 
+    def _get_slice_(self, state, slc):
         if self._value is None:
             state._value = None
         else:
-            state._value = state.value[:,slc[0],slc[1]]
+            state._value = state.value[:, slc[0], slc[1]]
         if state.row is not None:
             state.row = state.row[slc[0]]
             state.col = state.col[slc[1]]
-        
-        return(state)
-        
+
+        return state
+
     def _get_uid_(self):
         if self._value is None:
-            shp = len(self.row),len(self.col)
+            shp = len(self.row), len(self.col)
         else:
-            shp = self._value.shape[1],self._value.shape[2]
-        ret = np.arange(1,(shp[0]*shp[1])+1,dtype=constants.np_int).reshape(shp)
-        ret = np.ma.array(ret,mask=False)
-        return(ret)
-    
+            shp = self._value.shape[1], self._value.shape[2]
+        ret = np.arange(1, (shp[0] * shp[1]) + 1, dtype=constants.np_int).reshape(shp)
+        ret = np.ma.array(ret, mask=False)
+        return ret
+
     def _get_value_(self):
-        ## assert types of row and column are equivalent
+        # assert types of row and column are equivalent
         if self.row.value.dtype != self.col.value.dtype:
             self.col._value = self.col._value.astype(self.row.value.dtype)
-        ## fill the centroids
-        fill = np.empty((2,self.row.shape[0],self.col.shape[0]),dtype=self.row.value.dtype)
-        fill = np.ma.array(fill,mask=False)
-        col_coords,row_coords = np.meshgrid(self.col.value,self.row.value)
-        fill[0,:,:] = row_coords
-        fill[1,:,:] = col_coords
-        return(fill)
+        # fill the centroids
+        fill = np.empty((2, self.row.shape[0], self.col.shape[0]), dtype=self.row.value.dtype)
+        fill = np.ma.array(fill, mask=False)
+        col_coords, row_coords = np.meshgrid(self.col.value, self.row.value)
+        fill[0, :, :] = row_coords
+        fill[1, :, :] = col_coords
+        return fill
     
     
 class SpatialGeometryDimension(base.AbstractUidDimension):
