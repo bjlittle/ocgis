@@ -142,7 +142,6 @@ class DriverNetcdf(AbstractDriver):
             axis_value = v['axis']
             # pull the axis information out of the dimension map
             ref_axis = source_metadata['dim_map'].get(axis_value)
-            ref_axis = source_metadata['dim_map'].get(axis_value)
             # if the axis is not represented, fill it with none. this happens when a dataset does not have a vertical
             # level or projection axis for example.
             if ref_axis is None:
