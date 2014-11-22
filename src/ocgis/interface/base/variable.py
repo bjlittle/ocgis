@@ -23,13 +23,15 @@ class AbstractValueVariable(object):
     :type units: str or :class:`cfunits.Units`
     """
     __metaclass__ = abc.ABCMeta
+    _value = None
+    _conform_units_to = None
     
     def __init__(self, value=None, units=None, dtype=None, fill_value=None, name=None, conform_units_to=None):
         # if the units value is not None, then convert to string. cfunits.Units may be easily handled this way without
         # checking for the module presence.
         self.units = str(units) if units is not None else None
         self.conform_units_to = conform_units_to
-        self._value = value
+        self.value = value
         self._dtype = dtype
         self._fill_value = fill_value
         self.name = name
@@ -84,19 +86,12 @@ class AbstractValueVariable(object):
     @property
     def value(self):
         if self._value is None:
-            self._value = self._get_value_()
+            self._value = self._format_private_value_(self._get_value_())
         return self._value
 
-    def _get_value_(self):
-        raise NotImplementedError
-    
-    @property
-    def _value(self):
-        return self.__value
-
-    @_value.setter
-    def _value(self, value):
-        self.__value = self._format_private_value_(value)
+    @value.setter
+    def value(self, value):
+        self._value = self._format_private_value_(value)
 
     def _format_private_value_(self, value):
         if value is not None:
@@ -105,6 +100,10 @@ class AbstractValueVariable(object):
                 if not self.conform_units_to.equals(self.cfunits):
                     value = self.cfunits_conform(to_units=self.conform_units_to, value=value, from_units=self.cfunits)
         return value
+
+    @abc.abstractmethod
+    def _get_value_(self):
+        """Return the value field."""
 
     def cfunits_conform(self,to_units,value=None,from_units=None):
         '''

@@ -47,6 +47,24 @@ class TestAbstractSourcedVariable(TestBase):
         self.assertNumpyAll(aa._src_idx, np.array([1, 2]))
 
 
+
+class FakeAbstractValueVariable(AbstractValueVariable):
+
+    def _get_value_(self):
+        return np.array(self._value)
+
+
+class TestAbstractValueVariable(TestBase):
+    create_dir = False
+
+    def test_init(self):
+        kwds = dict(value=[[4, 5, 6]])
+
+        for k in self.iter_product_keywords(kwds):
+            av = FakeAbstractValueVariable(value=k.value)
+            self.assertEqual(av.value, k.value)
+
+
 class TestVariable(TestBase):
 
     def test_init(self):
