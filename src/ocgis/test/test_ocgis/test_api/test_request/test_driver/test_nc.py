@@ -1,3 +1,4 @@
+from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis import constants
 from copy import deepcopy
 import os
@@ -58,6 +59,34 @@ class TestDriverNetcdf(TestBase):
         geom = SpatialGeometryDimension(polygon=poly)
         sdim = SpatialDimension(geom=geom,properties=attrs,crs=WGS84())
         return(sdim)
+
+    def get_netcdf_path_no_row_column(self):
+        """Create a NetCDF with no row and column dimensions."""
+
+        field = self.get_field()
+        field.spatial.grid.row.set_extrapolated_bounds()
+        field.spatial.grid.col.set_extrapolated_bounds()
+        field.spatial.grid.value
+        field.spatial.grid.corners
+        self.assertIsNotNone(field.spatial.grid.corners)
+        field.spatial.grid.row = field.spatial.grid.col = None
+        self.assertIsNone(field.spatial.grid.row)
+        self.assertIsNone(field.spatial.grid.col)
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with self.nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+        return path
+
+    def test_get_dimension(self):
+        path = self.get_netcdf_path_no_row_column()
+        rd = RequestDataset(path)
+        driver = DriverNetcdf(rd)
+        k = 'row'
+        v = {'name_uid': 'yc_id', 'axis': 'Y', 'adds': {'interpolate_bounds': False}, 'name': 'yc', 'cls': VectorDimension}
+        source_metadata = rd.source_metadata
+        dim = driver._get_dimension_(k, v, source_metadata)
+        dim.value
+        import ipdb;ipdb.set_trace()
 
     def test_get_dimensioned_variables_one_variable_in_target_dataset(self):
         uri = self.test_data.get_uri('cancm4_tas')
@@ -426,18 +455,7 @@ class TestDriverNetcdf(TestBase):
     def test_get_field_without_row_column_vectors(self):
         """Test loading a field objects without row and column vectors."""
 
-        field = self.get_field()
-        field.spatial.grid.row.set_extrapolated_bounds()
-        field.spatial.grid.col.set_extrapolated_bounds()
-        field.spatial.grid.value
-        field.spatial.grid.corners
-        self.assertIsNotNone(field.spatial.grid.corners)
-        field.spatial.grid.row = field.spatial.grid.col = None
-        self.assertIsNone(field.spatial.grid.row)
-        self.assertIsNone(field.spatial.grid.col)
-        path = os.path.join(self.current_dir_output, 'foo.nc')
-        with self.nc_scope(path, 'w') as ds:
-            field.write_to_netcdf_dataset(ds)
+        path = self.get_netcdf_path_no_row_column()
 
         rd = RequestDataset(path)
         driver = DriverNetcdf(rd)
