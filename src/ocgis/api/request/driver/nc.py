@@ -213,7 +213,7 @@ class DriverNetcdf(AbstractDriver):
             fill = self._get_vector_dimension_(k, v, source_metadata)
             loaded[k] = fill
 
-        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v if None])):
+        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v is not None])):
             raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
 
         grid = SpatialGridDimension(row=loaded['row'], col=loaded['col'])
