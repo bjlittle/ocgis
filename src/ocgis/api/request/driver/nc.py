@@ -132,7 +132,8 @@ class DriverNetcdf(AbstractDriver):
                 if axis_value == 'R' and ref_variable is None:
                     ref_variable = {'axis': ref_axis, 'name': ref_axis['dimension'], 'attrs': {}}
 
-            if len(ref_variable['dimensions']) > 1:
+            # realization axes may not have a variable associated with them
+            if k != 'realization'and len(ref_variable['dimensions']) > 1:
                 msg = 'Vector dimensions must be one-dimensional. "{0}" has dimensions "{1}"'.format(k, ref_variable['dimensions'])
                 raise DimensionShapeError(msg)
 
