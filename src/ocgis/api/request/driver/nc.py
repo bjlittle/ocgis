@@ -75,6 +75,35 @@ class DriverNetcdf(AbstractDriver):
 
         return ret
 
+    def get_source_metadata(self):
+        metadata = self.raw_metadata
+
+        try:
+            var = metadata['variables'][self.rd._variable[0]]
+        except KeyError:
+            raise VariableNotFoundError(self.rd.uri, self.rd._variable[0])
+        if self.rd.dimension_map is None:
+            metadata['dim_map'] = get_dimension_map(var['name'], metadata)
+        else:
+            for k, v in self.rd.dimension_map.iteritems():
+                try:
+                    variable_name = metadata['variables'][v]['name']
+                except KeyError:
+                    variable_name = None
+                self.rd.dimension_map[k] = {'variable': variable_name,
+                                            'dimension': v,
+                                            'pos': var['dimensions'].index(v)}
+                metadata['dim_map'] = self.rd.dimension_map
+
+        return metadata
+
+    def open(self):
+        try:
+            ret = nc.Dataset(self.rd.uri, 'r')
+        except TypeError:
+            ret = nc.MFDataset(self.rd.uri)
+        return ret
+
     def _get_field_(self, format_time=True, interpolate_spatial_bounds=False):
         """
         :param bool format_time:
@@ -207,35 +236,6 @@ class DriverNetcdf(AbstractDriver):
                 else:
                     raise
 
-        return ret
-
-    def get_source_metadata(self):
-        metadata = self.raw_metadata
-
-        try:
-            var = metadata['variables'][self.rd._variable[0]]
-        except KeyError:
-            raise VariableNotFoundError(self.rd.uri, self.rd._variable[0])
-        if self.rd.dimension_map is None:
-            metadata['dim_map'] = get_dimension_map(var['name'], metadata)
-        else:
-            for k, v in self.rd.dimension_map.iteritems():
-                try:
-                    variable_name = metadata['variables'][v]['name']
-                except KeyError:
-                    variable_name = None
-                self.rd.dimension_map[k] = {'variable': variable_name,
-                                            'dimension': v,
-                                            'pos': var['dimensions'].index(v)}
-                metadata['dim_map'] = self.rd.dimension_map
-
-        return metadata
-
-    def open(self):
-        try:
-            ret = nc.Dataset(self.rd.uri, 'r')
-        except TypeError:
-            ret = nc.MFDataset(self.rd.uri)
         return ret
 
     @staticmethod
