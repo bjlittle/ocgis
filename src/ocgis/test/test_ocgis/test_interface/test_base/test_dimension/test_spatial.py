@@ -1,4 +1,5 @@
 from copy import deepcopy, copy
+import os
 import unittest
 import itertools
 import numpy as np
@@ -1409,7 +1410,44 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
         grid = SpatialGridDimension(row=row,col=col,name='grid')
         self.assertNumpyAll(grid.value,np.ma.array([[[10]],[[100]]],mask=False))
 
+    def test_write_to_netcdf_dataset(self):
+        path = os.path.join(self.current_dir_output, 'foo.nc')
 
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()
+        kwds = dict(with_rc=[True, False],
+                    with_corners=[False, True])
+
+        for k in self.iter_product_keywords(kwds):
+            row = VectorDimension(value=[4., 5.])
+            col = VectorDimension(value=[6., 7.])
+            grid = SpatialGridDimension(row=row, col=col)
+
+            if k.with_corners:
+                row.set_extrapolated_bounds()
+                col.set_extrapolated_bounds()
+                grid.corners
+
+            if not k.with_rc:
+                grid.value
+                grid.row = None
+                grid.col = None
+
+            with self.nc_scope(path, mode='w') as ds:
+                grid.write_to_netcdf_dataset(ds)
+            with self.nc_scope(path) as ds:
+                if k.with_rc:
+                    self.assertNumpyAll(ds.variables[grid.row.name][:], row.value)
+                    self.assertNumpyAll(ds.variables[grid.col.name][:], col.value)
+                else:
+                    yc = ds.variables['yc']
+                    xc = ds.variables['xc']
+                    self.assertNumpyAll(yc[:], grid.value[0].data)
+                    self.assertNumpyAll(xc[:], grid.value[1].data)
+                    self.assertEqual(yc.axis, 'Y')
+                    self.assertEqual(xc.axis, 'X')
+                if k.with_corners and not k.with_rc:
+                    for idx, name in zip([0, 1], ['yc_corners', 'xc_corners']):
+                        var = ds.variables[name]
+                        self.assertNumpyAll(var[:], grid.corners[idx].data)
+                    self.assertEqual(ds.variables['yc'].corners, 'yc_corners')
+                    self.assertEqual(ds.variables['xc'].corners, 'xc_corners')
+                    self.inspect(path)

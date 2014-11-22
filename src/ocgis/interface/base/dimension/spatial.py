@@ -841,6 +841,43 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
         return(ret)
     
+    def write_to_netcdf_dataset(self, dataset, **kwargs):
+        """
+        :param dataset:
+        :type dataset: :class:`netCDF4.Dataset`
+        """
+
+        try:
+            self.row.write_to_netcdf_dataset(dataset, **kwargs)
+            self.col.write_to_netcdf_dataset(dataset, **kwargs)
+        except AttributeError:
+            # likely no row and column. write the grid value.
+            name_yc = 'yc'
+            name_xc = 'xc'
+            dataset.createDimension(name_yc, size=self.shape[0])
+            dataset.createDimension(name_xc, size=self.shape[1])
+            value = self.value
+            dimensions = (name_yc, name_xc)
+            yc = dataset.createVariable(name_yc, value.dtype, dimensions=dimensions)
+            yc[:] = value[0, :, :]
+            yc.axis = 'Y'
+            xc = dataset.createVariable(name_xc, value.dtype, dimensions=dimensions)
+            xc[:] = value[1, :, :]
+            xc.axis = 'X'
+
+            if self.corners is not None:
+                corners = self.corners
+                ncorners = 'ncorners'
+                dataset.createDimension(ncorners, size=4)
+                name_yc_corner = '{0}_corners'.format(name_yc)
+                name_xc_corner = '{0}_corners'.format(name_xc)
+                dimensions = (name_yc, name_xc, ncorners)
+                for idx, name in zip([0, 1], [name_yc_corner, name_xc_corner]):
+                    var = dataset.createVariable(name, corners.dtype, dimensions=dimensions)
+                    var[:] = corners[idx]
+                yc.corners = name_yc_corner
+                xc.corners = name_xc_corner
+
     def _format_private_value_(self,value):
         if value is None:
             ret = None
