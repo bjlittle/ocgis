@@ -72,10 +72,9 @@ class TestAbstractValueDimension(TestBase):
 class TestVectorDimension(TestBase):
 
     def test_init(self):
+        self.assertEqual(VectorDimension.__bases__, (AbstractSourcedVariable, AbstractUidValueDimension, Attributes))
+
         vd = VectorDimension(value=[4, 5])
-        self.assertIsInstance(vd, AbstractSourcedVariable)
-        self.assertIsInstance(vd, AbstractUidValueDimension)
-        self.assertIsInstance(vd, Attributes)
         self.assertIsInstance(vd.attrs, OrderedDict)
         self.assertIsNone(vd.name)
         self.assertIsNone(vd.name_value)
@@ -89,6 +88,9 @@ class TestVectorDimension(TestBase):
         vd = VectorDimension(value=[4, 5], attrs=attrs, axis='D')
         self.assertEqual(vd.attrs, attrs)
         self.assertEqual(vd.axis, 'D')
+
+        with self.assertRaises(ValueError):
+            VectorDimension()
 
     def test_bad_dtypes(self):
         vd = VectorDimension(value=181.5,bounds=[181,182])
@@ -126,10 +128,6 @@ class TestVectorDimension(TestBase):
         value = [10,20,30,40,50]
         vdim = VectorDimension(value=value)
         self.assertEqual(vdim.dtype,np.array(value).dtype)
-
-    def test_empty(self):
-        with self.assertRaises(ValueError):
-            VectorDimension()
 
     def test_get_iter(self):
         vdim = VectorDimension(value=[10, 20, 30, 40, 50])

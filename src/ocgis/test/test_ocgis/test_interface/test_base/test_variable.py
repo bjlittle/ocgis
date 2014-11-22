@@ -4,18 +4,53 @@ from cfunits import Units
 from ocgis.exc import VariableInCollectionError, NoUnitsError
 from ocgis.interface.base.attributes import Attributes
 from ocgis.test.base import TestBase
-from ocgis.interface.base.variable import Variable, VariableCollection, AbstractSourcedVariable
+from ocgis.interface.base.variable import Variable, VariableCollection, AbstractSourcedVariable, AbstractValueVariable
 import numpy as np
 from ocgis.util.helpers import get_iter
 from ocgis.util.itester import itr_products_keywords
 
 
+class FakeAbstractSourcedVariable(AbstractSourcedVariable):
+
+    def _set_value_from_source_(self):
+        self._value = self._src_idx*2
+
+
+class TestAbstractSourcedVariable(TestBase):
+
+    def iter(self):
+        src_idx = [1, 2]
+        data = 'foo'
+        kwds = dict(src_idx=[src_idx, None],
+                    data=[data, None])
+
+        for k in self.iter_product_keywords(kwds):
+            yield k
+
+    def test_init(self):
+        for k in self.iter():
+            FakeAbstractSourcedVariable(k.data, k.src_idx)
+
+        FakeAbstractSourcedVariable(None, None)
+
+    def test_format_src_idx(self):
+        aa = FakeAbstractSourcedVariable('foo', src_idx=[1, 2])
+        self.assertNumpyAll(aa._format_src_idx_([1, 2]), np.array([1, 2]))
+
+    def test_get_value(self):
+        aa = FakeAbstractSourcedVariable('foo', src_idx=[1, 2])
+        aa._value = None
+        self.assertNumpyAll(aa._get_value_(), np.array([1, 2])*2)
+
+    def test_src_idx(self):
+        aa = FakeAbstractSourcedVariable('foo', src_idx=[1, 2])
+        self.assertNumpyAll(aa._src_idx, np.array([1, 2]))
+
+
 class TestVariable(TestBase):
 
     def test_init(self):
-        var = Variable(value=np.array([5]))
-        self.assertIsInstance(var, AbstractSourcedVariable)
-        self.assertIsInstance(var, Attributes)
+        self.assertEqual(Variable.__bases__, (AbstractSourcedVariable, AbstractValueVariable, Attributes))
 
         # test passing attributes
         var = Variable(attrs={'a': 6}, value=np.array([5]))

@@ -159,6 +159,10 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
     _ndims = 1
     
     def __init__(self, *args, **kwargs):
+        if kwargs.get('value') is None and kwargs.get('data') is None:
+            msg = 'Without a "data" object, "value" is required.'
+            raise ValueError(msg)
+
         bounds = kwargs.pop('bounds', None)
         # used for creating name_bounds as well as the name of the bounds dimension in netCDF
         self.name_bounds_suffix = kwargs.pop('name_bounds_suffix', None) or constants.ocgis_bounds
@@ -169,11 +173,10 @@ class VectorDimension(AbstractSourcedVariable, AbstractUidValueDimension, Attrib
         # if True, bounds were interpolated. if False, they were loaded from source data
         self._has_interpolated_bounds = False
 
+        AbstractSourcedVariable.__init__(self, kwargs.pop('data', None), kwargs.pop('src_idx', None))
         Attributes.__init__(self, attrs=kwargs.pop('attrs', None))
-        AbstractSourcedVariable.__init__(self, kwargs.pop('data', None), src_idx=kwargs.pop('src_idx', None),
-                                         value=kwargs.get('value'), dtype=kwargs.get('dtype'))
         AbstractUidValueDimension.__init__(self, *args, **kwargs)
-                
+
         # setting bounds requires checking the data type of value set in a superclass.
         self.bounds = bounds
             
