@@ -371,9 +371,13 @@ class Field(Attributes):
                     value_dimensions.append(self.spatial.grid.row.name)
                     value_dimensions.append(self.spatial.grid.col.name)
         except AttributeError:
+            # write the grid.value directly
             if self.spatial.grid.row is None or self.spatial.grid.col is None:
-                msg = 'Row and/or column dimensions are required on the grid to write to netCDF.'
-                raise ValueError(msg)
+                self.spatial.grid.write_to_netcdf_dataset(dataset, **kwargs)
+                value_dimensions.append('yc')
+                value_dimensions.append('xc')
+            else:
+                raise
 
         try:
             variable_crs = self.spatial.crs.write_to_rootgrp(dataset)

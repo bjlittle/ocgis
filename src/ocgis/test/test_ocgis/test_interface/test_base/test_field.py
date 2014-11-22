@@ -72,7 +72,7 @@ class AbstractTestField(TestBase):
             else:
                 temporal_bounds = None
             dname = 'time' if with_dimension_names else None
-            temporal = TemporalDimension(value=temporal_value, bounds=temporal_bounds, name=dname, units='days')
+            temporal = TemporalDimension(value=temporal_value, bounds=temporal_bounds, name=dname)
             t_shape = temporal.shape[0]
         else:
             temporal = None
@@ -472,7 +472,6 @@ class TestField(AbstractTestField):
     def test_write_to_netcdf_dataset(self):
         keywords = dict(file_only=[False, True],
                         second_variable_alias=[None, 'tmin_alias'],
-                        with_row_column=[True, False],
                         with_realization=[False, True],
                         remove_dimension_names=[False, True],
                         crs=[None, Spherical()],
@@ -492,17 +491,6 @@ class TestField(AbstractTestField):
                 field.spatial.grid.row.name = None
                 field.spatial.grid.col.name = None
 
-            if not k.with_row_column:
-                field.spatial.grid.value
-                field.spatial.grid.row = None
-                field.spatial.grid.col = None
-
-            # update the temporal dimension to an nctemporaldimension
-            value = date2num(field.temporal.value, 'days since 0000-01-01 00:00:00', calendar='standard')
-            bounds = date2num(field.temporal.bounds, 'days since 0000-01-01 00:00:00', calendar='standard')
-            field.temporal = NcTemporalDimension(value=value, bounds=bounds)
-            self.assertIsInstance(field.temporal, NcTemporalDimension)
-
             # add another variable
             value = np.random.rand(*field.shape)
             second_variable_name = 'tmin'
@@ -519,13 +507,8 @@ class TestField(AbstractTestField):
                 try:
                     field.write_to_netcdf_dataset(ds, file_only=k.file_only)
                 except ValueError:
-                    try:
-                        self.assertTrue(k.with_realization)
-                        self.assertIsNotNone(field.realization)
-                    except AssertionError:
-                        self.assertFalse(k.with_row_column)
-                        self.assertIsNone(field.spatial.grid.row)
-                        self.assertIsNone(field.spatial.grid.col)
+                    self.assertTrue(k.with_realization)
+                    self.assertIsNotNone(field.realization)
                     continue
 
             with nc_scope(path) as ds:
@@ -590,6 +573,19 @@ class TestField(AbstractTestField):
             self.assertGreater(len(ds.__dict__), 0)
             self.assertGreater(len(ds.variables['time'].__dict__), 0)
 
+    def test_write_to_netcdf_dataset_without_row_column_on_grid(self):
+        """Test writing a field without rows and columns on the grid."""
+
+        field = self.get_field(with_value=True, with_realization=False)
+        field.spatial.grid.value
+        field.spatial.grid.corners
+        field.spatial.grid.row = None
+        field.spatial.grid.col = None
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+            self.assertAsSetEqual(ds.variables.keys(), ['time', 'time_bounds', 'level', 'level_bounds', 'yc', 'xc', 'yc_corners', 'xc_corners', 'tmax'])
+            self.assertAsSetEqual(ds.dimensions.keys(), ['time', 'bounds', 'level', 'yc', 'xc', 'ncorners'])
 
 class TestDerivedField(AbstractTestField):
     
