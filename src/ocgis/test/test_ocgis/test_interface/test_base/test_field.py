@@ -584,18 +584,24 @@ class TestField(AbstractTestField):
         path = os.path.join(self.current_dir_output, 'foo.nc')
         with nc_scope(path, 'w') as ds:
             field.write_to_netcdf_dataset(ds)
-            self.assertAsSetEqual(ds.variables.keys(), ['time', 'time_bounds', 'level', 'level_bounds', 'yc', 'xc', 'yc_corners', 'xc_corners', 'tmax'])
-            self.assertAsSetEqual(ds.dimensions.keys(), ['time', 'bounds', 'level', 'yc', 'xc', 'ncorners'])
+            self.assertAsSetEqual(ds.variables.keys(), ['time', 'time_bounds', 'level', 'level_bounds',
+                                                        constants.default_name_row_coordinates,
+                                                        constants.default_name_col_coordinates, 'yc_corners',
+                                                        'xc_corners', 'tmax'])
+            self.assertAsSetEqual(ds.dimensions.keys(),
+                                  ['time', 'bounds', 'level', constants.default_name_row_coordinates,
+                                   constants.default_name_col_coordinates, constants.default_name_corners_dimension])
 
 class TestDerivedField(AbstractTestField):
     
-    def test_constructor(self):
+    def test_init(self):
         field = self.get_field(with_value=True,month_count=2)
         tgd = field.temporal.get_grouping(['month'])
         new_data = np.random.rand(2,2,2,3,4)
         mu = Variable(name='mu',value=new_data)
         df = DerivedField(variables=mu,temporal=tgd,spatial=field.spatial,
                           level=field.level,realization=field.realization)
+        self.assertIsInstance(df, Field)
         self.assertIsInstance(df.temporal.value[0],datetime.datetime)
         self.assertEqual(df.temporal.value.tolist(),[datetime.datetime(2000, 1, 16, 0, 0),datetime.datetime(2000, 2, 16, 0, 0)])
         self.assertEqual(df.temporal.bounds[1,1],datetime.datetime(2000, 3, 1, 0, 0))

@@ -852,8 +852,8 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
             self.col.write_to_netcdf_dataset(dataset, **kwargs)
         except AttributeError:
             # likely no row and column. write the grid value.
-            name_yc = 'yc'
-            name_xc = 'xc'
+            name_yc = constants.default_name_row_coordinates
+            name_xc = constants.default_name_col_coordinates
             dataset.createDimension(name_yc, size=self.shape[0])
             dataset.createDimension(name_xc, size=self.shape[1])
             value = self.value
@@ -867,7 +867,7 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
             if self.corners is not None:
                 corners = self.corners
-                ncorners = 'ncorners'
+                ncorners = constants.default_name_corners_dimension
                 dataset.createDimension(ncorners, size=4)
                 name_yc_corner = '{0}_corners'.format(name_yc)
                 name_xc_corner = '{0}_corners'.format(name_xc)

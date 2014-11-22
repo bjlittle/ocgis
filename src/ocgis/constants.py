@@ -21,6 +21,15 @@ default_sample_size_standard_name = 'sample_size'
 #: Default sample size variable long name.
 default_sample_size_long_name = 'Statistical Sample Size'
 
+#: Default row coordinate name.
+default_name_row_coordinates = 'yc'
+
+#: Default column coordinate name.
+default_name_col_coordinates = 'xc'
+
+#: Default corners dimension name.
+default_name_corners_dimension = 'ncorners'
+
 #: Standard headers for subset operations.
 raw_headers = ['did','vid','ugid','tid','lid','gid','variable','alias','time','year','month','day','level','value']
 #: Standard headers for computation.

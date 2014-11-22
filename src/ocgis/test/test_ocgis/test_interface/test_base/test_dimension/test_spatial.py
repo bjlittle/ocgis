@@ -1438,16 +1438,18 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
                     self.assertNumpyAll(ds.variables[grid.row.name][:], row.value)
                     self.assertNumpyAll(ds.variables[grid.col.name][:], col.value)
                 else:
-                    yc = ds.variables['yc']
-                    xc = ds.variables['xc']
+                    yc = ds.variables[constants.default_name_row_coordinates]
+                    xc = ds.variables[constants.default_name_col_coordinates]
                     self.assertNumpyAll(yc[:], grid.value[0].data)
                     self.assertNumpyAll(xc[:], grid.value[1].data)
                     self.assertEqual(yc.axis, 'Y')
                     self.assertEqual(xc.axis, 'X')
                 if k.with_corners and not k.with_rc:
-                    for idx, name in zip([0, 1], ['yc_corners', 'xc_corners']):
+                    name_yc_corners, name_xc_corners = ['{0}_corners'.format(xx) for xx in
+                                                        [constants.default_name_row_coordinates,
+                                                         constants.default_name_col_coordinates]]
+                    for idx, name in zip([0, 1], [name_yc_corners, name_xc_corners]):
                         var = ds.variables[name]
                         self.assertNumpyAll(var[:], grid.corners[idx].data)
-                    self.assertEqual(ds.variables['yc'].corners, 'yc_corners')
-                    self.assertEqual(ds.variables['xc'].corners, 'xc_corners')
-                    self.inspect(path)
+                    self.assertEqual(ds.variables[constants.default_name_row_coordinates].corners, name_yc_corners)
+                    self.assertEqual(ds.variables[constants.default_name_col_coordinates].corners, name_xc_corners)
