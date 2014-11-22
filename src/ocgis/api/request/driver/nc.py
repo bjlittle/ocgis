@@ -6,7 +6,7 @@ import numpy as np
 
 from ocgis import constants
 from ocgis.api.request.driver.base import AbstractDriver
-from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound
+from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound, DimensionShapeError
 from ocgis.interface.base.crs import CFCoordinateReferenceSystem
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis.interface.base.variable import VariableCollection, Variable
@@ -104,7 +104,7 @@ class DriverNetcdf(AbstractDriver):
             ret = nc.MFDataset(self.rd.uri)
         return ret
 
-    def _get_dimension_(self, k, v, source_metadata):
+    def _get_vector_dimension_(self, k, v, source_metadata):
         """
         :param str k: The string name/key of the dimension to load.
         :param dict v: A series of keyword parameters to pass to the dimension class.
@@ -131,6 +131,10 @@ class DriverNetcdf(AbstractDriver):
             except TypeError:
                 if axis_value == 'R' and ref_variable is None:
                     ref_variable = {'axis': ref_axis, 'name': ref_axis['dimension'], 'attrs': {}}
+
+            if len(ref_variable['dimensions']) > 1:
+                msg = 'Vector dimensions must be one-dimensional. "{0}" has dimensions "{1}"'.format(k, ref_variable['dimensions'])
+                raise DimensionShapeError(msg)
 
             # extract the data length to use when creating the source index arrays.
             length = source_metadata['dimensions'][ref_axis['dimension']]['len']
@@ -206,10 +210,10 @@ class DriverNetcdf(AbstractDriver):
         loaded = {}
 
         for k, v in to_load.iteritems():
-            fill = self._get_dimension_(k, v, source_metadata)
+            fill = self._get_vector_dimension_(k, v, source_metadata)
             loaded[k] = fill
 
-        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v != None])):
+        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v if None])):
             raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
 
         grid = SpatialGridDimension(row=loaded['row'], col=loaded['col'])

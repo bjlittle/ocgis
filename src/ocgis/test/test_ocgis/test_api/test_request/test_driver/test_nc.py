@@ -17,7 +17,7 @@ from ocgis.interface.base.dimension.spatial import SpatialGeometryPolygonDimensi
     SpatialDimension
 import fiona
 from shapely.geometry.geo import shape
-from ocgis.exc import EmptySubsetError, DimensionNotFound
+from ocgis.exc import EmptySubsetError, DimensionNotFound, DimensionShapeError
 import datetime
 from unittest.case import SkipTest
 import ocgis
@@ -76,17 +76,6 @@ class TestDriverNetcdf(TestBase):
         with self.nc_scope(path, 'w') as ds:
             field.write_to_netcdf_dataset(ds)
         return path
-
-    def test_get_dimension(self):
-        path = self.get_netcdf_path_no_row_column()
-        rd = RequestDataset(path)
-        driver = DriverNetcdf(rd)
-        k = 'row'
-        v = {'name_uid': 'yc_id', 'axis': 'Y', 'adds': {'interpolate_bounds': False}, 'name': 'yc', 'cls': VectorDimension}
-        source_metadata = rd.source_metadata
-        dim = driver._get_dimension_(k, v, source_metadata)
-        dim.value
-        import ipdb;ipdb.set_trace()
 
     def test_get_dimensioned_variables_one_variable_in_target_dataset(self):
         uri = self.test_data.get_uri('cancm4_tas')
@@ -463,6 +452,17 @@ class TestDriverNetcdf(TestBase):
         self.assertIsNone(new_field.spatial.grid.row)
         raise
         import ipdb;ipdb.set_trace()
+
+    def test_get_vector_dimension(self):
+        # test exception raised with no row and column
+        path = self.get_netcdf_path_no_row_column()
+        rd = RequestDataset(path)
+        driver = DriverNetcdf(rd)
+        k = 'row'
+        v = {'name_uid': 'yc_id', 'axis': 'Y', 'adds': {'interpolate_bounds': False}, 'name': 'yc', 'cls': VectorDimension}
+        source_metadata = rd.source_metadata
+        with self.assertRaises(DimensionShapeError):
+            driver._get_vector_dimension_(k, v, source_metadata)
 
     def test_get_name_bounds_suffix(self):
         rd = self.test_data.get_rd('cancm4_tas')
