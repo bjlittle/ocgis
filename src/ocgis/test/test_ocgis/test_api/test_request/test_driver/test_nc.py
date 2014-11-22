@@ -423,6 +423,29 @@ class TestDriverNetcdf(TestBase):
         field = rd.get()
         self.assertNotEqual(field.temporal.bounds,None)
 
+    def test_get_field_without_row_column_vectors(self):
+        """Test loading a field objects without row and column vectors."""
+
+        field = self.get_field()
+        field.spatial.grid.row.set_extrapolated_bounds()
+        field.spatial.grid.col.set_extrapolated_bounds()
+        field.spatial.grid.value
+        field.spatial.grid.corners
+        self.assertIsNotNone(field.spatial.grid.corners)
+        field.spatial.grid.row = field.spatial.grid.col = None
+        self.assertIsNone(field.spatial.grid.row)
+        self.assertIsNone(field.spatial.grid.col)
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        with self.nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+
+        rd = RequestDataset(path)
+        driver = DriverNetcdf(rd)
+        new_field = driver.get_field()
+        self.assertIsNone(new_field.spatial.grid.row)
+        raise
+        import ipdb;ipdb.set_trace()
+
     def test_get_name_bounds_suffix(self):
         rd = self.test_data.get_rd('cancm4_tas')
         source_metadata = rd.source_metadata
