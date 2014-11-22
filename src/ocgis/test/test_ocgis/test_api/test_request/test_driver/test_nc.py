@@ -1,3 +1,4 @@
+from ocgis.interface.nc.spatial import NcSpatialGridDimension
 from ocgis.interface.base.dimension.base import VectorDimension
 from ocgis import constants
 from copy import deepcopy
@@ -86,6 +87,8 @@ class TestDriverNetcdf(TestBase):
         uri = self.test_data.get_uri('cancm4_tas')
         rd = RequestDataset(variable=ref_test['variable'],uri=uri)
         field = rd.get()
+
+        self.assertIsInstance(field.spatial.grid, NcSpatialGridDimension)
 
         # test names are correctly set when creating the field
         self.assertEqual(field.temporal.name, 'time')

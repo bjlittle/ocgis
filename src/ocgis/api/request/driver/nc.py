@@ -4,11 +4,12 @@ import netCDF4 as nc
 
 import numpy as np
 
+from ocgis.interface.nc.spatial import NcSpatialGridDimension
 from ocgis import constants
 from ocgis.api.request.driver.base import AbstractDriver
 from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound, DimensionShapeError
 from ocgis.interface.base.crs import CFCoordinateReferenceSystem
-from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
+from ocgis.interface.base.dimension.spatial import SpatialDimension
 from ocgis.interface.base.variable import VariableCollection, Variable
 from ocgis.interface.metadata import NcMetadata
 from ocgis.interface.nc.dimension import NcVectorDimension
@@ -217,7 +218,7 @@ class DriverNetcdf(AbstractDriver):
         if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v is not None])):
             raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
 
-        grid = SpatialGridDimension(row=loaded['row'], col=loaded['col'])
+        grid = NcSpatialGridDimension(row=loaded['row'], col=loaded['col'])
 
         spatial = SpatialDimension(name_uid='gid', grid=grid, crs=self.rd.crs, abstraction=self.rd.s_abstraction)
 
