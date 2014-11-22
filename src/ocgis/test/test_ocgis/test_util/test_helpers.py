@@ -379,7 +379,8 @@ class Test2(TestBase):
         upper = dt(2013, 1, 2, 0, 0)
         self.assertTrue(get_is_date_between(lower,upper,year=2013))
             
-    def test_get_formatted_slc(self):
+    def test_get_formatted_slice(self):
+
         ret = get_formatted_slice(slice(None,None,None),10)
         self.assertEqual(ret,[slice(None,None,None)]*10)
         

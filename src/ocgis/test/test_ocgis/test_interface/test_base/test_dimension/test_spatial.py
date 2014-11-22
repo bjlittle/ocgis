@@ -1303,38 +1303,20 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
             yield sdim.grid
 
     def test_init(self):
+        self.assertEqual(SpatialGridDimension.__bases__, (AbstractUidValueDimension,))
+
         with self.assertRaises(ValueError):
             SpatialGridDimension()
         row = VectorDimension(value=[5])
         col = VectorDimension(value=[6])
         grid = SpatialGridDimension(row=row, col=col)
         self.assertEqual(grid.name, 'grid')
-        self.assertIsInstance(grid, AbstractUidValueDimension)
         self.assertEqual(grid.row.name, 'yc')
         self.assertEqual(grid.col.name, 'xc')
 
-    def test_corners(self):
-        for grid in self.iter_grid_combinations_for_corners():
-            try:
-                self.assertGridCorners(grid)
-            except AssertionError:
-                if grid.row is None or grid.row.bounds is None:
-                    continue
-                else:
-                    raise
-
-    def test_extent_and_extent_polygon(self):
-        for grid in self.iter_grid_combinations_for_corners():
-            extent = grid.extent
-            self.assertEqual(len(extent), 4)
-            self.assertTrue(extent[0] < extent[2])
-            self.assertTrue(extent[1] < extent[3])
-            self.assertEqual(extent, grid.extent_polygon.bounds)
-
-    def test_corners_esmf(self):
-        sdim = self.get_sdim()
-        actual = np.array([[[40.5, 40.5, 40.5, 40.5, 40.5], [39.5, 39.5, 39.5, 39.5, 39.5], [38.5, 38.5, 38.5, 38.5, 38.5], [37.5, 37.5, 37.5, 37.5, 37.5]], [[-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5]]], dtype=sdim.grid.value.dtype)
-        self.assertNumpyAll(actual, sdim.grid.corners_esmf)
+        grid = SpatialGridDimension(row=row, col=col, name_row='foo', name_col='whatever')
+        self.assertEqual(grid.name_row, 'foo')
+        self.assertEqual(grid.name_col, 'whatever')
 
     def test_assert_uniform_mask(self):
         """Test masks are uniform across major spatial components."""
@@ -1365,7 +1347,22 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
             sdim.assert_uniform_mask()
         sdim.geom.polygon.value.mask[2, 2] = False
 
-    def test_with_corners(self):
+    def test_corners(self):
+        for grid in self.iter_grid_combinations_for_corners():
+            try:
+                self.assertGridCorners(grid)
+            except AssertionError:
+                if grid.row is None or grid.row.bounds is None:
+                    continue
+                else:
+                    raise
+
+    def test_corners_esmf(self):
+        sdim = self.get_sdim()
+        actual = np.array([[[40.5, 40.5, 40.5, 40.5, 40.5], [39.5, 39.5, 39.5, 39.5, 39.5], [38.5, 38.5, 38.5, 38.5, 38.5], [37.5, 37.5, 37.5, 37.5, 37.5]], [[-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5], [-100.5, -99.5, -98.5, -97.5, -96.5]]], dtype=sdim.grid.value.dtype)
+        self.assertNumpyAll(actual, sdim.grid.corners_esmf)
+
+    def test_corners_as_parameter(self):
         """Test passing bounds during initialization."""
 
         grid = SpatialGridDimension(value=self.grid_value_regular, corners=self.grid_corners_regular)
@@ -1373,6 +1370,14 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
         self.assertEqual(sub.corners.shape, (2, 1, 1, 4))
         actual = np.ma.array([[[[39.5, 39.5, 38.5, 38.5]]], [[[-98.5, -97.5, -97.5, -98.5]]]], mask=False)
         self.assertNumpyAll(sub.corners, actual)
+
+    def test_extent_and_extent_polygon(self):
+        for grid in self.iter_grid_combinations_for_corners():
+            extent = grid.extent
+            self.assertEqual(len(extent), 4)
+            self.assertTrue(extent[0] < extent[2])
+            self.assertTrue(extent[1] < extent[3])
+            self.assertEqual(extent, grid.extent_polygon.bounds)
 
     def test_without_row_and_column(self):
         row = np.arange(39,42.5,0.5)
@@ -1388,27 +1393,31 @@ class TestSpatialGridDimension(AbstractTestSpatialDimension):
         self.assertNumpyAll(sub.value,value)
     
     def test_load_from_source_grid_slicing(self):
-        row = VectorDimension(src_idx=[10,20,30,40],name='row',data='foo')
-        self.assertEqual(row.name,'row')
-        col = VectorDimension(src_idx=[100,200,300],name='col',data='foo')
-        grid = SpatialGridDimension(row=row,col=col,name='grid')
-        self.assertEqual(grid.shape,(4,3))
-        grid_slc = grid[1,2]
-        self.assertEqual(grid_slc.shape,(1,1))
+        row = VectorDimension(src_idx=[10, 20, 30, 40], name='row', data='foo')
+        self.assertEqual(row.name, 'row')
+        col = VectorDimension(src_idx=[100, 200, 300], name='col', data='foo')
+        grid = SpatialGridDimension(row=row, col=col, name='grid')
+        self.assertEqual(grid.shape, (4, 3))
+        grid_slc = grid[1, 2]
+        self.assertEqual(grid_slc.shape, (1, 1))
         with self.assertRaises(NotImplementedError):
             grid_slc.value
         with self.assertRaises(NotImplementedError):
             grid_slc.row.bounds
-        self.assertNumpyAll(grid_slc.row._src_idx,np.array([20]))
-        self.assertNumpyAll(grid_slc.col._src_idx,np.array([300]))
-        self.assertEqual(grid_slc.row.name,'row')
-        self.assertEqual(grid_slc.uid,np.array([[6]],dtype=np.int32))
+        self.assertNumpyAll(grid_slc.row._src_idx, np.array([20]))
+        self.assertNumpyAll(grid_slc.col._src_idx, np.array([300]))
+        self.assertEqual(grid_slc.row.name, 'row')
+        self.assertEqual(grid_slc.uid, np.array([[6]], dtype=np.int32))
 
     def test_singletons(self):
         row = VectorDimension(value=10,name='row')
         col = VectorDimension(value=100,name='col')
         grid = SpatialGridDimension(row=row,col=col,name='grid')
         self.assertNumpyAll(grid.value,np.ma.array([[[10]],[[100]]],mask=False))
+
+    def test_validate(self):
+        with self.assertRaises(ValueError):
+            SpatialGridDimension()
 
     def test_write_to_netcdf_dataset(self):
         path = os.path.join(self.current_dir_output, 'foo.nc')

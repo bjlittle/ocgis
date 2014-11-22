@@ -601,6 +601,8 @@ class SpatialDimension(base.AbstractUidDimension):
 class SpatialGridDimension(base.AbstractUidValueDimension):
     _ndims = 2
     _attrs_slice = None
+    _name_row = None
+
 
     def __init__(self, *args, **kwargs):
         self._corners = None
@@ -614,12 +616,12 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
         kwargs['name'] = kwargs.get('name') or 'grid'
 
+        self.name_row = kwargs.pop('name_row', None)
+        self.name_col = kwargs.pop('name_col', None)
+
         super(SpatialGridDimension, self).__init__(*args, **kwargs)
 
-        if self._value is None:
-            if self.row is None or self.col is None:
-                msg = 'Without a value, a row and column dimension are required.'
-                raise ValueError(msg)
+        self._validate_()
 
         # set names of row and column if available
         name_mapping = {self.row: 'yc', self.col: 'xc'}
@@ -627,7 +629,7 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
         
     def __getitem__(self,slc):
         slc = get_formatted_slice(slc,2)
-        
+
         uid = self.uid[slc]
         
         if self._value is not None:
@@ -748,7 +750,7 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
     def extent_polygon(self):
         minx, miny, maxx, maxy = self.extent
         return make_poly([miny, maxy], [minx, maxx])
-        
+
     @property
     def resolution(self):
         try:
@@ -767,7 +769,7 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
             ret = (len(self.row), len(self.col))
         # occurs if either of these are empty. get the shape from the grid value.
         except TypeError:
-            ret = (self.value.shape[1], self.value.shape[2])
+            ret = (self.uid.shape[0], self.uid.shape[1])
         return ret
         
     def get_subset_bbox(self,min_col,min_row,max_col,max_row,return_indices=False,closed=True,
@@ -841,6 +843,12 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
         return(ret)
     
+    def _validate_(self):
+        if self._value is None:
+            if self.row is None or self.col is None:
+                msg = 'Without a value, a row and column dimension are required.'
+                raise ValueError(msg)
+
     def write_to_netcdf_dataset(self, dataset, **kwargs):
         """
         :param dataset:
@@ -888,22 +896,12 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
             ret = value
         return ret
 
-    def _get_slice_(self, state, slc):
-        if self._value is None:
-            state._value = None
-        else:
-            state._value = state.value[:, slc[0], slc[1]]
-        if state.row is not None:
-            state.row = state.row[slc[0]]
-            state.col = state.col[slc[1]]
-
-        return state
-
-    def _get_uid_(self):
-        if self._value is None:
-            shp = len(self.row), len(self.col)
-        else:
-            shp = self._value.shape[1], self._value.shape[2]
+    def _get_uid_(self, shp=None):
+        if shp is None:
+            if self._value is None:
+                shp = len(self.row), len(self.col)
+            else:
+                shp = self._value.shape[1], self._value.shape[2]
         ret = np.arange(1, (shp[0] * shp[1]) + 1, dtype=constants.np_int).reshape(shp)
         ret = np.ma.array(ret, mask=False)
         return ret
