@@ -109,10 +109,12 @@ class AbstractTestField(TestBase):
 
         if with_value:
             value = np.random.rand(r_shape, t_shape, l_shape, row_shape, col_shape)
+            data = None
         else:
             value = None
+            data = 'foo'
 
-        var = Variable(name, units=units, debug=True, data=None, value=value)
+        var = Variable(name, units=units, data=data, value=value)
         vc = VariableCollection(variables=var)
         field = Field(variables=vc, temporal=temporal, level=level, realization=realization, spatial=spatial,
                       name=field_name)
