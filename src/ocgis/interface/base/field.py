@@ -366,11 +366,10 @@ class Field(Attributes):
                 raise
         try:
             with name_scope(self.spatial.grid.row, 'yc', 'Y'):
-                self.spatial.grid.row.write_to_netcdf_dataset(dataset, **kwargs)
-                value_dimensions.append(self.spatial.grid.row.name)
-            with name_scope(self.spatial.grid.col, 'xc', 'X'):
-                self.spatial.grid.col.write_to_netcdf_dataset(dataset, **kwargs)
-                value_dimensions.append(self.spatial.grid.col.name)
+                with name_scope(self.spatial.grid.col, 'xc', 'X'):
+                    self.spatial.grid.write_to_netcdf_dataset(dataset, **kwargs)
+                    value_dimensions.append(self.spatial.grid.row.name)
+                    value_dimensions.append(self.spatial.grid.col.name)
         except AttributeError:
             if self.spatial.grid.row is None or self.spatial.grid.col is None:
                 msg = 'Row and/or column dimensions are required on the grid to write to netCDF.'
