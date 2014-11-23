@@ -4,6 +4,7 @@ import abc
 import tempfile
 import datetime
 import subprocess
+import itertools
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis import env
@@ -210,10 +211,14 @@ class TestBase(unittest.TestCase):
 
                 self.assertEqual(var.dimensions, dvar.dimensions)
 
-            src_variables = src.variables.keys()
-            for xx in ignore_variables:
-                src_variables.remove(xx)
-            self.assertEqual(set(src_variables), set(dest.variables.keys()))
+            sets = [set(xx.variables.keys()) for xx in [src, dest]]
+            for ignore_variable, s in itertools.product(ignore_variables, sets):
+                try:
+                    s.remove(ignore_variable)
+                except KeyError:
+                    # likely missing in one or the other
+                    continue
+            self.assertEqual(*sets)
 
             if 'global' not in ignore_attributes:
                 self.assertDictEqual(src.__dict__, dest.__dict__)

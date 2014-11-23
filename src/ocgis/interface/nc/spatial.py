@@ -48,8 +48,13 @@ class NcSpatialGridDimension(AbstractSourcedVariable, SpatialGridDimension):
                     slices = {k: get_formatted_slice(self._src_idx[k], 1) for k in self._src_idx.keys()}
                     slice_row = slices['row']
                     slice_col = slices['col']
-                    value_row = np.atleast_2d(ds.variables[self.name_row][slice_row, slice_col])
-                    value_col = np.atleast_2d(ds.variables[self.name_col][slice_row, slice_col])
+                    variable_row = ds.variables[self.name_row]
+                    variable_col = ds.variables[self.name_col]
+
+                    # load values ######################################################################################
+
+                    value_row = np.atleast_2d(variable_row[slice_row, slice_col])
+                    value_col = np.atleast_2d(variable_col[slice_row, slice_col])
                     fill = np.zeros([2]+list(value_row.shape), dtype=value_row.dtype)
                     try:
                         fill_value = value_row.fill_value
@@ -59,6 +64,40 @@ class NcSpatialGridDimension(AbstractSourcedVariable, SpatialGridDimension):
                     fill[0, :, :] = value_row
                     fill[1, :, :] = value_col
                     self.value = fill
+
+                    # load corners #####################################################################################
+
+                    try:
+                        name_row_corners = variable_row.corners
+                    except AttributeError:
+                        # likely no corners
+                        pass
+                    else:
+                        name_col_corners = variable_col.corners
+                        value_row_corners = ds.variables[name_row_corners][slice_row, slice_col, :]
+                        value_col_corners = ds.variables[name_col_corners][slice_row, slice_col, :]
+
+                        # a reshape may be required if this is a singleton slice operation
+
+                        def _reshape_corners_(arr):
+                            if arr.ndim < 3:
+                                assert arr.shape == (1, 4)
+                                arr = arr.reshape(1, 1, 4)
+                            return arr
+
+                        value_row_corners = _reshape_corners_(value_row_corners)
+                        value_col_corners = _reshape_corners_(value_col_corners)
+
+                        fill = np.zeros([2]+list(value_row_corners.shape), dtype=value_row_corners.dtype)
+                        try:
+                            fill_value = value_row_corners.fill_value
+                        except AttributeError:
+                            fill_value = None
+                        fill = np.ma.array(fill, fill_value=fill_value, mask=False)
+                        fill[0, :, :, :] = value_row_corners
+                        fill[1, :, :, :] = value_col_corners
+                        self.corners = fill
+
                 finally:
                     self._data.driver.close(ds)
             else:

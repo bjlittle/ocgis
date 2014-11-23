@@ -435,6 +435,7 @@ class TestDriverNetcdf(TestBase):
         rd = RequestDataset(path)
         driver = DriverNetcdf(rd)
         new_field = driver.get_field()
+        self.assertIsNotNone(new_field.crs)
         grid = new_field.spatial.grid
         self.assertIsNone(grid.row)
         self.assertIsNone(grid.col)
@@ -466,7 +467,8 @@ class TestDriverNetcdf(TestBase):
         path2 = os.path.join(self.current_dir_output, 'foo2.nc')
         with self.nc_scope(path2, 'w') as ds:
             new_field.write_to_netcdf_dataset(ds)
-        self.assertNcEqual(path, path2)
+        self.assertNcEqual(path, path2, ignore_attributes={'foo': ['grid_mapping']},
+                           ignore_variables=['latitude_longitude'])
 
     def test_get_vector_dimension(self):
         # test exception raised with no row and column

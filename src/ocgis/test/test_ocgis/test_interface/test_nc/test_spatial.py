@@ -47,10 +47,10 @@ class TestNcSpatialGridDimension(TestBase):
     def test_set_value_from_source(self):
         path = self.get_netcdf_path_no_row_column()
         rd = RequestDataset(path)
+
         src_idx = {'row': np.array([0, 1]), 'col': np.array([0])}
         grid = NcSpatialGridDimension(data=rd, src_idx=src_idx, name_row='yc', name_col='xc')
         self.assertEqual(grid.value.shape, (2, 2, 1))
-
         with self.nc_scope(path) as ds:
             var_row = ds.variables[grid.name_row]
             var_col = ds.variables[grid.name_col]
@@ -59,9 +59,13 @@ class TestNcSpatialGridDimension(TestBase):
 
         src_idx = {'row': np.array([0]), 'col': np.array([1])}
         grid = NcSpatialGridDimension(data=rd, src_idx=src_idx, name_row='yc', name_col='xc')
+        self.assertIsNone(grid._value)
+        self.assertIsNone(grid._corners)
         self.assertEqual(grid.value.shape, (2, 1, 1))
-
-        raise self.ToTest('loading corners from source')
+        self.assertEqual(grid.corners.shape, (2, 1, 1, 4))
+        self.assertEqual(grid.corners_esmf.shape, (2, 2, 2))
+        actual = np.ma.array([[[[3.5, 3.5, 4.5, 4.5]]], [[[45.0, 55.0, 55.0, 45.0]]]])
+        self.assertNumpyAll(actual, grid.corners)
 
     def test_shape(self):
         src_idx = {'row': np.array([5, 6, 7, 8]), 'col': np.array([9, 10, 11])}
@@ -73,6 +77,7 @@ class TestNcSpatialGridDimension(TestBase):
         col = VectorDimension(value=[6, 7, 8])
         grid = NcSpatialGridDimension(row=row, col=col)
         self.assertEqual(grid.shape, (2, 3))
+
 
     def test_validate(self):
         with self.assertRaises(ValueError):
