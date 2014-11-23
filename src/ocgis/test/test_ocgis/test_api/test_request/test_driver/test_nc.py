@@ -444,7 +444,8 @@ class TestDriverNetcdf(TestBase):
         actual = np.ma.array([[[4.0, 4.0], [5.0, 5.0]], [[40.0, 50.0], [40.0, 50.0]]])
         self.assertNumpyAll(grid.value, actual)
         var = new_field.variables.first()
-        self.assertEqual(var.shape, 1)
+        self.assertEqual(var.shape, (1, 2, 1, 2, 2))
+        self.assertEqual(var.value.shape, (1, 2, 1, 2, 2))
 
         new_field = driver.get_field()
         grid = new_field.spatial.grid
@@ -458,6 +459,9 @@ class TestDriverNetcdf(TestBase):
         self.assertEqual(sub_grid.shape, (1, 1))
         actual = np.ma.array([[[4.0]], [[50.0]]])
         self.assertNumpyAll(actual, sub_grid.value)
+        sub_var = sub.variables.first()
+        self.assertEqual(sub_var.shape, (1, 2, 1, 1, 1))
+        self.assertEqual(sub_var.value.shape, (1, 2, 1, 1, 1))
 
         path2 = os.path.join(self.current_dir_output, 'foo2.nc')
         with self.nc_scope(path2, 'w') as ds:
