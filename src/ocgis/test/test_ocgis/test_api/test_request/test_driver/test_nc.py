@@ -18,7 +18,7 @@ from ocgis.interface.base.dimension.spatial import SpatialGeometryPolygonDimensi
     SpatialDimension
 import fiona
 from shapely.geometry.geo import shape
-from ocgis.exc import EmptySubsetError, DimensionNotFound, DimensionShapeError
+from ocgis.exc import EmptySubsetError, DimensionNotFound
 import datetime
 from unittest.case import SkipTest
 import ocgis
@@ -435,9 +435,34 @@ class TestDriverNetcdf(TestBase):
         rd = RequestDataset(path)
         driver = DriverNetcdf(rd)
         new_field = driver.get_field()
-        self.assertIsNone(new_field.spatial.grid.row)
-        raise
-        import ipdb;ipdb.set_trace()
+        grid = new_field.spatial.grid
+        self.assertIsNone(grid.row)
+        self.assertIsNone(grid.col)
+        self.assertEqual(grid.name_row, 'yc')
+        self.assertEqual(grid.name_col, 'xc')
+        self.assertIsNone(grid._value)
+        actual = np.ma.array([[[4.0, 4.0], [5.0, 5.0]], [[40.0, 50.0], [40.0, 50.0]]])
+        self.assertNumpyAll(grid.value, actual)
+        var = new_field.variables.first()
+        self.assertEqual(var.shape, 1)
+
+        new_field = driver.get_field()
+        grid = new_field.spatial.grid
+        self.assertEqual(grid.shape, (2, 2))
+        self.assertIsNone(grid._value)
+        sub = new_field[:, :, :, 0, 1]
+        sub_grid = sub.spatial.grid
+        self.assertIsInstance(sub_grid, NcSpatialGridDimension)
+        self.assertEqual(sub.shape, (1, 2, 1, 1, 1))
+        self.assertIsNone(sub_grid._value)
+        self.assertEqual(sub_grid.shape, (1, 1))
+        actual = np.ma.array([[[4.0]], [[50.0]]])
+        self.assertNumpyAll(actual, sub_grid.value)
+
+        path2 = os.path.join(self.current_dir_output, 'foo2.nc')
+        with self.nc_scope(path2, 'w') as ds:
+            new_field.write_to_netcdf_dataset(ds)
+        self.assertNcEqual(path, path2)
 
     def test_get_vector_dimension(self):
         # test exception raised with no row and column
@@ -447,8 +472,8 @@ class TestDriverNetcdf(TestBase):
         k = 'row'
         v = {'name_uid': 'yc_id', 'axis': 'Y', 'adds': {'interpolate_bounds': False}, 'name': 'yc', 'cls': VectorDimension}
         source_metadata = rd.source_metadata
-        with self.assertRaises(DimensionShapeError):
-            driver._get_vector_dimension_(k, v, source_metadata)
+        res = driver._get_vector_dimension_(k, v, source_metadata)
+        self.assertEqual(res['name'], 'yc')
 
     def test_get_name_bounds_suffix(self):
         rd = self.test_data.get_rd('cancm4_tas')

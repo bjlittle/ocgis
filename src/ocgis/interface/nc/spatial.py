@@ -48,16 +48,16 @@ class NcSpatialGridDimension(AbstractSourcedVariable, SpatialGridDimension):
                     slices = {k: get_formatted_slice(self._src_idx[k], 1) for k in self._src_idx.keys()}
                     slice_row = slices['row']
                     slice_col = slices['col']
-                    value_row = ds.variables[self.name_row][slice_row, slice_col]
-                    value_col = ds.variables[self.name_col][slice_row, slice_col]
+                    value_row = np.atleast_2d(ds.variables[self.name_row][slice_row, slice_col])
+                    value_col = np.atleast_2d(ds.variables[self.name_col][slice_row, slice_col])
                     fill = np.zeros([2]+list(value_row.shape), dtype=value_row.dtype)
                     try:
                         fill_value = value_row.fill_value
                     except AttributeError:
                         fill_value = None
                     fill = np.ma.array(fill, fill_value=fill_value, mask=False)
-                    fill[0] = value_row
-                    fill[1] = value_col
+                    fill[0, :, :] = value_row
+                    fill[1, :, :] = value_col
                     self.value = fill
                 finally:
                     self._data.driver.close(ds)

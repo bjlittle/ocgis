@@ -57,6 +57,10 @@ class TestNcSpatialGridDimension(TestBase):
             self.assertNumpyAll(var_row[:, 0].reshape(2, 1), grid.value[0].data)
             self.assertNumpyAll(var_col[:, 0].reshape(2, 1), grid.value[1].data)
 
+        src_idx = {'row': np.array([0]), 'col': np.array([1])}
+        grid = NcSpatialGridDimension(data=rd, src_idx=src_idx, name_row='yc', name_col='xc')
+        self.assertEqual(grid.value.shape, (2, 1, 1))
+
         raise self.ToTest('loading corners from source')
 
     def test_shape(self):

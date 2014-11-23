@@ -7,7 +7,7 @@ import numpy as np
 from ocgis.interface.nc.spatial import NcSpatialGridDimension
 from ocgis import constants
 from ocgis.api.request.driver.base import AbstractDriver
-from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound, DimensionShapeError
+from ocgis.exc import ProjectionDoesNotMatch, VariableNotFoundError, DimensionNotFound
 from ocgis.interface.base.crs import CFCoordinateReferenceSystem
 from ocgis.interface.base.dimension.spatial import SpatialDimension
 from ocgis.interface.base.variable import VariableCollection, Variable
@@ -111,7 +111,8 @@ class DriverNetcdf(AbstractDriver):
         :param dict v: A series of keyword parameters to pass to the dimension class.
         :param dict source_metadata: The request dataset's metadata as returned from
          :attr:`ocgis.api.request.base.RequestDataset.source_metadata`.
-        :returns: A vector dimension object linked to the source data.
+        :returns: A vector dimension object linked to the source data. If the variable is not one-dimension return the
+         ``source_metadata`` reference to the variable.
         :rtype: :class:`ocgis.interface.base.dimension.base.VectorDimension`
         """
 
@@ -135,8 +136,7 @@ class DriverNetcdf(AbstractDriver):
 
             # realization axes may not have a variable associated with them
             if k != 'realization'and len(ref_variable['dimensions']) > 1:
-                msg = 'Vector dimensions must be one-dimensional. "{0}" has dimensions "{1}"'.format(k, ref_variable['dimensions'])
-                raise DimensionShapeError(msg)
+                return ref_variable
 
             # extract the data length to use when creating the source index arrays.
             length = source_metadata['dimensions'][ref_axis['dimension']]['len']
@@ -209,16 +209,33 @@ class DriverNetcdf(AbstractDriver):
                            'name': 'xc'},
                    'realization': {'cls': NcVectorDimension, 'adds': None, 'axis': 'R', 'name_uid': 'rlz_id',
                                    'name_value': 'rlz'}}
-        loaded = {}
 
+        loaded = {}
+        kwds_grid = {}
+        has_row_column = True
         for k, v in to_load.iteritems():
             fill = self._get_vector_dimension_(k, v, source_metadata)
+            if k != 'realization' and not isinstance(fill, NcVectorDimension) and fill is not None:
+                assert k in ('row', 'col')
+                has_row_column = False
+                kwds_grid[k] = fill
             loaded[k] = fill
 
-        if not {'temporal', 'row', 'col'}.issubset(set([k for k, v in loaded.iteritems() if v is not None])):
-            raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
+        loaded_keys = set([k for k, v in loaded.iteritems() if v is not None])
+        if has_row_column:
+            if not {'temporal', 'row', 'col'}.issubset(loaded_keys):
+                raise ValueError('Target variable must at least have temporal, row, and column dimensions.')
+            kwds_grid = {'row': loaded['row'], 'col': loaded['col']}
+        else:
+            shape_src_idx = [source_metadata['dimensions'][xx]['len'] for xx in kwds_grid['row']['dimensions']]
+            src_idx = {}
+            src_idx['row'] = np.arange(0, shape_src_idx[0], dtype=constants.np_int)
+            src_idx['col'] = np.arange(0, shape_src_idx[1], dtype=constants.np_int)
+            name_row = kwds_grid['row']['name']
+            name_col = kwds_grid['col']['name']
+            kwds_grid = {'name_row': name_row, 'name_col': name_col, 'data': self.rd, 'src_idx': src_idx}
 
-        grid = NcSpatialGridDimension(row=loaded['row'], col=loaded['col'])
+        grid = NcSpatialGridDimension(**kwds_grid)
 
         spatial = SpatialDimension(name_uid='gid', grid=grid, crs=self.rd.crs, abstraction=self.rd.s_abstraction)
 

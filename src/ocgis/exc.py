@@ -114,10 +114,6 @@ class DimensionNotFound(CFException):
         return msg
 
 
-class DimensionShapeError(OcgException):
-    """Raised when a dimension's shape is inappropriately sized for an operation."""
-
-
 class DefinitionValidationError(OcgException):
     """Raised when validation fails on :class:`~ocgis.OcgOperations`.
     
