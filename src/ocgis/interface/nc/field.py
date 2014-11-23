@@ -16,6 +16,7 @@ class NcField(Field):
         ## if grid and row are not present on the GridDimesion object. the source
         ## indices are attached to the grid object itself.
         except AttributeError:
+            raise
             axis_slc['Y'] = self.spatial.grid._row_src_idx
             axis_slc['X'] = self.spatial.grid._col_src_idx
         if self.realization is not None:
