@@ -19,9 +19,22 @@ class ESMPyConverter(AbstractConverter):
 
     @classmethod
     def validate_ops(cls, ops):
+        msg = None
         if len(ops.dataset) > 1:
-            msg = 'Only one requested dataset may be written.'
-            raise DefinitionValidationError('output_format', msg)
+            msg = 'Only one requested dataset may be written for "esmpy" output.'
+            target = 'dataset'
+        elif ops.spatial_operation == 'clip':
+            msg = 'Clip operations not allowed for "esmpy" output.'
+            target = 'spatial_operation'
+        elif ops.select_ugid is not None and not ops.agg_selection and len(ops.select_ugid) > 1:
+            msg = 'Only one selection geometry allowed for "esmpy" output.'
+            target = 'select_ugid'
+        elif ops.aggregate:
+            msg = 'No spatial aggregation for "esmpy" output.'
+            target = 'aggregate'
+
+        if msg is not None:
+            raise DefinitionValidationError(target, msg)
 
     def write(self):
         #todo: doc

@@ -1,8 +1,10 @@
 import unittest
 from cfunits import Units
-from ocgis import env
+from ocgis.conv.esmpy_ import ESMPyConverter
+from ocgis import env, SpatialCollection
 from ocgis.api.parms.definition import *
 from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension
+from ocgis.regrid.base import get_ocgis_field_from_esmpy_field
 from ocgis.util.helpers import make_poly
 import pickle
 import tempfile
@@ -415,6 +417,16 @@ class TestDataset(TestBase):
         reference_rd2 = self.test_data.get_rd('narccap_crcm')
         dsb = [dsa, {'uri': reference_rd2.uri, 'variable': reference_rd2.variable, 'alias': 'knight'}]
         Dataset(dsb)
+
+    def test_init_esmf(self):
+        #todo: what to do about time values
+        field = self.get_field()
+        coll = SpatialCollection()
+        coll.add_field(1, None, field)
+        conv = ESMPyConverter([coll])
+        efield = conv.write()
+        d = Dataset(efield)
+        raise self.ToTest('esmpy field acceptable as dataset argument')
 
     def test_get_meta(self):
         # test with standard request dataset collection

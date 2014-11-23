@@ -75,3 +75,18 @@ class TestESMPyConverter(AbstractTestConverter):
         # only one dataset for output
         with self.assertRaises(DefinitionValidationError):
             OcgOperations(dataset=dataset, output_format='esmpy')
+
+        # clip not allowed
+        with self.assertRaises(DefinitionValidationError):
+            OcgOperations(dataset=rd, output_format='esmpy', spatial_operation='clip')
+
+        # only one select_ugid
+        with self.assertRaises(DefinitionValidationError):
+            OcgOperations(dataset=rd, output_format='esmpy', geom='state_boundaries', select_ugid=[4, 5])
+        # more than one is allowed if agg_selection is true
+        OcgOperations(dataset=rd, output_format='esmpy', geom='state_boundaries', select_ugid=[4, 5],
+                      agg_selection=True)
+
+        # no spatial aggregation
+        with self.assertRaises(DefinitionValidationError):
+            OcgOperations(dataset=rd, output_format='esmpy', aggregate=True)

@@ -339,7 +339,8 @@ class TestOcgOperations(TestBase):
 
     def test_keyword_output_format_esmpy(self):
         """Test with the ESMPy output format."""
-
+        #todo: test spatial subsetting
+        #todo: test calculations
         slc = [None, None, None, [0, 10], [0, 10]]
         kwds = dict(as_field=[False, True],
                     with_slice=[True, False])
