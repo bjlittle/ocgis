@@ -611,8 +611,6 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
         self.col = kwargs.pop('col', None)
 
         self.corners = kwargs.pop('corners', None)
-        self._row_src_idx = kwargs.pop('row_src_idx', None)
-        self._col_src_idx = kwargs.pop('col_src_idx', None)
 
         kwargs['name'] = kwargs.get('name') or 'grid'
 
@@ -648,10 +646,6 @@ class SpatialGridDimension(base.AbstractUidValueDimension):
 
         if ret._corners is not None:
             ret._corners = ret._corners[:, slc[0], slc[1], :]
-        
-        if self._row_src_idx is not None:
-            ret._row_src_idx = self._row_src_idx[slc[0]]
-            ret._col_src_idx = self._col_src_idx[slc[1]]
         
         ret.uid = uid
         ret._value = value

@@ -1,22 +1,24 @@
-from collections import OrderedDict
 from copy import copy, deepcopy
 import tempfile
 import itertools
+import abc
+import logging
+
 from osgeo.osr import SpatialReference
+
 from fiona.crs import from_string, to_string
 import numpy as np
 from shapely.geometry import Point, Polygon
 from shapely.geometry.base import BaseMultipartGeometry
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.multipoint import MultiPoint
+
 from ocgis import constants
 from ocgis.util.logging_ocgis import ocgis_lh
-from ocgis.exc import SpatialWrappingError, ProjectionCoordinateNotFound,\
-    ProjectionDoesNotMatch
+from ocgis.exc import SpatialWrappingError, ProjectionCoordinateNotFound, ProjectionDoesNotMatch
+
 from ocgis.util.spatial.wrap import Wrapper
 from ocgis.util.helpers import iter_array
-from shapely.geometry.multipolygon import MultiPolygon
-import abc
-import logging
-from shapely.geometry.multipoint import MultiPoint
 
 
 class CoordinateReferenceSystem(object):
@@ -770,8 +772,9 @@ class CFRotatedPole(CFCoordinateReferenceSystem):
                                            attrs=dict_col['attrs'])
             new_col, new_row = np.meshgrid(new_col, new_row)
         else:
-            new_grid._row_src_idx = new_grid.row._src_idx
-            new_grid._col_src_idx = new_grid.col._src_idx
+            from ocgis.interface.nc.spatial import NcSpatialGridDimension
+            assert isinstance(new_grid, NcSpatialGridDimension)
+            new_grid._src_idx = {'row': new_grid.row._src_idx, 'col': new_grid.col._src_idx}
             new_grid.row = None
             new_grid.col = None
 
