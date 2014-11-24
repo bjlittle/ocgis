@@ -6,7 +6,6 @@ import ESMF
 
 from numpy import dtype
 import numpy as np
-from ocgis.util.inspect import Inspect
 
 from ocgis.api.parms.definition import RegridOptions
 from ocgis.interface.base.crs import CFWGS84
@@ -15,7 +14,7 @@ from ocgis.exc import DefinitionValidationError, DimensionNotFound, RequestValid
 from ocgis.api.parms import definition
 from ocgis import env, constants
 from ocgis.api.operations import OcgOperations
-from ocgis.util.helpers import make_poly, write_geom_dict, bbox_poly
+from ocgis.util.helpers import make_poly
 import ocgis
 from ocgis.api.request.base import RequestDataset, RequestDatasetCollection
 from ocgis.util.shp_cabinet import ShpCabinetIterator
