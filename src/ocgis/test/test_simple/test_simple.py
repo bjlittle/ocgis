@@ -29,7 +29,7 @@ from ocgis.test.base import TestBase, nc_scope
 import ocgis
 from ocgis.exc import ExtentError, DefinitionValidationError
 from ocgis.interface.base import crs
-from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, CFWGS84
+from ocgis.interface.base.crs import CoordinateReferenceSystem, WGS84, CFWGS84, WrappableCoordinateReferenceSystem
 from ocgis.api.request.base import RequestDataset, RequestDatasetCollection
 from ocgis.test.test_simple.make_test_data import SimpleNcNoLevel, SimpleNc, SimpleNcNoBounds, SimpleMaskNc, \
     SimpleNc360, SimpleNcProjection, SimpleNcNoSpatialBounds, SimpleNcMultivariate
@@ -1470,10 +1470,10 @@ class TestSimple360(TestSimpleBase):
 
         rd = RequestDataset(**self.get_dataset())
         field = rd.get()
-        self.assertTrue(field.spatial.is_unwrapped)
+        self.assertEqual(field.spatial.wrapped_state, WrappableCoordinateReferenceSystem._flag_unwrapped)
         ops = OcgOperations(dataset=rd, vector_wrap=True)
         ret = ops.execute()
-        self.assertFalse(ret[1]['foo'].spatial.is_unwrapped)
+        self.assertEqual(ret[1]['foo'].spatial.wrapped_state, WrappableCoordinateReferenceSystem._flag_wrapped)
 
     def test_wrap(self):
         
