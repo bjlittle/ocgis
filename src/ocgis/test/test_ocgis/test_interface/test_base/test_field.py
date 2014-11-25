@@ -478,7 +478,8 @@ class TestField(AbstractTestField):
         sdim = SpatialDimension(grid=grid)
         temporal = TemporalDimension(value=[5000])
         field = Field(spatial=sdim, temporal=temporal)
-        self.assertIsNone(field.variables)
+        self.assertIsInstance(field.variables, VariableCollection)
+        self.assertEqual(len(field.variables), 0)
         self.assertEqual(field.shape, (1, 1, 1, 2, 2))
         with self.assertRaises(ValueError):
             field.variables = 'foo'

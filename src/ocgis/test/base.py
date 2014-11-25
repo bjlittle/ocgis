@@ -302,7 +302,7 @@ class TestBase(unittest.TestCase):
 
         from ocgis.conv.esmpy import ESMPyConverter
 
-        field = kwargs.pop('field') or self.get_field(**kwargs)
+        field = kwargs.pop('field', None) or self.get_field(**kwargs)
         coll = SpatialCollection()
         coll.add_field(1, None, field)
         conv = ESMPyConverter([coll])
