@@ -1,6 +1,6 @@
 import unittest
 from cfunits import Units
-from ocgis.conv.esmpy_ import ESMPyConverter
+from ocgis.conv.esmpy import ESMPyConverter
 from ocgis import env, SpatialCollection
 from ocgis.api.parms.definition import *
 from ocgis.interface.base.dimension.spatial import SpatialDimension, SpatialGeometryPointDimension
@@ -402,10 +402,33 @@ class TestDataset(TestBase):
         with self.assertRaises(DefinitionValidationError):
             Dataset(5)
 
-        # test with a Field object
+        # test with field does not load anything
         field = self.test_data.get_rd('cancm4_tas').get()
         dd = Dataset(field)
+        rfield = dd.value.first()
+        self.assertIsNone(rfield.temporal._value)
+        self.assertIsNone(rfield.spatial.grid._value)
+        self.assertIsNone(rfield.spatial.grid.row._value)
+        self.assertIsNone(rfield.spatial.grid.col._value)
+        self.assertIsNone(rfield.variables.first()._value)
+
+        # test with a Field object
+        field = self.test_data.get_rd('cancm4_tas').get()[:, 0, :, :, :]
+        field_value = field.variables.first().value
+        dd = Dataset(field)
         self.assertIsInstance(dd.value, RequestDatasetCollection)
+        rdc_value = dd.value.first().variables.first().value
+        # do not do a deep copy on the field object...
+        self.assertTrue(np.may_share_memory(field_value, rdc_value))
+
+        # we do want a deepcopy on the request dataset object and request dataset collection
+        rd = self.test_data.get_rd('cancm4_tas')
+        dd = Dataset(rd)
+        self.assertIsInstance(dd.value.first(), RequestDataset)
+        self.assertNotEqual(id(rd), id(dd.value.first()))
+        rdc = RequestDatasetCollection(target=[rd])
+        dd = Dataset(rdc)
+        self.assertNotEqual(id(rdc), id(dd.value))
 
         # test loading dataset directly from uri with some overloads
         reference_rd = self.test_data.get_rd('cancm4_tas')
@@ -419,14 +442,15 @@ class TestDataset(TestBase):
         Dataset(dsb)
 
     def test_init_esmf(self):
-        #todo: what to do about time values
-        field = self.get_field()
-        coll = SpatialCollection()
-        coll.add_field(1, None, field)
-        conv = ESMPyConverter([coll])
-        efield = conv.write()
-        d = Dataset(efield)
-        raise self.ToTest('esmpy field acceptable as dataset argument')
+        #todo: what to do about time values, units, etc.
+        efield = self.get_esmf_field()
+        dd = Dataset(efield)
+        self.assertIsInstance(dd.value, RequestDatasetCollection)
+        ofield = dd.value.first()
+        self.assertIsInstance(ofield, Field)
+        ofield_value = ofield.variables.first().value
+        self.assertTrue(np.may_share_memory(ofield_value, efield))
+        self.assertNumpyAll(ofield_value, efield)
 
     def test_get_meta(self):
         # test with standard request dataset collection
@@ -438,6 +462,20 @@ class TestDataset(TestBase):
         dd = Dataset(rd.get())
         ret = dd.get_meta()
         self.assertEqual(ret, ['* dataset=', 'NcField(name=tas, ...)', ''])
+
+    def test_unfiled(self):
+        env.DIR_DATA = ocgis.env.DIR_TEST_DATA
+        reference_rd = self.test_data.get_rd('cancm4_tas')
+        rd = RequestDataset(reference_rd.uri,reference_rd.variable)
+        ds = Dataset(rd)
+        self.assertEqual(ds.value,RequestDatasetCollection([rd]))
+
+        dsa = {'uri':reference_rd.uri,'variable':reference_rd.variable}
+        Dataset(dsa)
+
+        reference_rd2 = self.test_data.get_rd('narccap_crcm')
+        dsb = [dsa,{'uri':reference_rd2.uri,'variable':reference_rd2.variable,'alias':'knight'}]
+        Dataset(dsb)
 
 
 class TestGeom(TestBase):

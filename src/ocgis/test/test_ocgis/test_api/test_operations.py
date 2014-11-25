@@ -257,19 +257,15 @@ class TestOcgOperations(TestBase):
         with self.assertRaises(RequestValidationError):
             OcgOperations(dataset=rd, conform_units_to='crap')
 
-    def test_keyword_dataset(self):
-        env.DIR_DATA = ocgis.env.DIR_TEST_DATA
-        reference_rd = self.test_data.get_rd('cancm4_tas')
-        rd = RequestDataset(reference_rd.uri,reference_rd.variable)
-        ds = definition.Dataset(rd)
-        self.assertEqual(ds.value,RequestDatasetCollection([rd]))
+    def test_keyword_dataset_esmf(self):
+        """Test with some operations an an ESMF Field."""
 
-        dsa = {'uri':reference_rd.uri,'variable':reference_rd.variable}
-        ds = definition.Dataset(dsa)
-
-        reference_rd2 = self.test_data.get_rd('narccap_crcm')
-        dsb = [dsa,{'uri':reference_rd2.uri,'variable':reference_rd2.variable,'alias':'knight'}]
-        ds = definition.Dataset(dsb)
+        efield = self.get_esmf_field()
+        ops = OcgOperations(dataset=efield, output_format='nc')
+        ret = ops.execute()
+        self.inspect(ret)
+        raise
+        import ipdb;ipdb.set_trace()
 
     def test_keyword_geom(self):
         geom = make_poly((37.762,38.222),(-102.281,-101.754))

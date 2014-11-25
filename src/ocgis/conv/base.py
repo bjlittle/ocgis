@@ -277,7 +277,7 @@ class AbstractConverter(object):
 #        from ocgis.conv.shpidx import ShpIdxConverter
 #        from ocgis.conv.keyed import KeyedConverter
         from ocgis.conv.nc import NcConverter
-        from ocgis.conv.esmpy_ import ESMPyConverter
+        from ocgis.conv.esmpy import ESMPyConverter
 
         mmap = {'shp': ShpConverter,
                 'csv': CsvConverter,

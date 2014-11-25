@@ -5,6 +5,7 @@ import tempfile
 import datetime
 import subprocess
 import itertools
+from ocgis.api.collection import SpatialCollection
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
 from ocgis import env
@@ -289,6 +290,16 @@ class TestBase(unittest.TestCase):
             pass
         else:
             raise AssertionError('Arrays are equivalent within precision.')
+
+    def get_esmf_field(self, **kwargs):
+        from ocgis.conv.esmpy import ESMPyConverter
+
+        field = self.get_field(**kwargs)
+        coll = SpatialCollection()
+        coll.add_field(1, None, field)
+        conv = ESMPyConverter([coll])
+        efield = conv.write()
+        return efield
 
     def get_field(self, nlevel=None, nrlz=None, crs=None):
         """

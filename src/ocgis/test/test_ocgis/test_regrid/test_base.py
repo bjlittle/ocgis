@@ -2,7 +2,7 @@ from copy import deepcopy, copy
 import ESMF
 import itertools
 from ocgis.api.operations import OcgOperations
-from ocgis.conv.esmpy_ import ESMPyConverter
+from ocgis.conv.esmpy import ESMPyConverter
 from ocgis.api.collection import SpatialCollection
 from ocgis.interface.base.dimension.temporal import TemporalDimension
 from ocgis.interface.base.dimension.base import VectorDimension

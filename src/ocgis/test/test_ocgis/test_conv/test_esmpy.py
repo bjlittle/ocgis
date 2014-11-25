@@ -4,7 +4,7 @@ from ocgis.exc import DefinitionValidationError
 from ocgis.test.base import ToTest
 from ocgis import SpatialCollection, OcgOperations
 from ocgis.conv.base import AbstractConverter
-from ocgis.conv.esmpy_ import ESMPyConverter
+from ocgis.conv.esmpy import ESMPyConverter
 from ocgis.test.test_ocgis.test_conv.test_base import AbstractTestConverter
 import numpy as np
 

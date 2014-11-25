@@ -413,20 +413,36 @@ class Dataset(base.OcgParameter):
     default = None
     input_types = [RequestDataset, list, tuple, RequestDatasetCollection, dict, Field]
     return_type = [RequestDatasetCollection]
+    _perform_deepcopy = False
 
     def __init__(self, init_value):
         if init_value is not None:
             if isinstance(init_value, RequestDatasetCollection):
-                init_value = init_value
+                init_value = deepcopy(init_value)
             else:
                 if isinstance(init_value, (RequestDataset, dict, Field)):
                     itr = [init_value]
                 elif type(init_value) in [list, tuple]:
                     itr = init_value
                 else:
-                    raise DefinitionValidationError(self, 'Type not accepted: {0}'.format(type(init_value)))
+                    should_raise = True
+                    try:
+                        import ESMF
+                    except ImportError:
+                        # ESMF is not a required library
+                        ocgis_lh('Could not import ESMF library.', level=logging.WARN, check_duplicate=True)
+                    else:
+                        if isinstance(init_value, ESMF.Field):
+                            from ocgis.regrid.base import get_ocgis_field_from_esmpy_field
+                            field = get_ocgis_field_from_esmpy_field(init_value)
+                            itr = [field]
+                            should_raise = False
+                    if should_raise:
+                        raise DefinitionValidationError(self, 'Type not accepted: {0}'.format(type(init_value)))
                 rdc = RequestDatasetCollection()
                 for rd in itr:
+                    if not isinstance(rd, Field):
+                        rd = deepcopy(rd)
                     rdc.update(rd)
                 init_value = rdc
         else:
