@@ -98,6 +98,10 @@ class TestVariable(TestBase):
         self.assertEqual(var.dtype,np.float)
         self.assertEqual(var.fill_value,9)
 
+    def test_str(self):
+        var = Variable(name='toon')
+        self.assertEqual(str(var), 'Variable(name="toon", alias="toon", units=None)')
+
     def test_conform_units_to(self):
         """Test using the conform_units_to keyword argument."""
 

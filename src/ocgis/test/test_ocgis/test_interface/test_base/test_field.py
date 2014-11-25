@@ -471,6 +471,18 @@ class TestField(AbstractTestField):
             self.assertEqual(ret.temporal.value[0],dt(2000,1,15,12))
             self.assertEqual(ret.temporal.value[-1],dt(2000,1,30,12))
 
+    def test_variables(self):
+        row = VectorDimension(value=[5, 6])
+        col = VectorDimension(value=[7, 8])
+        grid = SpatialGridDimension(row=row, col=col)
+        sdim = SpatialDimension(grid=grid)
+        temporal = TemporalDimension(value=[5000])
+        field = Field(spatial=sdim, temporal=temporal)
+        self.assertIsNone(field.variables)
+        self.assertEqual(field.shape, (1, 1, 1, 2, 2))
+        with self.assertRaises(ValueError):
+            field.variables = 'foo'
+
     def test_write_to_netcdf_dataset(self):
         keywords = dict(file_only=[False, True],
                         second_variable_alias=[None, 'tmin_alias'],

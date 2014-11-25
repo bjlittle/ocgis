@@ -212,9 +212,11 @@ class Variable(AbstractSourcedVariable, AbstractValueVariable, Attributes):
             ret._value = self._value[slc]
         return(ret)
                 
-    def __repr__(self):
-        ret = '{0}(alias="{1}",name="{2}",units="{3}")'.format(self.__class__.__name__,self.alias,self.name,self.units)
-        return(ret)
+    def __str__(self):
+        units = '{0}' if self.units is None else '"{0}"'
+        units = units.format(self.units)
+        ret = '{0}(name="{1}", alias="{2}", units={3})'.format(self.__class__.__name__, self.alias, self.name, units)
+        return ret
 
     def get_empty_like(self, shape=None):
         """

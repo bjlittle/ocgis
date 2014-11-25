@@ -40,6 +40,7 @@ class Field(Attributes):
     _axis_map = {'realization': 0, 'temporal': 1, 'level': 2}
     _axes = ['R', 'T', 'Z', 'Y', 'X']
     _value_dimension_names = ('realization', 'temporal', 'level', 'row', 'column')
+    _variables = None
 
     def __init__(self, variables=None, realization=None, temporal=None, level=None, spatial=None, meta=None, uid=None,
                  name=None, regrid_destination=False, attrs=None):
@@ -134,11 +135,14 @@ class Field(Attributes):
 
     @variables.setter
     def variables(self, value):
-        if isinstance(value, Variable):
-            value = VariableCollection(variables=[value])
+        if value is None:
+            value = VariableCollection()
+        else:
+            if isinstance(value, Variable):
+                value = VariableCollection(variables=[value])
 
         if not isinstance(value, VariableCollection):
-            raise ValueError('The "variables" keyword must be a Variable object.')
+            raise ValueError('The value must be a Variable or VariableCollection object.')
 
         self._variables = value
         for v in value.itervalues():

@@ -716,6 +716,22 @@ class TestRegrid(TestSimpleBase):
             self.assertTrue(np.may_share_memory(ofield_tmin_value, efield))
             self.assertFalse(np.may_share_memory(ofield_tmin_value, tmin.value))
 
+    def test_get_ocgis_field_from_esmpy_field_no_realization_no_level(self):
+        """Test without a realization or level on the field object."""
+
+        row = VectorDimension(value=[5, 6])
+        col = VectorDimension(value=[7, 8])
+        grid = SpatialGridDimension(row=row, col=col)
+        sdim = SpatialDimension(grid=grid)
+        temporal = TemporalDimension(value=[5000])
+        field = Field(spatial=sdim, temporal=temporal)
+        value = np.random.rand(*field.shape)
+        variable = Variable(value=value, name='foo')
+        field.variables.add_variable(variable)
+        efield = self.get_esmf_field(field=field)
+        self.assertIsInstance(efield, ESMF.Field)
+        import ipdb;ipdb.set_trace()
+
     def test_get_esmf_grid_from_sdim_with_corners(self):
         """Test with the with_corners option set to False."""
 

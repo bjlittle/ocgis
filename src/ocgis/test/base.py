@@ -292,9 +292,17 @@ class TestBase(unittest.TestCase):
             raise AssertionError('Arrays are equivalent within precision.')
 
     def get_esmf_field(self, **kwargs):
+        """
+        :keyword field: (``=None``) The field object. If ``None``, call :meth:`~ocgis.test.base.TestBase.get_field`
+        :type field: :class:`~ocgis.Field`
+        :param kwargs: Other keyword arguments to :meth:`ocgis.test.base.TestBase.get_field`.
+        :returns: An ESMF field object.
+        :rtype: :class:`ESMF.Field`
+        """
+
         from ocgis.conv.esmpy import ESMPyConverter
 
-        field = self.get_field(**kwargs)
+        field = kwargs.pop('field') or self.get_field(**kwargs)
         coll = SpatialCollection()
         coll.add_field(1, None, field)
         conv = ESMPyConverter([coll])
