@@ -606,6 +606,18 @@ class TestField(AbstractTestField):
                                   ['time', 'bounds', 'level', constants.default_name_row_coordinates,
                                    constants.default_name_col_coordinates, constants.default_name_corners_dimension])
 
+    def test_write_to_netcdf_dataset_without_temporal(self):
+        """Test without a temporal dimensions."""
+
+        path = os.path.join(self.current_dir_output, 'foo.nc')
+        field = self.get_field(with_temporal=False, with_realization=False, with_value=True, with_level=False)
+        with self.nc_scope(path, 'w') as ds:
+            field.write_to_netcdf_dataset(ds)
+        with self.nc_scope(path) as ds:
+            vars = ds.variables.keys()
+            self.assertAsSetEqual(vars, [u'latitude', u'latitude_bounds', u'longitude', u'longitude_bounds', u'tmax'])
+
+
 class TestDerivedField(AbstractTestField):
     
     def test_init(self):

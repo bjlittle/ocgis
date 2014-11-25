@@ -357,9 +357,14 @@ class Field(Attributes):
                 target.axis = previous_axis
 
         value_dimensions = []
-        with name_scope(self.temporal, 'time', 'T'):
-            self.temporal.write_to_netcdf_dataset(dataset, **kwargs)
-            value_dimensions.append(self.temporal.name)
+        try:
+            with name_scope(self.temporal, 'time', 'T'):
+                self.temporal.write_to_netcdf_dataset(dataset, **kwargs)
+                value_dimensions.append(self.temporal.name)
+        except AttributeError:
+            if self.temporal is not None:
+                raise
+
         try:
             with name_scope(self.level, 'level', 'Z'):
                 self.level.write_to_netcdf_dataset(dataset, **kwargs)
@@ -368,6 +373,7 @@ class Field(Attributes):
         except AttributeError:
             if self.level is not None:
                 raise
+
         try:
             with name_scope(self.spatial.grid.row, 'yc', 'Y'):
                 with name_scope(self.spatial.grid.col, 'xc', 'X'):
