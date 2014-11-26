@@ -272,6 +272,16 @@ class TestField(AbstractTestField):
         rows = list(field.get_iter())
         self.assertAsSetEqual(rows[10].keys(), ['vid', 'gid', 'month', 'year', 'alias', 'geom', 'realization', 'realization_uid', 'time_bounds_lower', 'level_bounds_upper', 'variable', 'day', 'realization_bounds_lower', 'name', 'level', 'did', 'level_bounds_lower', 'value', 'realization_bounds_upper', 'level_uid', 'time', 'tid', 'time_bounds_upper'])
 
+    def test_get_iter_spatial_only(self):
+        """Test with only a spatial dimension."""
+
+        field = self.get_field(with_temporal=False, with_level=False, with_realization=False, with_value=True)
+        self.assertIsNone(field.level)
+        rows = list(field.get_iter())
+        for xx in ['lid', 'level']:
+            self.assertNotIn(xx, rows[0].keys())
+        self.assertEqual(len(rows), 12)
+
     def test_get_intersects_domain_polygon(self):
         regular = make_poly((36.61,41.39),(-101.41,-95.47))
         field = self.get_field(with_value=True)

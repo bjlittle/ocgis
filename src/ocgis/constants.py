@@ -37,8 +37,6 @@ calc_headers = ['did','vid','cid','ugid','tid','lid','gid','variable','alias','c
 #: Standard headers for multivariate calculations.
 multi_headers = ['did','cid','ugid','tid','lid','gid','calc_key','calc_alias','time','year','month','day','level','value']
 
-level_headers = ['lid','level']
-
 #: Required headers for every request.
 required_headers = ['did','ugid','gid']
 

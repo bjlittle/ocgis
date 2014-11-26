@@ -184,10 +184,6 @@ class Field(Attributes):
 
         is_masked = np.ma.is_masked
 
-        # there is not level, these keys will need to be provided a None value
-        has_level = True if self.level is not None else False
-        r_level_defaults = dict.fromkeys(constants.level_headers)
-
         # value keys occur when the value array is in fact a structured array with field definitions. this occurs with
         # keyed output functions...
         has_value_keys = False if value_keys is None else True
@@ -221,10 +217,6 @@ class Field(Attributes):
                 # add geometries to the output
                 to_yld['geom'] = geom
                 to_yld[r_gid_name] = gid
-
-                # if there is no level, defaults are needs to satisfy converters
-                if not has_level:
-                    to_yld.update(r_level_defaults)
 
                 # the target value is a structure array, multiple value elements need to be added. these outputs do not
                 # a specific value, so it is not added. there may also be multiple elements in the structure which
