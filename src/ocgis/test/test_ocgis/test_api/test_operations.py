@@ -258,7 +258,7 @@ class TestOcgOperations(TestBase):
             OcgOperations(dataset=rd, conform_units_to='crap')
 
     def test_keyword_dataset_esmf(self):
-        """Test with some operations an an ESMF Field."""
+        """Test with operations on an ESMF Field."""
 
         efield = self.get_esmf_field()
         for output_format in OutputFormat.iter_possible():

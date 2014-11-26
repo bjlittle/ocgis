@@ -152,7 +152,7 @@ class SpatialCollection(AbstractCollection):
                             yld_row[k] = v(yld_row[k])
                     if use_upper_keys:
                         yld_row = {k.upper(): v for k, v in yld_row.iteritems()}
-                    yield (row['geom'], yld_row)
+                    yield row['geom'], yld_row
                     
     def get_iter_elements(self):
         for ugid,fields in self.iteritems():

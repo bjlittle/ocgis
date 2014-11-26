@@ -94,7 +94,7 @@ class FionaConverter(AbstractConverter):
             fiona_crs = crs.value
         except AttributeError:
             if crs is None:
-                raise ValueError('"crs" is None. A coordinate systems is required for writing to Fiona output.')
+                raise ValueError('"crs" is None. A coordinate system is required for writing to Fiona output.')
             else:
                 raise
 
