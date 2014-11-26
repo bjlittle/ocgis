@@ -7,7 +7,7 @@ import ESMF
 from numpy import dtype
 import numpy as np
 
-from ocgis.api.parms.definition import RegridOptions
+from ocgis.api.parms.definition import RegridOptions, OutputFormat
 from ocgis.interface.base.crs import CFWGS84
 from ocgis.test.base import TestBase
 from ocgis.exc import DefinitionValidationError, DimensionNotFound, RequestValidationError
@@ -261,10 +261,10 @@ class TestOcgOperations(TestBase):
         """Test with some operations an an ESMF Field."""
 
         efield = self.get_esmf_field()
-        ops = OcgOperations(dataset=efield, output_format='nc')
-        ret = ops.execute()
-        self.inspect(ret)
-        raise
+        for output_format in OutputFormat.iter_possible():
+            ops = OcgOperations(dataset=efield, output_format=output_format)
+            ret = ops.execute()
+        # self.inspect(ret)
         import ipdb;ipdb.set_trace()
 
     def test_keyword_geom(self):
