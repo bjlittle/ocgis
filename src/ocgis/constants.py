@@ -4,7 +4,7 @@ import numpy as np
 ocgis_bounds = 'bounds'
 
 #: Default netCDF4 output file type
-netCDF_default_data_model = 'NETCDF4_CLASSIC'
+netCDF_default_data_model = 'NETCDF4'
 
 #: Default temporal calendar.
 default_temporal_calendar = 'standard'

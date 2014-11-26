@@ -745,7 +745,9 @@ class TestSimple(TestSimpleBase):
             for k, v in expected.iteritems():
                 var = ds.variables[k]
                 self.assertEqual(var.axis, v)
-        
+        with self.nc_scope(ret) as ds:
+            self.assertEqual(ds.file_format, constants.netCDF_default_data_model)
+
     def test_nc_conversion_calc(self):
         calc_grouping = ['month']
         calc = [{'func':'mean','name':'my_mean'},
@@ -937,11 +939,6 @@ class TestSimple(TestSimpleBase):
                         continue
                     if s == 'clip':
                         continue
-                else:
-                    raise
-            except ImproperPolygonBoundsError:
-                if ab == 'polygon' and unbounded:
-                    continue
                 else:
                     raise
             except ExtentError:
