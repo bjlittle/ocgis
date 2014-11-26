@@ -617,6 +617,7 @@ class TestRegrid(TestSimpleBase):
         self.assertNumpyAll(egrid.mask[0], np.invert(value_mask.astype(bool)).astype(egrid.mask[0].dtype))
 
     def test_get_ocgis_field_from_esmpy_field(self):
+        #todo: return spherical crs if none is passed. check something on the grid
         np.random.seed(1)
         temporal = TemporalDimension(value=[3000., 4000., 5000.])
         level = VectorDimension(value=[10, 20, 30, 40])

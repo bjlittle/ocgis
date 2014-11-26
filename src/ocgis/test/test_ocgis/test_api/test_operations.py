@@ -263,7 +263,6 @@ class TestOcgOperations(TestBase):
 
         efield = self.get_esmf_field()
         output_format = OutputFormat.iter_possible()
-        output_format = ['nc', 'numpy', 'esmpy', 'csv', 'meta']
         for kk in output_format:
             ops = OcgOperations(dataset=efield, output_format=kk, prefix=kk)
             ret = ops.execute()
