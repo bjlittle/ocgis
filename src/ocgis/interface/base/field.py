@@ -45,6 +45,10 @@ class Field(Attributes):
     def __init__(self, variables=None, realization=None, temporal=None, level=None, spatial=None, meta=None, uid=None,
                  name=None, regrid_destination=False, attrs=None):
 
+        if spatial is None:
+            msg = 'At least "spatial" is required.'
+            raise ValueError(msg)
+
         Attributes.__init__(self, attrs=attrs)
 
         self.realization = realization

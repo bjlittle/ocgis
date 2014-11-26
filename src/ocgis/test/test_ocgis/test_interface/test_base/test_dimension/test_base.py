@@ -279,7 +279,8 @@ class TestVectorDimension(TestBase):
                         axis=[None, 'GG'],
                         name=[None, 'temporal'],
                         name_bounds=[None, 'time_bounds'],
-                        name_value=[None, 'time'])
+                        name_value=[None, 'time'],
+                        format=[None, 'NETCDF4_CLASSIC'])
 
         for k in itr_products_keywords(keywords, as_namedtuple=True):
             if k.with_attrs:

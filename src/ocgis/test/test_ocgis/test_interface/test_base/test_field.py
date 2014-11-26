@@ -148,6 +148,10 @@ class TestField(AbstractTestField):
                 with self.assertRaises(Exception):
                     field.variables['tmax'].value
 
+    def test_init_empty(self):
+        with self.assertRaises(ValueError):
+            Field()
+
     def test_crs(self):
         field = self.get_field(with_value=True)
         self.assertIsNone(field.spatial.crs)
@@ -172,10 +176,6 @@ class TestField(AbstractTestField):
         sub = field[:,3:15,:,:,:]
         self.assertEqual(sub.shape,(2,12,2,3,4))
         self.assertNumpyAll(sub.variables['tmax'].value,field.variables['tmax'].value[:,3:15,:,:,:])
-
-    def test_empty(self):
-        with self.assertRaises(ValueError):
-            Field()
 
     def test_get_aggregated_all(self):
         for wv in [True,False]:
