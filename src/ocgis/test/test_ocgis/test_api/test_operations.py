@@ -2,6 +2,7 @@ import csv
 from datetime import datetime as dt
 import itertools
 import datetime
+import os
 import ESMF
 
 from numpy import dtype
@@ -261,10 +262,13 @@ class TestOcgOperations(TestBase):
         """Test with operations on an ESMF Field."""
 
         efield = self.get_esmf_field()
-        for output_format in OutputFormat.iter_possible():
-            ops = OcgOperations(dataset=efield, output_format=output_format)
+        output_format = OutputFormat.iter_possible()
+        output_format = ['nc', 'numpy', 'esmpy', 'csv', 'meta']
+        for kk in output_format:
+            ops = OcgOperations(dataset=efield, output_format=kk, prefix=kk)
             ret = ops.execute()
         # self.inspect(ret)
+        raise
         import ipdb;ipdb.set_trace()
 
     def test_keyword_geom(self):
@@ -332,6 +336,13 @@ class TestOcgOperations(TestBase):
         ops.level_range = lr
         for r in ops.dataset.itervalues():
             self.assertEqual(r.level_range,tuple(lr))
+
+    def test_keyword_prefix(self):
+        # the meta output format should not create an output directory
+        rd = self.test_data.get_rd('cancm4_tas')
+        ops = OcgOperations(dataset=rd, output_format='meta')
+        ops.execute()
+        self.assertEqual(len(os.listdir(self.current_dir_output)), 0)
 
     def test_keyword_output_format_esmpy(self):
         """Test with the ESMPy output format."""
