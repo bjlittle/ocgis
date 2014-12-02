@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 import netCDF4 as nc
+from warnings import warn
 
 import numpy as np
 
@@ -15,7 +16,7 @@ from ocgis.interface.metadata import NcMetadata
 from ocgis.interface.nc.dimension import NcVectorDimension
 from ocgis.interface.nc.field import NcField
 from ocgis.interface.nc.temporal import NcTemporalDimension
-from ocgis.util.helpers import itersubclasses
+from ocgis.util.helpers import itersubclasses, get_iter
 from ocgis.util.logging_ocgis import ocgis_lh
 
 
@@ -35,6 +36,31 @@ class DriverNetcdf(AbstractDriver):
             finally:
                 self.close(ds)
         return self._raw_metadata
+
+    def open(self):
+        try:
+            ret = nc.Dataset(self.rd.uri, 'r')
+        except TypeError:
+            try:
+                ret = nc.MFDataset(self.rd.uri)
+            except KeyError as e:
+                # it is possible the variable is not in one of the data URIs. check for this to raise a cleaner error.
+                for uri in get_iter(self.rd.uri):
+                    ds = nc.Dataset(uri, 'r')
+                    try:
+                        for variable in get_iter(self.rd.variable):
+                            try:
+                                ds.variables[variable]
+                            except KeyError:
+                                msg = 'The variable "{0}" was not found in URI "{1}".'.format(variable, uri)
+                                raise KeyError(msg)
+                    finally:
+                        ds.close()
+
+                # if all variables were found, raise the other error
+                raise e
+
+        return ret
 
     def close(self, obj):
         obj.close()
@@ -97,13 +123,6 @@ class DriverNetcdf(AbstractDriver):
                 metadata['dim_map'] = self.rd.dimension_map
 
         return metadata
-
-    def open(self):
-        try:
-            ret = nc.Dataset(self.rd.uri, 'r')
-        except TypeError:
-            ret = nc.MFDataset(self.rd.uri)
-        return ret
 
     def _get_vector_dimension_(self, k, v, source_metadata):
         """
@@ -375,10 +394,13 @@ def get_dimension_map(variable, metadata):
             ocgis_lh(msg, logger='nc.driver', level=logging.WARNING, check_duplicate=True)
             bounds_var = None
 
-        try:
-            assert(isinstance(bounds_var, basestring))
-        except AssertionError:
-            assert(bounds_var is None)
+        # bounds variables sometime appear oddly, if it is not none and not a string, display what the value is, raise a
+        # warning and continue setting the bounds variable to None.
+        if not isinstance(bounds_var, basestring):
+            if bounds_var is not None:
+                msg = 'Bounds variable is not a string and is not None. The value is "{0}". Setting bounds to None.'.format(bounds_var)
+                warn(msg)
+                bounds_var = None
 
         value.update({'bounds': bounds_var})
 
