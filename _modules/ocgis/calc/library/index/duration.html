@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.library.index.duration &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.calc.library.index.duration &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../../../../index.html" />
     <link rel="up" title="ocgis" href="../../../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,65 +45,66 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.library.index.duration</h1><div class="highlight"><pre>
-<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">from</span> <span class="nn">ocgis.util.helpers</span> <span class="kn">import</span> <span class="n">iter_array</span>
 <span class="kn">from</span> <span class="nn">ocgis.exc</span> <span class="kn">import</span> <span class="n">DefinitionValidationError</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 
 
-<div class="viewcode-block" id="Duration"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.Duration">[docs]</a><span class="k">class</span> <span class="nc">Duration</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
+<div class="viewcode-block" id="Duration"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.Duration">[docs]</a><span class="k">class</span> <span class="nc">Duration</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;duration&#39;</span>
-    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;threshold&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">,</span><span class="s">&#39;operation&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="s">&#39;summary&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">}</span>
-    <span class="c">## output data type will vary by the summary operation (e.g. float for mean,</span>
-    <span class="c">## int for max)</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;threshold&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s">&#39;summary&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+    <span class="c"># output data type will vary by the summary operation (e.g. float for mean, int for max)</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Summarizes consecutive occurrences in a sequence where the logical operation returns TRUE. The summary operation is applied to the sequences within a temporal aggregation.&#39;</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;duration&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Duration&#39;</span>
 
-<div class="viewcode-block" id="Duration.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.Duration.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">summary</span><span class="o">=</span><span class="s">&#39;mean&#39;</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Duration.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.Duration.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s">&#39;mean&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param threshold: The threshold value to use for the logical operation.</span>
 <span class="sd">        :type threshold: float</span>
 <span class="sd">        :param operation: The logical operation. One of &#39;gt&#39;,&#39;gte&#39;,&#39;lt&#39;, or &#39;lte&#39;.</span>
 <span class="sd">        :type operation: str</span>
 <span class="sd">        :param summary: The summary operation to apply the durations. One of &#39;mean&#39;,&#39;median&#39;,&#39;std&#39;,&#39;max&#39;, or &#39;min&#39;.</span>
 <span class="sd">        :type summary: str</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
-        <span class="c">## storage array for counts</span>
-        <span class="n">shp_out</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
-        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_out</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-        <span class="c">## get the summary operation from the numpy library</span>
-        <span class="n">summary_operation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span><span class="n">summary</span><span class="p">)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c">## find longest sequence for each geometry across time dimension</span>
-        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">fill</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iter_consecutive_</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">threshold</span><span class="p">,</span><span class="n">operation</span><span class="p">)):</span>
-            <span class="c">## case of only a singular occurrence</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="c"># storage array for counts</span>
+        <span class="n">shp_out</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="c"># get the summary operation from the numpy library</span>
+        <span class="n">summary_operation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">summary</span><span class="p">)</span>
+
+        <span class="c"># find longest sequence for each geometry across time dimension</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">fill</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iter_consecutive_</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">operation</span><span class="p">)):</span>
+            <span class="c"># case of only a singular occurrence</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="n">summary_operation</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="n">fill</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c">## value is likely masked</span>
+                <span class="c"># value is likely masked</span>
                 <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
                     <span class="n">fill</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">store</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill</span>
-        
+
         <span class="n">store</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">shp_out</span><span class="p">)</span>
-        
-        <span class="c">## update the output mask. this only applies to geometries so pick the</span>
-        <span class="c">## first masked time field</span>
-        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">store</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:])</span>
-                
-        <span class="k">return</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-    </div>
-    <span class="k">def</span> <span class="nf">_iter_consecutive_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="n">threshold</span><span class="p">,</span><span class="n">operation</span><span class="p">):</span>
-        <span class="c">## time index reference</span>
-        <span class="n">ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="c">## perform requested logical operation</span>
+
+        <span class="c"># update the output mask. this only applies to geometries so pick the</span>
+        <span class="c"># first masked time field</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">store</span>
+</div>
+    <span class="k">def</span> <span class="nf">_iter_consecutive_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">operation</span><span class="p">):</span>
+        <span class="c"># time index reference</span>
+        <span class="n">ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c"># perform requested logical operation</span>
         <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;gt&#39;</span><span class="p">:</span>
             <span class="n">arr</span> <span class="o">=</span> <span class="n">values</span> <span class="o">&gt;</span> <span class="n">threshold</span>
         <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;lt&#39;</span><span class="p">:</span>
@@ -113,65 +114,66 @@
         <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;lte&#39;</span><span class="p">:</span>
             <span class="n">arr</span> <span class="o">=</span> <span class="n">values</span> <span class="o">&lt;=</span> <span class="n">threshold</span>
 
-        <span class="c">## find longest sequence for each geometry across time dimension</span>
-        <span class="k">for</span> <span class="n">rowidx</span><span class="p">,</span><span class="n">colidx</span> <span class="ow">in</span> <span class="n">iter_array</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:],</span><span class="n">use_mask</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-            <span class="n">vec</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[:,</span><span class="n">rowidx</span><span class="p">,</span><span class="n">colidx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="c">## check first if there is a longer series than 1</span>
+        <span class="c"># find longest sequence for each geometry across time dimension</span>
+        <span class="k">for</span> <span class="n">rowidx</span><span class="p">,</span> <span class="n">colidx</span> <span class="ow">in</span> <span class="n">iter_array</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">use_mask</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+            <span class="n">vec</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[:,</span> <span class="n">rowidx</span><span class="p">,</span> <span class="n">colidx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c"># check first if there is a longer series than 1</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">ref</span><span class="p">[</span><span class="n">vec</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="c">## find locations where the values switch</span>
+                <span class="c"># find locations where the values switch</span>
                 <span class="n">diff_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">diff_idx</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-                    <span class="n">diff_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diff_idx</span><span class="p">,[</span><span class="bp">False</span><span class="p">])</span>
+                    <span class="n">diff_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diff_idx</span><span class="p">,</span> <span class="p">[</span><span class="bp">False</span><span class="p">])</span>
                 <span class="n">split_idx</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="n">diff_idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
-                <span class="n">splits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span><span class="n">split_idx</span><span class="p">)</span>
+                <span class="n">splits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">split_idx</span><span class="p">)</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">a</span><span class="p">)]</span>
-            <span class="c">## case of only a singular occurrence</span>
+            <span class="c"># case of only a singular occurrence</span>
             <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="c">## case for no occurrence</span>
+            <span class="c"># case for no occurrence</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">fill</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            
-            <span class="k">yield</span><span class="p">(</span><span class="n">fill</span><span class="p">)</span>
-    
-    <span class="nd">@classmethod</span> 
-    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
+
+            <span class="k">yield</span> <span class="p">(</span><span class="n">fill</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
         <span class="k">if</span> <span class="s">&#39;year&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ops</span><span class="o">.</span><span class="n">calc_grouping</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Calculation grouping must include &quot;year&quot; for duration calculations.&#39;</span>
-            <span class="k">raise</span><span class="p">(</span><span class="n">DefinitionValidationError</span><span class="p">(</span><span class="s">&#39;calc&#39;</span><span class="p">,</span><span class="n">msg</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">DefinitionValidationError</span><span class="p">(</span><span class="s">&#39;calc&#39;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
 
 </div>
-<div class="viewcode-block" id="FrequencyDuration"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.FrequencyDuration">[docs]</a><span class="k">class</span> <span class="nc">FrequencyDuration</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractKeyedOutputFunction</span><span class="p">,</span><span class="n">Duration</span><span class="p">):</span>
+<div class="viewcode-block" id="FrequencyDuration"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.FrequencyDuration">[docs]</a><span class="k">class</span> <span class="nc">FrequencyDuration</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractKeyedOutputFunction</span><span class="p">,</span> <span class="n">Duration</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;freq_duration&#39;</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Count the frequency of spell durations within the temporal aggregation.&#39;</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="nb">object</span>
-    <span class="n">structure_dtype</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([[</span><span class="s">&#39;names&#39;</span><span class="p">,[</span><span class="s">&#39;duration&#39;</span><span class="p">,</span><span class="s">&#39;count&#39;</span><span class="p">]],[</span><span class="s">&#39;formats&#39;</span><span class="p">,[</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">,</span><span class="n">constants</span><span class="o">.</span><span class="n">np_int</span><span class="p">]]])</span>
-    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;threshold&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">,</span><span class="s">&#39;operation&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">}</span>
+    <span class="n">structure_dtype</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([[</span><span class="s">&#39;names&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">,</span> <span class="s">&#39;count&#39;</span><span class="p">]],</span> <span class="p">[</span><span class="s">&#39;formats&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">constants</span><span class="o">.</span><span class="n">NP_INT</span><span class="p">,</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_INT</span><span class="p">]]])</span>
+    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;threshold&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;frequency_duration&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Frequency Duration&#39;</span>
-    
-<div class="viewcode-block" id="FrequencyDuration.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.FrequencyDuration.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="FrequencyDuration.calculate"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.duration.FrequencyDuration.calculate">[docs]</a>    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param threshold: The threshold value to use for the logical operation.</span>
 <span class="sd">        :type threshold: float</span>
 <span class="sd">        :param operation: The logical operation. One of &#39;gt&#39;,&#39;gte&#39;,&#39;lt&#39;, or &#39;lte&#39;.</span>
 <span class="sd">        :type operation: str</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">shp_out</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
-        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_out</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">duration</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iter_consecutive_</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">threshold</span><span class="p">,</span><span class="n">operation</span><span class="p">)):</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shp_out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">duration</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iter_consecutive_</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">operation</span><span class="p">)):</span>
             <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_summary_</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
             <span class="n">store</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span>
         <span class="n">store</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">shp_out</span><span class="p">)</span>
-        
-        <span class="c">## update the output mask. this only applies to geometries so pick the</span>
-        <span class="c">## first masked time field</span>
-        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">store</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,:])</span>
-        
-        <span class="k">return</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-        </div>
-    <span class="k">def</span> <span class="nf">_get_summary_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">duration</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+        <span class="c"># update the output mask. this only applies to geometries so pick the</span>
+        <span class="c"># first masked time field</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">store</span>
+</div>
+    <span class="k">def</span> <span class="nf">_get_summary_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param duration: List of duration elements for frequency target.</span>
 <span class="sd">        :type duration: list</span>
 <span class="sd">        </span>
@@ -179,18 +181,19 @@
 <span class="sd">        </span>
 <span class="sd">        :returns: NumPy structure with dimension equal to the count of unique elements</span>
 <span class="sd">         in the `duration` sequence.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">set_duration</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">set_duration</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">structure_dtype</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">sd</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">set_duration</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">set_duration</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">structure_dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">sd</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">set_duration</span><span class="p">):</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="o">==</span> <span class="n">sd</span>
             <span class="n">count</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sd</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="s">&#39;count&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
-        <span class="k">return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-    
+        <span class="k">return</span> <span class="n">ret</span>
+
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
         <span class="n">Duration</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span></div>
 </pre></div>
 
@@ -219,7 +222,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

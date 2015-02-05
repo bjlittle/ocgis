@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.regrid.base &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.regrid.base &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../../index.html" />
     <link rel="up" title="ocgis" href="../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -48,19 +48,23 @@
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">ESMF</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">ocgis.exc</span> <span class="kn">import</span> <span class="n">CornersUnavailable</span><span class="p">,</span> <span class="n">RegriddingError</span><span class="p">,</span> <span class="n">CornersInconsistentError</span>
+<span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">TemporalDimension</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">ocgis.exc</span> <span class="kn">import</span> <span class="n">RegriddingError</span><span class="p">,</span> <span class="n">CornersInconsistentError</span>
 <span class="kn">from</span> <span class="nn">ocgis.interface.base.crs</span> <span class="kn">import</span> <span class="n">Spherical</span>
+<span class="kn">from</span> <span class="nn">ocgis.interface.base.dimension.base</span> <span class="kn">import</span> <span class="n">VectorDimension</span>
 <span class="kn">from</span> <span class="nn">ocgis.interface.base.dimension.spatial</span> <span class="kn">import</span> <span class="n">SpatialGridDimension</span><span class="p">,</span> <span class="n">SpatialDimension</span>
-<span class="kn">from</span> <span class="nn">ocgis.interface.base.variable</span> <span class="kn">import</span> <span class="n">VariableCollection</span>
+<span class="kn">from</span> <span class="nn">ocgis.interface.base.variable</span> <span class="kn">import</span> <span class="n">VariableCollection</span><span class="p">,</span> <span class="n">Variable</span>
 <span class="kn">from</span> <span class="nn">ocgis.util.helpers</span> <span class="kn">import</span> <span class="n">iter_array</span><span class="p">,</span> <span class="n">make_poly</span>
 
 
-<div class="viewcode-block" id="get_sdim_from_esmf_grid"><a class="viewcode-back" href="../../../regrid.html#ocgis.regrid.base.get_sdim_from_esmf_grid">[docs]</a><span class="k">def</span> <span class="nf">get_sdim_from_esmf_grid</span><span class="p">(</span><span class="n">egrid</span><span class="p">):</span>
+<div class="viewcode-block" id="get_sdim_from_esmf_grid"><a class="viewcode-back" href="../../../regrid.html#ocgis.regrid.base.get_sdim_from_esmf_grid">[docs]</a><span class="k">def</span> <span class="nf">get_sdim_from_esmf_grid</span><span class="p">(</span><span class="n">egrid</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create an OCGIS :class:`~ocgis.interface.base.dimension.spatial.SpatialDimension` object from an ESMF</span>
 <span class="sd">    :class:`~ESMF.api.grid.Grid`.</span>
 
 <span class="sd">    :type egrid: :class:`ESMF.api.grid.Grid`</span>
+<span class="sd">    :param crs: The coordinate system to attach to the output spatial dimension.</span>
+<span class="sd">    :type crs: :class:`ocgis.interface.base.crs.CoordinateReferenceSystem`</span>
 <span class="sd">    :rtype: :class:`~ocgis.interface.base.dimension.spatial.SpatialDimension`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -114,9 +118,59 @@
 
     <span class="c"># make the spatial dimension object</span>
     <span class="n">ogrid</span> <span class="o">=</span> <span class="n">SpatialGridDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">grid_value</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="n">grid_corners</span><span class="p">)</span>
-    <span class="n">sdim</span> <span class="o">=</span> <span class="n">SpatialDimension</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">ogrid</span><span class="p">)</span>
+    <span class="n">sdim</span> <span class="o">=</span> <span class="n">SpatialDimension</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">ogrid</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">sdim</span>
+
+</div>
+<div class="viewcode-block" id="get_ocgis_field_from_esmpy_field"><a class="viewcode-back" href="../../../regrid.html#ocgis.regrid.base.get_ocgis_field_from_esmpy_field">[docs]</a><span class="k">def</span> <span class="nf">get_ocgis_field_from_esmpy_field</span><span class="p">(</span><span class="n">efield</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="c">#todo: doc dimensions</span>
+    <span class="c">#todo: doc behavior for singleton dimension</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param efield: The ESMPy field object to convert to an OCGIS field.</span>
+<span class="sd">    :type efield: :class:`ESMF.api.field.Field`</span>
+<span class="sd">    :param crs: The coordinate system of the ESMPy field. If ``None``, this will default to</span>
+<span class="sd">     :class:`ocgis.crs.Spherical`.</span>
+<span class="sd">    :returns: An OCGIS field object.</span>
+<span class="sd">    :rtype: :class:`~ocgis.Field`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span>
+
+    <span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">realization</span> <span class="o">=</span> <span class="n">dimensions</span><span class="p">[</span><span class="s">&#39;realization&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">realization_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">realization</span> <span class="o">=</span> <span class="n">VectorDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">realization_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">realization</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">temporal</span> <span class="o">=</span> <span class="n">dimensions</span><span class="p">[</span><span class="s">&#39;temporal&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">temporal_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">temporal</span> <span class="o">=</span> <span class="n">TemporalDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">temporal_values</span><span class="p">,</span> <span class="n">format_time</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">temporal</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">dimensions</span><span class="p">[</span><span class="s">&#39;level&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">level_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">efield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">VectorDimension</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">level_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="n">variable</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">efield</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">efield</span><span class="p">)</span>
+    <span class="n">sdim</span> <span class="o">=</span> <span class="n">get_sdim_from_esmf_grid</span><span class="p">(</span><span class="n">efield</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">variables</span><span class="o">=</span><span class="n">variable</span><span class="p">,</span> <span class="n">realization</span><span class="o">=</span><span class="n">realization</span><span class="p">,</span> <span class="n">temporal</span><span class="o">=</span><span class="n">temporal</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">spatial</span><span class="o">=</span><span class="n">sdim</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">field</span>
 
 </div>
 <div class="viewcode-block" id="get_esmf_grid_from_sdim"><a class="viewcode-back" href="../../../regrid.html#ocgis.regrid.base.get_esmf_grid_from_sdim">[docs]</a><span class="k">def</span> <span class="nf">get_esmf_grid_from_sdim</span><span class="p">(</span><span class="n">sdim</span><span class="p">,</span> <span class="n">with_corners</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">value_mask</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -150,13 +204,13 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">value_mask</span> <span class="o">=</span> <span class="n">ogrid</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="c"># follows SCRIP convention where 1 is unmasked and 0 is masked</span>
-    <span class="n">esmf_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">value_mask</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+    <span class="n">esmf_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">value_mask</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
     <span class="n">egrid</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">ESMF</span><span class="o">.</span><span class="n">GridItem</span><span class="o">.</span><span class="n">MASK</span><span class="p">,</span> <span class="n">staggerloc</span><span class="o">=</span><span class="n">ESMF</span><span class="o">.</span><span class="n">StaggerLoc</span><span class="o">.</span><span class="n">CENTER</span><span class="p">,</span> <span class="n">from_file</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
     <span class="n">egrid</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">esmf_mask</span>
 
     <span class="c"># attempt to access corners if possible</span>
     <span class="k">if</span> <span class="n">with_corners</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">corners_esmf</span> <span class="o">=</span> <span class="n">sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners_esmf</span>
             <span class="c"># adding corners. first tell the grid object to allocate corners</span>
             <span class="n">egrid</span><span class="o">.</span><span class="n">add_coords</span><span class="p">(</span><span class="n">staggerloc</span><span class="o">=</span><span class="p">[</span><span class="n">ESMF</span><span class="o">.</span><span class="n">StaggerLoc</span><span class="o">.</span><span class="n">CORNER</span><span class="p">])</span>
@@ -164,8 +218,6 @@
             <span class="n">grid_corner</span> <span class="o">=</span> <span class="n">egrid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">ESMF</span><span class="o">.</span><span class="n">StaggerLoc</span><span class="o">.</span><span class="n">CORNER</span><span class="p">]</span>
             <span class="n">grid_corner</span><span class="p">[</span><span class="mi">1</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">corners_esmf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">grid_corner</span><span class="p">[</span><span class="mi">0</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">corners_esmf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">except</span> <span class="n">CornersUnavailable</span><span class="p">:</span>
-            <span class="k">pass</span>
 
     <span class="k">return</span> <span class="n">egrid</span>
 
@@ -197,6 +249,7 @@
 
 <span class="sd">    :raises: AssertionError</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="c">#todo: provide other options for calculating value_mask</span>
     <span class="c"># only one level and realization allowed</span>
     <span class="k">assert</span> <span class="n">ofield</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
@@ -253,15 +306,13 @@
     <span class="k">if</span> <span class="n">with_corners</span><span class="p">:</span>
         <span class="n">has_corners_sources</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">source</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">has_corners_sources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">CornersUnavailable</span><span class="p">:</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="n">has_corners_sources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners</span>
+        <span class="k">if</span> <span class="n">sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">corners</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">has_corners_destination</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">except</span> <span class="n">CornersUnavailable</span><span class="p">:</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">has_corners_destination</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_corners_sources</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">has_corners_destination</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Corners are not available on all sources and destination. Consider setting &quot;with_corners&quot; to False.&#39;</span>
@@ -386,8 +437,8 @@
                         <span class="n">out_sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">col</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="bp">None</span>
                         <span class="n">out_sdim</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">_corners</span> <span class="o">=</span> <span class="bp">None</span>
                     <span class="c"># remove any polygons if they exist</span>
-                    <span class="k">if</span> <span class="n">out_sdim</span><span class="o">.</span><span class="n">_geom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                        <span class="n">out_sdim</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">_polygon</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="n">out_sdim</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">_polygon</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="n">out_sdim</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">out_sdim</span><span class="o">.</span><span class="n">grid</span>
                 <span class="n">build</span> <span class="o">=</span> <span class="bp">False</span>
 
             <span class="c"># perform the regrid operation and fill the new variabales</span>
@@ -431,7 +482,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

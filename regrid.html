@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ESMPy Regridding &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ESMPy Regridding &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="index.html" />
     <link rel="next" title="Examples" href="examples.html" />
     <link rel="prev" title="Computation" href="computation.html" /> 
   </head>
@@ -40,7 +40,7 @@
         <li class="right" >
           <a href="computation.html" title="Computation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -142,15 +142,41 @@ mask. Values of <tt class="docutils literal"><span class="pre">True</span></tt> 
 </dd></dl>
 
 <dl class="function">
+<dt id="ocgis.regrid.base.get_ocgis_field_from_esmpy_field">
+<tt class="descclassname">ocgis.regrid.base.</tt><tt class="descname">get_ocgis_field_from_esmpy_field</tt><big>(</big><em>efield</em>, <em>crs=None</em>, <em>dimensions=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/regrid/base.html#get_ocgis_field_from_esmpy_field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.regrid.base.get_ocgis_field_from_esmpy_field" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>efield</strong> (<tt class="xref py py-class docutils literal"><span class="pre">ESMF.api.field.Field</span></tt>) &#8211; The ESMPy field object to convert to an OCGIS field.</li>
+<li><strong>crs</strong> &#8211; The coordinate system of the ESMPy field. If <tt class="docutils literal"><span class="pre">None</span></tt>, this will default to
+<tt class="xref py py-class docutils literal"><span class="pre">ocgis.crs.Spherical</span></tt>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An OCGIS field object.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><tt class="xref py py-class docutils literal"><span class="pre">Field</span></tt></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="ocgis.regrid.base.get_sdim_from_esmf_grid">
-<tt class="descclassname">ocgis.regrid.base.</tt><tt class="descname">get_sdim_from_esmf_grid</tt><big>(</big><em>egrid</em><big>)</big><a class="reference internal" href="_modules/ocgis/regrid/base.html#get_sdim_from_esmf_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.regrid.base.get_sdim_from_esmf_grid" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">ocgis.regrid.base.</tt><tt class="descname">get_sdim_from_esmf_grid</tt><big>(</big><em>egrid</em>, <em>crs=None</em><big>)</big><a class="reference internal" href="_modules/ocgis/regrid/base.html#get_sdim_from_esmf_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.regrid.base.get_sdim_from_esmf_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create an OCGIS <tt class="xref py py-class docutils literal"><span class="pre">SpatialDimension</span></tt> object from an ESMF
 <tt class="xref py py-class docutils literal"><span class="pre">Grid</span></tt>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">SpatialDimension</span></tt></td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>crs</strong> (<tt class="xref py py-class docutils literal"><span class="pre">ocgis.interface.base.crs.CoordinateReferenceSystem</span></tt>) &#8211; The coordinate system to attach to the output spatial dimension.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">SpatialDimension</span></tt></td>
 </tr>
 </tbody>
 </table>
@@ -309,7 +335,7 @@ default) then the mask will be set using the first realization/time/level from t
         <li class="right" >
           <a href="computation.html" title="Computation"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

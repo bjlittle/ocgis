@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Appendix &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>Appendix &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="index.html" />
     <link rel="prev" title="Exceptions" href="exc.html" /> 
   </head>
   <body>
@@ -36,7 +36,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="exc.html" title="Exceptions"
              accesskey="P">previous</a></li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -47,6 +47,14 @@
             
   <div class="section" id="appendix">
 <h1>Appendix<a class="headerlink" href="#appendix" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="output-formats">
+<h2>Output Formats<a class="headerlink" href="#output-formats" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="d-flexible-mesh">
+<span id="d-flexible-mesh-label"></span><h3>2D Flexible Mesh<a class="headerlink" href="#d-flexible-mesh" title="Permalink to this headline">¶</a></h3>
+<p>The two-dimensional flexible mesh format is a NetCDF4-based format adhering to <a class="reference external" href="https://github.com/ugrid-conventions/ugrid-conventions/blob/v0.9.0/ugrid-conventions.md">UGRID (v0.9.0)</a> convention. It is used to represent a set of arbitrary boundaries (polygons) with no <a class="reference external" href="http://manual.linfiniti.com/en/create_vector_data/topo_editing.html#moderate-fa-closing-the-gaps">gaps</a>. Documentation for the format is here: <a class="reference external" href="https://github.com/ugrid-conventions/ugrid-conventions/blob/v0.9.0/ugrid-conventions.md#2d-flexible-mesh-mixed-triangles-quadrilaterals-etc-topology">https://github.com/ugrid-conventions/ugrid-conventions/blob/v0.9.0/ugrid-conventions.md#2d-flexible-mesh-mixed-triangles-quadrilaterals-etc-topology</a>.</p>
+<p>See <a class="reference internal" href="examples.html#d-flexible-mesh-example-label"><em>Converting an ESRI Shapefile to UGRID</em></a> for example code converting a shapefile to a UGRID NetCDF file.</p>
+</div>
+</div>
 <div class="section" id="spatial-operations">
 <h2>Spatial Operations<a class="headerlink" href="#spatial-operations" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
@@ -93,6 +101,10 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Appendix</a><ul>
+<li><a class="reference internal" href="#output-formats">Output Formats</a><ul>
+<li><a class="reference internal" href="#d-flexible-mesh">2D Flexible Mesh</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#spatial-operations">Spatial Operations</a><ul>
 <li><a class="reference internal" href="#intersects-select">Intersects (Select)</a></li>
 <li><a class="reference internal" href="#clip-intersection">Clip (Intersection)</a></li>
@@ -135,7 +147,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="exc.html" title="Exceptions"
              >previous</a></li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

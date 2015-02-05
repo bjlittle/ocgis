@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.constants &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.constants &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../index.html" />
     <link rel="up" title="ocgis" href="../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -47,62 +47,143 @@
   <h1>Source code for ocgis.constants</h1><div class="highlight"><pre>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-<span class="c">#: Standard bounds name used when none is available from the input data.</span>
-<span class="kn">from</span> <span class="nn">ocgis.interface.base.crs</span> <span class="kn">import</span> <span class="n">CFWGS84</span>
 
-<span class="n">ocgis_bounds</span> <span class="o">=</span> <span class="s">&#39;bounds&#39;</span>
+<span class="c"># : Standard bounds name used when none is available from the input data.</span>
+<span class="n">OCGIS_BOUNDS</span> <span class="o">=</span> <span class="s">&#39;bounds&#39;</span>
 
 <span class="c">#: Default netCDF4 output file type</span>
-<span class="n">netCDF_default_data_model</span> <span class="o">=</span> <span class="s">&#39;NETCDF4_CLASSIC&#39;</span>
+<span class="n">NETCDF_DEFAULT_DATA_MODEL</span> <span class="o">=</span> <span class="s">&#39;NETCDF4&#39;</span>
 
-<span class="c">#: Standard headers for subset operations.</span>
-<span class="n">raw_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;did&#39;</span><span class="p">,</span><span class="s">&#39;vid&#39;</span><span class="p">,</span><span class="s">&#39;ugid&#39;</span><span class="p">,</span><span class="s">&#39;tid&#39;</span><span class="p">,</span><span class="s">&#39;lid&#39;</span><span class="p">,</span><span class="s">&#39;gid&#39;</span><span class="p">,</span><span class="s">&#39;variable&#39;</span><span class="p">,</span><span class="s">&#39;alias&#39;</span><span class="p">,</span><span class="s">&#39;time&#39;</span><span class="p">,</span><span class="s">&#39;year&#39;</span><span class="p">,</span><span class="s">&#39;month&#39;</span><span class="p">,</span><span class="s">&#39;day&#39;</span><span class="p">,</span><span class="s">&#39;level&#39;</span><span class="p">,</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
+<span class="c">#: Default temporal calendar.</span>
+<span class="n">DEFAULT_TEMPORAL_CALENDAR</span> <span class="o">=</span> <span class="s">&#39;standard&#39;</span>
+
+<span class="c">#: Default temporal units.</span>
+<span class="n">DEFAULT_TEMPORAL_UNITS</span> <span class="o">=</span> <span class="s">&#39;days since 0001-01-01 00:00:00&#39;</span>
+
+<span class="c">#: Default name for coordinate systems in netCDF file if none is provided.</span>
+<span class="n">DEFAULT_COORDINATE_SYSTEM_NAME</span> <span class="o">=</span> <span class="s">&#39;coordinate_system&#39;</span>
+
+<span class="c">#: Default sample size variable standard name.</span>
+<span class="n">DEFAULT_SAMPLE_SIZE_STANDARD_NAME</span> <span class="o">=</span> <span class="s">&#39;sample_size&#39;</span>
+
+<span class="c">#: Default sample size variable long name.</span>
+<span class="n">DEFAULT_SAMPLE_SIZE_LONG_NAME</span> <span class="o">=</span> <span class="s">&#39;Statistical Sample Size&#39;</span>
+
+<span class="c">#: Default row coordinate name.</span>
+<span class="n">DEFAULT_NAME_ROW_COORDINATES</span> <span class="o">=</span> <span class="s">&#39;yc&#39;</span>
+
+<span class="c">#: Default column coordinate name.</span>
+<span class="n">DEFAULT_NAME_COL_COORDINATES</span> <span class="o">=</span> <span class="s">&#39;xc&#39;</span>
+
+<span class="c">#: Default corners dimension name.</span>
+<span class="n">DEFAULT_NAME_CORNERS_DIMENSION</span> <span class="o">=</span> <span class="s">&#39;ncorners&#39;</span>
+
+
+<div class="viewcode-block" id="HEADERS"><a class="viewcode-back" href="../../constants.html#ocgis.constants.HEADERS">[docs]</a><span class="k">class</span> <span class="nc">HEADERS</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">ID_DATASET</span> <span class="o">=</span> <span class="s">&#39;did&#39;</span>
+    <span class="n">ID_VARIABLE</span> <span class="o">=</span> <span class="s">&#39;vid&#39;</span>
+    <span class="n">ID_SELECTION_GEOMETRY</span> <span class="o">=</span> <span class="s">&#39;ugid&#39;</span>
+    <span class="n">ID_TEMPORAL</span> <span class="o">=</span> <span class="s">&#39;tid&#39;</span>
+    <span class="n">ID_LEVEL</span> <span class="o">=</span> <span class="s">&#39;lid&#39;</span>
+    <span class="n">ID_GEOMETRY</span> <span class="o">=</span> <span class="s">&#39;gid&#39;</span>
+    <span class="n">ID_CALCULATION</span> <span class="o">=</span> <span class="s">&#39;cid&#39;</span>
+
+    <span class="n">VARIABLE</span> <span class="o">=</span> <span class="s">&#39;variable&#39;</span>
+    <span class="n">VARIABLE_ALIAS</span> <span class="o">=</span> <span class="s">&#39;alias&#39;</span>
+
+    <span class="n">TEMPORAL</span> <span class="o">=</span> <span class="s">&#39;time&#39;</span>
+    <span class="n">TEMPORAL_YEAR</span> <span class="o">=</span> <span class="s">&#39;year&#39;</span>
+    <span class="n">TEMPORAL_MONTH</span> <span class="o">=</span> <span class="s">&#39;month&#39;</span>
+    <span class="n">TEMPORAL_DAY</span> <span class="o">=</span> <span class="s">&#39;day&#39;</span>
+
+    <span class="n">LEVEL</span> <span class="o">=</span> <span class="s">&#39;level&#39;</span>
+
+    <span class="n">VALUE</span> <span class="o">=</span> <span class="s">&#39;value&#39;</span>
+
+    <span class="n">CALCULATION_KEY</span> <span class="o">=</span> <span class="s">&#39;calc_key&#39;</span>
+    <span class="n">CALCULATION_ALIAS</span> <span class="o">=</span> <span class="s">&#39;calc_alias&#39;</span>
+
+
+<span class="c">#: Standard headers for subset operations.</span></div>
+<span class="n">HEADERS_RAW</span> <span class="o">=</span> <span class="p">[</span><span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_DATASET</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_VARIABLE</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_SELECTION_GEOMETRY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_TEMPORAL</span><span class="p">,</span>
+               <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_GEOMETRY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VARIABLE</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VARIABLE_ALIAS</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL</span><span class="p">,</span>
+               <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_YEAR</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_MONTH</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_DAY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VALUE</span><span class="p">]</span>
+
 <span class="c">#: Standard headers for computation.</span>
-<span class="n">calc_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;did&#39;</span><span class="p">,</span><span class="s">&#39;vid&#39;</span><span class="p">,</span><span class="s">&#39;cid&#39;</span><span class="p">,</span><span class="s">&#39;ugid&#39;</span><span class="p">,</span><span class="s">&#39;tid&#39;</span><span class="p">,</span><span class="s">&#39;lid&#39;</span><span class="p">,</span><span class="s">&#39;gid&#39;</span><span class="p">,</span><span class="s">&#39;variable&#39;</span><span class="p">,</span><span class="s">&#39;alias&#39;</span><span class="p">,</span><span class="s">&#39;calc_key&#39;</span><span class="p">,</span><span class="s">&#39;calc_alias&#39;</span><span class="p">,</span><span class="s">&#39;time&#39;</span><span class="p">,</span><span class="s">&#39;year&#39;</span><span class="p">,</span><span class="s">&#39;month&#39;</span><span class="p">,</span><span class="s">&#39;day&#39;</span><span class="p">,</span><span class="s">&#39;level&#39;</span><span class="p">,</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
-<span class="c">#: Standard headers for multivariate calculations.</span>
-<span class="n">multi_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;did&#39;</span><span class="p">,</span><span class="s">&#39;cid&#39;</span><span class="p">,</span><span class="s">&#39;ugid&#39;</span><span class="p">,</span><span class="s">&#39;tid&#39;</span><span class="p">,</span><span class="s">&#39;lid&#39;</span><span class="p">,</span><span class="s">&#39;gid&#39;</span><span class="p">,</span><span class="s">&#39;calc_key&#39;</span><span class="p">,</span><span class="s">&#39;calc_alias&#39;</span><span class="p">,</span><span class="s">&#39;time&#39;</span><span class="p">,</span><span class="s">&#39;year&#39;</span><span class="p">,</span><span class="s">&#39;month&#39;</span><span class="p">,</span><span class="s">&#39;day&#39;</span><span class="p">,</span><span class="s">&#39;level&#39;</span><span class="p">,</span><span class="s">&#39;value&#39;</span><span class="p">]</span>
+<span class="n">HEADERS_CALC</span> <span class="o">=</span> <span class="p">[</span><span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_DATASET</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_VARIABLE</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_CALCULATION</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_SELECTION_GEOMETRY</span><span class="p">,</span>
+                <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_TEMPORAL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_GEOMETRY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VARIABLE</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VARIABLE_ALIAS</span><span class="p">,</span>
+                <span class="n">HEADERS</span><span class="o">.</span><span class="n">CALCULATION_KEY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">CALCULATION_ALIAS</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_YEAR</span><span class="p">,</span>
+                <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_MONTH</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_DAY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VALUE</span><span class="p">]</span>
 
-<span class="n">level_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;lid&#39;</span><span class="p">,</span><span class="s">&#39;level&#39;</span><span class="p">]</span>
+<span class="c">#: Standard headers for multivariate calculation.</span>
+<span class="n">HEADERS_MULTI</span> <span class="o">=</span> <span class="p">[</span><span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_DATASET</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_CALCULATION</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_SELECTION_GEOMETRY</span><span class="p">,</span>
+                 <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_TEMPORAL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_GEOMETRY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">CALCULATION_KEY</span><span class="p">,</span>
+                 <span class="n">HEADERS</span><span class="o">.</span><span class="n">CALCULATION_ALIAS</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_YEAR</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_MONTH</span><span class="p">,</span>
+                 <span class="n">HEADERS</span><span class="o">.</span><span class="n">TEMPORAL_DAY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">LEVEL</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">VALUE</span><span class="p">]</span>
 
 <span class="c">#: Required headers for every request.</span>
-<span class="n">required_headers</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;did&#39;</span><span class="p">,</span><span class="s">&#39;ugid&#39;</span><span class="p">,</span><span class="s">&#39;gid&#39;</span><span class="p">]</span>
+<span class="n">HEADERS_REQUIRED</span> <span class="o">=</span> <span class="p">[</span><span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_DATASET</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_SELECTION_GEOMETRY</span><span class="p">,</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_GEOMETRY</span><span class="p">]</span>
 
-<span class="c">#: Key identifiers for output formats.</span>
-<span class="n">output_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;numpy&#39;</span><span class="p">,</span><span class="s">&#39;nc&#39;</span><span class="p">,</span><span class="s">&#39;csv&#39;</span><span class="p">,</span><span class="s">&#39;csv+&#39;</span><span class="p">,</span><span class="s">&#39;shp&#39;</span><span class="p">,</span><span class="s">&#39;geojson&#39;</span><span class="p">,</span><span class="s">&#39;meta&#39;</span><span class="p">]</span>
+<span class="c">#: Standard name for the unique identifier in GIS files.</span>
+<span class="n">OCGIS_UNIQUE_GEOMETRY_IDENTIFIER</span> <span class="o">=</span> <span class="n">HEADERS</span><span class="o">.</span><span class="n">ID_SELECTION_GEOMETRY</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+<span class="n">OUTPUT_FORMAT_CSV</span> <span class="o">=</span> <span class="s">&#39;csv&#39;</span>
+<span class="n">OUTPUT_FORMAT_CSV_SHAPEFILE</span> <span class="o">=</span> <span class="s">&#39;csv-shp&#39;</span>
+<span class="n">OUTPUT_FORMAT_CSV_SHAPEFILE_OLD</span> <span class="o">=</span> <span class="s">&#39;csv+&#39;</span>
+<span class="n">OUTPUT_FORMAT_ESMPY_GRID</span> <span class="o">=</span> <span class="s">&#39;esmpy&#39;</span>
+<span class="n">OUTPUT_FORMAT_GEOJSON</span> <span class="o">=</span> <span class="s">&#39;geojson&#39;</span>
+<span class="n">OUTPUT_FORMAT_METADATA</span> <span class="o">=</span> <span class="s">&#39;meta&#39;</span>
+<span class="n">OUTPUT_FORMAT_NETCDF</span> <span class="o">=</span> <span class="s">&#39;nc&#39;</span>
+<span class="n">OUTPUT_FORMAT_NETCDF_UGRID_2D_FLEXIBLE_MESH</span> <span class="o">=</span> <span class="s">&#39;nc-ugrid-2d-flexible-mesh&#39;</span>
+<span class="n">OUTPUT_FORMAT_NUMPY</span> <span class="o">=</span> <span class="s">&#39;numpy&#39;</span>
+<span class="n">OUTPUT_FORMAT_SHAPEFILE</span> <span class="o">=</span> <span class="s">&#39;shp&#39;</span>
 
 <span class="c"># Download URL for test datasets.</span>
-<span class="n">test_data_download_url_prefix</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">TEST_DATA_DOWNLOAD_PREFIX</span> <span class="o">=</span> <span class="bp">None</span>
 
 <span class="c">#: The day value to use for month centroids.</span>
-<span class="n">calc_month_centroid</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">CALC_MONTH_CENTROID</span> <span class="o">=</span> <span class="mi">16</span>
 <span class="c">#: The month value to use for year centroids.</span>
-<span class="n">calc_year_centroid_month</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">CALC_YEAR_CENTROID_MONTH</span> <span class="o">=</span> <span class="mi">7</span>
 <span class="c">#: The default day value for year centroids.</span>
-<span class="n">calc_year_centroid_day</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">CALC_YEAR_CENTROID_DAY</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="c">#: The number of values to use when calculating data resolution.</span>
-<span class="n">resolution_limit</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">RESOLUTION_LIMIT</span> <span class="o">=</span> <span class="mi">100</span>
 
 <span class="c">#: The data type to use for NumPy integers.</span>
-<span class="n">np_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">NP_INT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
 <span class="c">#: The data type to use for NumPy floats.</span>
-<span class="n">np_float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+<span class="n">NP_FLOAT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
 
 <span class="c">#: Function key prefix for the `icclim` indices library.</span>
-<span class="n">prefix_icclim_function_key</span> <span class="o">=</span> <span class="s">&#39;icclim&#39;</span>
+<span class="n">ICCLIM_PREFIX_FUNCTION_KEY</span> <span class="o">=</span> <span class="s">&#39;icclim&#39;</span>
 
 <span class="c">#: NumPy functions enabled for functions evaluated from string representations.</span>
-<span class="n">enabled_numpy_ufuncs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;exp&#39;</span><span class="p">,</span><span class="s">&#39;log&#39;</span><span class="p">,</span><span class="s">&#39;abs&#39;</span><span class="p">]</span>
+<span class="n">ENABLED_NUMPY_UFUNCS</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;exp&#39;</span><span class="p">,</span> <span class="s">&#39;log&#39;</span><span class="p">,</span> <span class="s">&#39;abs&#39;</span><span class="p">]</span>
 
-<span class="c">#: The default coordinate system to use if none is provided.</span>
-<span class="n">default_coordinate_system</span> <span class="o">=</span> <span class="n">CFWGS84</span><span class="p">()</span>
+<span class="c">#: The value for the 180th meridian to use when wrapping.</span>
+<span class="n">MERIDIAN_180TH</span> <span class="o">=</span> <span class="mf">180.</span>
+<span class="c"># MERIDIAN_180TH = 179.9999999999999</span>
 
-<span class="c">#: The value for the prime meridian to use when wrapping.</span>
-<span class="n">prime_meridian</span> <span class="o">=</span> <span class="mf">179.9999999999999</span>
+<span class="c"># The standard key used to identify geometries in a dictionary.</span>
+<span class="n">DEFAULT_GEOMETRY_KEY</span> <span class="o">=</span> <span class="s">&#39;geom&#39;</span>
 
+<span class="c"># Attributes to remove when a value is changed if they are present in the attributes dictionary. These attributes are</span>
+<span class="c"># tuned to specific value ranges and will not apply when a value is changed.</span>
+<span class="n">NETCDF_ATTRIBUTES_TO_REMOVE_ON_VALUE_CHANGE</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;scale_value&#39;</span><span class="p">,</span> <span class="s">&#39;add_offset&#39;</span><span class="p">)</span>
 
-<span class="n">test_run_long_tests</span> <span class="o">=</span> <span class="bp">True</span>
-<span class="n">test_run_dev_tests</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">NAME_DIMENSION_REALIZATION</span> <span class="o">=</span> <span class="s">&#39;rlz&#39;</span>
+<span class="n">NAME_DIMENSION_TEMPORAL</span> <span class="o">=</span> <span class="s">&#39;time&#39;</span>
+<span class="n">NAME_DIMENSION_LEVEL</span> <span class="o">=</span> <span class="s">&#39;level&#39;</span>
+
+<span class="n">NAME_BOUNDS_DIMENSION_LOWER</span> <span class="o">=</span> <span class="s">&#39;lb&#39;</span>
+<span class="n">NAME_BOUNDS_DIMENSION_UPPER</span> <span class="o">=</span> <span class="s">&#39;ub&#39;</span>
+
+<span class="n">NAME_UID_DIMENSION_REALIZATION</span> <span class="o">=</span> <span class="s">&#39;rid&#39;</span>
+<span class="n">NAME_UID_DIMENSION_TEMPORAL</span> <span class="o">=</span> <span class="s">&#39;tid&#39;</span>
+<span class="n">NAME_UID_DIMENSION_LEVEL</span> <span class="o">=</span> <span class="s">&#39;lid&#39;</span>
+<span class="n">NAME_UID_FIELD</span> <span class="o">=</span> <span class="s">&#39;fid&#39;</span>
 </pre></div>
 
           </div>
@@ -130,7 +211,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

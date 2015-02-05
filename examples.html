@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Examples &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>Examples &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,8 +26,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="index.html" />
-    <link rel="next" title="Utility Functions" href="utility.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="index.html" />
+    <link rel="next" title="Utility/Helper Functions" href="utility.html" />
     <link rel="prev" title="ESMPy Regridding" href="regrid.html" /> 
   </head>
   <body>
@@ -35,12 +35,12 @@
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="utility.html" title="Utility Functions"
+          <a href="utility.html" title="Utility/Helper Functions"
              accesskey="N">next</a></li>
         <li class="right" >
           <a href="regrid.html" title="ESMPy Regridding"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -144,45 +144,44 @@ variables:
 <p class="last">The <cite>keyed</cite> <a class="reference internal" href="api.html#output-format-headline"><em>output_format</em></a> is highly recommended as writing data to shapefiles/CSV may result in large file sizes. For each record, a shapefile repeats the geometry storage.</p>
 </div>
 <p>This example will introduce simple subsetting by a bounding box with conversion to in-memory NumPy arrays, shapefile, CSV, and keyed formats.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">ocgis</span>
-<span class="kn">import</span> <span class="nn">os</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">ocgis</span>
 
 
-<span class="c">## Directory holding climate data.</span>
+
+<span class="c"># Directory holding climate data.</span>
 <span class="n">DATA_DIR</span> <span class="o">=</span> <span class="s">&#39;/usr/local/climate_data/CanCM4&#39;</span>
-<span class="c">## Location and variable name for a daily decadal temperature simulation.</span>
-<span class="n">URI_TAS</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span><span class="s">&#39;tas_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">)</span>
+<span class="c"># Location and variable name for a daily decadal temperature simulation.</span>
+<span class="n">URI_TAS</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span> <span class="s">&#39;tas_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">)</span>
 <span class="n">VAR_TAS</span> <span class="o">=</span> <span class="s">&#39;tas&#39;</span>
-<span class="c">## Make it easy to switch to non-snippet requests.</span>
+<span class="c"># Make it easy to switch to non-snippet requests.</span>
 <span class="n">SNIPPET</span> <span class="o">=</span> <span class="bp">True</span>
-<span class="c">## Set output directory for shapefile and keyed formats. (MAKE SURE IT EXISTS!)</span>
+<span class="c"># Set output directory for shapefile and keyed formats. (MAKE SURE IT EXISTS!)</span>
 <span class="n">ocgis</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">DIR_OUTPUT</span> <span class="o">=</span> <span class="s">&#39;/tmp/foo&#39;</span>
 <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">)</span>
-<span class="c">## The bounding box coordinates [minx, miny, maxx, maxy] for the state of</span>
-<span class="c">## Colorado in WGS84 latitude/longitude coordinates.</span>
+<span class="c"># The bounding box coordinates [minx, miny, maxx, maxy] for the state of Colorado in WGS84 latitude/longitude</span>
+<span class="c"># coordinates.</span>
 <span class="n">BBOX</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">109.1</span><span class="p">,</span> <span class="mf">36.9</span><span class="p">,</span> <span class="o">-</span><span class="mf">102.0</span><span class="p">,</span> <span class="mf">41.0</span><span class="p">]</span>
 
 
-<span class="c">## Construct RequestDataset Object #############################################</span>
+<span class="c"># Construct RequestDataset Object ######################################################################################</span>
 
-<span class="c">## This object will be reused so just build it once.</span>
-<span class="n">rd</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">URI_TAS</span><span class="p">,</span><span class="n">VAR_TAS</span><span class="p">)</span>
+<span class="c"># This object will be reused so just build it once.</span>
+<span class="n">rd</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">URI_TAS</span><span class="p">,</span> <span class="n">VAR_TAS</span><span class="p">)</span>
 
-<span class="c">## Returning NumPy Data Objects ################################################</span>
+<span class="c"># Returning NumPy Data Objects #########################################################################################</span>
 
-<span class="c">## The NumPy data type return is the default. Only the geometry and</span>
-<span class="c">## RequestDataset are required (except &quot;snippet&quot; of course...). See the</span>
-<span class="c">## documentation for the OcgCollection object to understand the return </span>
-<span class="c">## structure.</span>
-<span class="n">ret</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="n">BBOX</span><span class="p">,</span><span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<span class="c"># The NumPy data type return is the default. Only the geometry and RequestDataset are required (except &quot;snippet&quot; of </span>
+<span class="c"># course...). See the documentation for the OcgCollection object to understand the return structure.</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">BBOX</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 
-<span class="c">## Returning Converted Files ###################################################</span>
+<span class="c"># Returning Converted Files ############################################################################################</span>
 
-<span class="n">output_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;shp&#39;</span><span class="p">,</span><span class="s">&#39;csv&#39;</span><span class="p">,</span><span class="s">&#39;csv+&#39;</span><span class="p">,</span><span class="s">&#39;nc&#39;</span><span class="p">]</span>
+<span class="n">output_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;shp&#39;</span><span class="p">,</span> <span class="s">&#39;csv&#39;</span><span class="p">,</span> <span class="s">&#39;csv-shp&#39;</span><span class="p">,</span> <span class="s">&#39;nc&#39;</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">output_format</span> <span class="ow">in</span> <span class="n">output_formats</span><span class="p">:</span>
     <span class="n">prefix</span> <span class="o">=</span> <span class="n">output_format</span> <span class="o">+</span> <span class="s">&#39;_output&#39;</span>
-    <span class="n">ops</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="n">BBOX</span><span class="p">,</span><span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span>
-                              <span class="n">output_format</span><span class="o">=</span><span class="n">output_format</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+    <span class="n">ops</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">BBOX</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="n">output_format</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -193,21 +192,21 @@ variables:
 /tmp/foo/nc_output/nc_output_did.csv
 /tmp/foo/nc_output/nc_output.nc
 /tmp/foo/nc_output/nc_output_meta.txt
-/tmp/foo/csv+_output
-/tmp/foo/csv+_output/csv+_output_meta.txt
-/tmp/foo/csv+_output/csv+_output_did.csv
-/tmp/foo/csv+_output/csv+_output.csv
-/tmp/foo/csv+_output/shp
-/tmp/foo/csv+_output/shp/csv+_output_gid.csv
-/tmp/foo/csv+_output/shp/csv+_output_gid.shp
-/tmp/foo/csv+_output/shp/csv+_output_ugid.prj
-/tmp/foo/csv+_output/shp/csv+_output_gid.dbf
-/tmp/foo/csv+_output/shp/csv+_output_ugid.shp
-/tmp/foo/csv+_output/shp/csv+_output_gid.prj
-/tmp/foo/csv+_output/shp/csv+_output_ugid.shx
-/tmp/foo/csv+_output/shp/csv+_output_gid.shx
-/tmp/foo/csv+_output/shp/csv+_output_ugid.csv
-/tmp/foo/csv+_output/shp/csv+_output_ugid.dbf
+/tmp/foo/csv-shp_output
+/tmp/foo/csv-shp_output/csv-shp_output_meta.txt
+/tmp/foo/csv-shp_output/csv-shp_output_did.csv
+/tmp/foo/csv-shp_output/csv-shp_output.csv
+/tmp/foo/csv-shp_output/shp
+/tmp/foo/csv-shp_output/shp/csv-shp_output_gid.csv
+/tmp/foo/csv-shp_output/shp/csv-shp_output_gid.shp
+/tmp/foo/csv-shp_output/shp/csv-shp_output_ugid.prj
+/tmp/foo/csv-shp_output/shp/csv-shp_output_gid.dbf
+/tmp/foo/csv-shp_output/shp/csv-shp_output_ugid.shp
+/tmp/foo/csv-shp_output/shp/csv-shp_output_gid.prj
+/tmp/foo/csv-shp_output/shp/csv-shp_output_ugid.shx
+/tmp/foo/csv-shp_output/shp/csv-shp_output_gid.shx
+/tmp/foo/csv-shp_output/shp/csv-shp_output_ugid.csv
+/tmp/foo/csv-shp_output/shp/csv-shp_output_ugid.dbf
 /tmp/foo/shp_output
 /tmp/foo/shp_output/shp_output_ugid.shx
 /tmp/foo/shp_output/shp_output_ugid.prj
@@ -234,60 +233,58 @@ variables:
 <p class="first admonition-title">Note</p>
 <p class="last">With no output directory specified, data is written to the current working directory.</p>
 </div>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">OcgOperations</span><span class="p">,</span> <span class="n">RequestDataset</span><span class="p">,</span> <span class="n">RequestDatasetCollection</span><span class="p">,</span> <span class="n">env</span>
-<span class="kn">import</span> <span class="nn">os.path</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os.path</span>
+
+<span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">OcgOperations</span><span class="p">,</span> <span class="n">RequestDataset</span><span class="p">,</span> <span class="n">RequestDatasetCollection</span><span class="p">,</span> <span class="n">env</span>
 
 
-<span class="c">## Directory holding climate data.</span>
+<span class="c"># Directory holding climate data.</span>
 <span class="n">DATA_DIR</span> <span class="o">=</span> <span class="s">&#39;/usr/local/climate_data/CanCM4&#39;</span>
-<span class="c">## Filename to variable name mapping.</span>
-<span class="n">NCS</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;tasmin_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span><span class="s">&#39;tasmin&#39;</span><span class="p">,</span>
-       <span class="s">&#39;tas_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span><span class="s">&#39;tas&#39;</span><span class="p">,</span>
-       <span class="s">&#39;tasmax_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span><span class="s">&#39;tasmax&#39;</span><span class="p">}</span>
-<span class="c">## Always start with a snippet (if there are no calculations!).</span>
+<span class="c"># Filename to variable name mapping.</span>
+<span class="n">NCS</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;tasmin_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span> <span class="s">&#39;tasmin&#39;</span><span class="p">,</span>
+       <span class="s">&#39;tas_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span> <span class="s">&#39;tas&#39;</span><span class="p">,</span>
+       <span class="s">&#39;tasmax_day_CanCM4_decadal2000_r2i1p1_20010101-20101231.nc&#39;</span><span class="p">:</span> <span class="s">&#39;tasmax&#39;</span><span class="p">}</span>
+<span class="c"># Always start with a snippet (if there are no calculations!).</span>
 <span class="n">SNIPPET</span> <span class="o">=</span> <span class="bp">True</span>
-<span class="c">## Data returns will overwrite in this case. Use with caution!!</span>
+<span class="c"># Data returns will overwrite in this case. Use with caution!!</span>
 <span class="n">env</span><span class="o">.</span><span class="n">OVERWRITE</span> <span class="o">=</span> <span class="bp">True</span>
 
 
-<span class="c">## RequestDatasetCollection ####################################################</span>
+<span class="c"># RequestDatasetCollection #############################################################################################</span>
 
 <span class="n">rdc</span> <span class="o">=</span> <span class="n">RequestDatasetCollection</span><span class="p">([</span><span class="n">RequestDataset</span><span class="p">(</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span><span class="n">uri</span><span class="p">),</span><span class="n">var</span><span class="p">)</span> <span class="k">for</span> <span class="n">uri</span><span class="p">,</span><span class="n">var</span> <span class="ow">in</span> <span class="n">NCS</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span> <span class="n">uri</span><span class="p">),</span> <span class="n">var</span><span class="p">)</span> <span class="k">for</span> <span class="n">uri</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">NCS</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
 
-<span class="c">## Return In-Memory ############################################################</span>
+<span class="c"># Return In-Memory #####################################################################################################</span>
 
-<span class="c">## Data is returned as a dictionary-like object (SpatialCollection) with 51 keys</span>
-<span class="c">## (don&#39;t forget Puerto Rico...). A key in the returned dictionary corresponds </span>
-<span class="c">## to a geometry &quot;ugid&quot; with the value of type OcgCollection.</span>
+<span class="c"># Data is returned as a dictionary-like object (SpatialCollection) with 51 keys (don&#39;t forget Puerto Rico...). A key in </span>
+<span class="c"># the returned dictionary corresponds to a geometry &quot;ugid&quot; with the value of type OcgCollection.</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&#39;returning numpy...&#39;</span><span class="p">)</span>
-<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span><span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span><span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                    <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">)</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span> <span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">)</span>
 <span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 
-<span class="c">## Return a SpatialCollection, but only for a target state in a U.S. state</span>
-<span class="c">## boundaries shapefile. In this case, the UGID attribute value of 23 is associated</span>
-<span class="c">## with Nebraska.</span>
+<span class="c"># Return a SpatialCollection, but only for a target state in a U.S. state boundaries shapefile. In this case, the UGID </span>
+<span class="c"># attribute value of 23 is associated with Nebraska.</span>
 
 <span class="k">print</span><span class="p">(</span><span class="s">&#39;returning numpy for a state...&#39;</span><span class="p">)</span>
-<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span><span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span><span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                    <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span><span class="n">select_ugid</span><span class="o">=</span><span class="p">[</span><span class="mi">23</span><span class="p">])</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span> <span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span>
+                    <span class="n">select_ugid</span><span class="o">=</span><span class="p">[</span><span class="mi">23</span><span class="p">])</span>
 <span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 
-<span class="c">## Write to Shapefile ##########################################################</span>
+<span class="c"># Write to Shapefile ###################################################################################################</span>
 
 <span class="k">print</span><span class="p">(</span><span class="s">&#39;returning shapefile...&#39;</span><span class="p">)</span>
-<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span><span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span><span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                    <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span><span class="n">output_format</span><span class="o">=</span><span class="s">&#39;shp&#39;</span><span class="p">)</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span> <span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="n">SNIPPET</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span>
+                    <span class="n">output_format</span><span class="o">=</span><span class="s">&#39;shp&#39;</span><span class="p">)</span>
 <span class="n">path</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 
-<span class="c">## Write All Data to Keyed Format ##############################################</span>
+<span class="c"># Write All Data to Keyed Format #######################################################################################</span>
 
-<span class="c">## Without the snippet, we are writing all data to the linked CSV-Shapefile</span>
-<span class="c">## output format. The operation will take considerably longer.</span>
-<span class="k">print</span><span class="p">(</span><span class="s">&#39;returning csv+...&#39;</span><span class="p">)</span>
-<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span><span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span><span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                    <span class="n">snippet</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span><span class="n">output_format</span><span class="o">=</span><span class="s">&#39;csv+&#39;</span><span class="p">)</span>
+<span class="c"># Without the snippet, we are writing all data to the linked CSV-Shapefile output format. The operation will take </span>
+<span class="c"># considerably longer.</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;returning csv-shp...&#39;</span><span class="p">)</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rdc</span><span class="p">,</span> <span class="n">spatial_operation</span><span class="o">=</span><span class="s">&#39;clip&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">snippet</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="s">&#39;state_boundaries&#39;</span><span class="p">,</span>
+                    <span class="n">output_format</span><span class="o">=</span><span class="s">&#39;csv-shp&#39;</span><span class="p">)</span>
 <span class="n">path</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -350,6 +347,27 @@ variables:
 </pre></div>
 </div>
 </div>
+<div class="section" id="converting-an-esri-shapefile-to-ugrid">
+<span id="d-flexible-mesh-example-label"></span><h2>Converting an ESRI Shapefile to UGRID<a class="headerlink" href="#converting-an-esri-shapefile-to-ugrid" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">tempfile</span>
+
+<span class="kn">import</span> <span class="nn">ocgis</span>
+<span class="kn">from</span> <span class="nn">ocgis.constants</span> <span class="kn">import</span> <span class="n">OUTPUT_FORMAT_NETCDF_UGRID_2D_FLEXIBLE_MESH</span>
+
+
+
+<span class="c"># This is the input shapefile with no gaps between the polygons. Multipolygons not allowed!</span>
+<span class="n">SHP</span> <span class="o">=</span> <span class="s">&#39;/path/to/no_gaps/shapefile.shp&#39;</span>
+<span class="c"># Write the data to a temporary directory.</span>
+<span class="n">ocgis</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">DIR_OUTPUT</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
+
+
+<span class="n">rd</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">RequestDataset</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">SHP</span><span class="p">)</span>
+<span class="n">ops</span> <span class="o">=</span> <span class="n">ocgis</span><span class="o">.</span><span class="n">OcgOperations</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">rd</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="n">OUTPUT_FORMAT_NETCDF_UGRID_2D_FLEXIBLE_MESH</span><span class="p">)</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -367,6 +385,7 @@ variables:
 <li><a class="reference internal" href="#advanced-subsetting">Advanced Subsetting</a></li>
 <li><a class="reference internal" href="#subsetting-with-a-time-level-range">Subsetting with a Time/Level Range</a></li>
 <li><a class="reference internal" href="#regridding">Regridding</a></li>
+<li><a class="reference internal" href="#converting-an-esri-shapefile-to-ugrid">Converting an ESRI Shapefile to UGRID</a></li>
 </ul>
 </li>
 </ul>
@@ -376,7 +395,7 @@ variables:
                         title="previous chapter">ESMPy Regridding</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="utility.html"
-                        title="next chapter">Utility Functions</a></p>
+                        title="next chapter">Utility/Helper Functions</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/examples.txt"
@@ -403,12 +422,12 @@ variables:
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="utility.html" title="Utility Functions"
+          <a href="utility.html" title="Utility/Helper Functions"
              >next</a></li>
         <li class="right" >
           <a href="regrid.html" title="ESMPy Regridding"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Constants &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>Constants &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,9 +26,9 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="index.html" />
     <link rel="next" title="Exceptions" href="exc.html" />
-    <link rel="prev" title="Utility Functions" href="utility.html" /> 
+    <link rel="prev" title="Utility/Helper Functions" href="utility.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,9 +38,9 @@
           <a href="exc.html" title="Exceptions"
              accesskey="N">next</a></li>
         <li class="right" >
-          <a href="utility.html" title="Utility Functions"
+          <a href="utility.html" title="Utility/Helper Functions"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -52,100 +52,233 @@
   <div class="section" id="module-ocgis.constants">
 <span id="constants"></span><h1>Constants<a class="headerlink" href="#module-ocgis.constants" title="Permalink to this headline">¶</a></h1>
 <dl class="data">
-<dt id="ocgis.constants.calc_headers">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">calc_headers</tt><em class="property"> = ['did', 'vid', 'cid', 'ugid', 'tid', 'lid', 'gid', 'variable', 'alias', 'calc_key', 'calc_alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.calc_headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Standard headers for computation.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ocgis.constants.calc_month_centroid">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">calc_month_centroid</tt><em class="property"> = 16</em><a class="headerlink" href="#ocgis.constants.calc_month_centroid" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.CALC_MONTH_CENTROID">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">CALC_MONTH_CENTROID</tt><em class="property"> = 16</em><a class="headerlink" href="#ocgis.constants.CALC_MONTH_CENTROID" title="Permalink to this definition">¶</a></dt>
 <dd><p>The day value to use for month centroids.</p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.calc_year_centroid_day">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">calc_year_centroid_day</tt><em class="property"> = 1</em><a class="headerlink" href="#ocgis.constants.calc_year_centroid_day" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.CALC_YEAR_CENTROID_DAY">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">CALC_YEAR_CENTROID_DAY</tt><em class="property"> = 1</em><a class="headerlink" href="#ocgis.constants.CALC_YEAR_CENTROID_DAY" title="Permalink to this definition">¶</a></dt>
 <dd><p>The default day value for year centroids.</p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.calc_year_centroid_month">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">calc_year_centroid_month</tt><em class="property"> = 7</em><a class="headerlink" href="#ocgis.constants.calc_year_centroid_month" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.CALC_YEAR_CENTROID_MONTH">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">CALC_YEAR_CENTROID_MONTH</tt><em class="property"> = 7</em><a class="headerlink" href="#ocgis.constants.CALC_YEAR_CENTROID_MONTH" title="Permalink to this definition">¶</a></dt>
 <dd><p>The month value to use for year centroids.</p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.default_coordinate_system">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">default_coordinate_system</tt><em class="property"> = &lt;ocgis.interface.base.crs.CFWGS84 object at 0x2af6b534de10&gt;</em><a class="headerlink" href="#ocgis.constants.default_coordinate_system" title="Permalink to this definition">¶</a></dt>
-<dd><p>The default coordinate system to use if none is provided.</p>
+<dt id="ocgis.constants.DEFAULT_COORDINATE_SYSTEM_NAME">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_COORDINATE_SYSTEM_NAME</tt><em class="property"> = 'coordinate_system'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_COORDINATE_SYSTEM_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default name for coordinate systems in netCDF file if none is provided.</p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.enabled_numpy_ufuncs">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">enabled_numpy_ufuncs</tt><em class="property"> = ['exp', 'log', 'abs']</em><a class="headerlink" href="#ocgis.constants.enabled_numpy_ufuncs" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.DEFAULT_NAME_COL_COORDINATES">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_NAME_COL_COORDINATES</tt><em class="property"> = 'xc'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_NAME_COL_COORDINATES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default column coordinate name.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_NAME_CORNERS_DIMENSION">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_NAME_CORNERS_DIMENSION</tt><em class="property"> = 'ncorners'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_NAME_CORNERS_DIMENSION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default corners dimension name.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_NAME_ROW_COORDINATES">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_NAME_ROW_COORDINATES</tt><em class="property"> = 'yc'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_NAME_ROW_COORDINATES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default row coordinate name.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_SAMPLE_SIZE_LONG_NAME">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_SAMPLE_SIZE_LONG_NAME</tt><em class="property"> = 'Statistical Sample Size'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_SAMPLE_SIZE_LONG_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default sample size variable long name.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_SAMPLE_SIZE_STANDARD_NAME">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_SAMPLE_SIZE_STANDARD_NAME</tt><em class="property"> = 'sample_size'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_SAMPLE_SIZE_STANDARD_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default sample size variable standard name.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_TEMPORAL_CALENDAR">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_TEMPORAL_CALENDAR</tt><em class="property"> = 'standard'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_TEMPORAL_CALENDAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default temporal calendar.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.DEFAULT_TEMPORAL_UNITS">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">DEFAULT_TEMPORAL_UNITS</tt><em class="property"> = 'days since 0001-01-01 00:00:00'</em><a class="headerlink" href="#ocgis.constants.DEFAULT_TEMPORAL_UNITS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default temporal units.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.ENABLED_NUMPY_UFUNCS">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">ENABLED_NUMPY_UFUNCS</tt><em class="property"> = ['exp', 'log', 'abs']</em><a class="headerlink" href="#ocgis.constants.ENABLED_NUMPY_UFUNCS" title="Permalink to this definition">¶</a></dt>
 <dd><p>NumPy functions enabled for functions evaluated from string representations.</p>
 </dd></dl>
 
-<dl class="data">
-<dt id="ocgis.constants.multi_headers">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">multi_headers</tt><em class="property"> = ['did', 'cid', 'ugid', 'tid', 'lid', 'gid', 'calc_key', 'calc_alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.multi_headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Standard headers for multivariate calculations.</p>
+<dl class="class">
+<dt id="ocgis.constants.HEADERS">
+<em class="property">class </em><tt class="descclassname">ocgis.constants.</tt><tt class="descname">HEADERS</tt><a class="reference internal" href="_modules/ocgis/constants.html#HEADERS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ocgis.constants.HEADERS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/2.7/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.CALCULATION_ALIAS">
+<tt class="descname">CALCULATION_ALIAS</tt><em class="property"> = 'calc_alias'</em><a class="headerlink" href="#ocgis.constants.HEADERS.CALCULATION_ALIAS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.CALCULATION_KEY">
+<tt class="descname">CALCULATION_KEY</tt><em class="property"> = 'calc_key'</em><a class="headerlink" href="#ocgis.constants.HEADERS.CALCULATION_KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_CALCULATION">
+<tt class="descname">ID_CALCULATION</tt><em class="property"> = 'cid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_CALCULATION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_DATASET">
+<tt class="descname">ID_DATASET</tt><em class="property"> = 'did'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_DATASET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_GEOMETRY">
+<tt class="descname">ID_GEOMETRY</tt><em class="property"> = 'gid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_GEOMETRY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_LEVEL">
+<tt class="descname">ID_LEVEL</tt><em class="property"> = 'lid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_LEVEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_SELECTION_GEOMETRY">
+<tt class="descname">ID_SELECTION_GEOMETRY</tt><em class="property"> = 'ugid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_SELECTION_GEOMETRY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_TEMPORAL">
+<tt class="descname">ID_TEMPORAL</tt><em class="property"> = 'tid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_TEMPORAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.ID_VARIABLE">
+<tt class="descname">ID_VARIABLE</tt><em class="property"> = 'vid'</em><a class="headerlink" href="#ocgis.constants.HEADERS.ID_VARIABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.LEVEL">
+<tt class="descname">LEVEL</tt><em class="property"> = 'level'</em><a class="headerlink" href="#ocgis.constants.HEADERS.LEVEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.TEMPORAL">
+<tt class="descname">TEMPORAL</tt><em class="property"> = 'time'</em><a class="headerlink" href="#ocgis.constants.HEADERS.TEMPORAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.TEMPORAL_DAY">
+<tt class="descname">TEMPORAL_DAY</tt><em class="property"> = 'day'</em><a class="headerlink" href="#ocgis.constants.HEADERS.TEMPORAL_DAY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.TEMPORAL_MONTH">
+<tt class="descname">TEMPORAL_MONTH</tt><em class="property"> = 'month'</em><a class="headerlink" href="#ocgis.constants.HEADERS.TEMPORAL_MONTH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.TEMPORAL_YEAR">
+<tt class="descname">TEMPORAL_YEAR</tt><em class="property"> = 'year'</em><a class="headerlink" href="#ocgis.constants.HEADERS.TEMPORAL_YEAR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.VALUE">
+<tt class="descname">VALUE</tt><em class="property"> = 'value'</em><a class="headerlink" href="#ocgis.constants.HEADERS.VALUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.VARIABLE">
+<tt class="descname">VARIABLE</tt><em class="property"> = 'variable'</em><a class="headerlink" href="#ocgis.constants.HEADERS.VARIABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ocgis.constants.HEADERS.VARIABLE_ALIAS">
+<tt class="descname">VARIABLE_ALIAS</tt><em class="property"> = 'alias'</em><a class="headerlink" href="#ocgis.constants.HEADERS.VARIABLE_ALIAS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.netCDF_default_data_model">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">netCDF_default_data_model</tt><em class="property"> = 'NETCDF4_CLASSIC'</em><a class="headerlink" href="#ocgis.constants.netCDF_default_data_model" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.HEADERS_CALC">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">HEADERS_CALC</tt><em class="property"> = ['did', 'vid', 'cid', 'ugid', 'tid', 'lid', 'gid', 'variable', 'alias', 'calc_key', 'calc_alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.HEADERS_CALC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard headers for computation.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.HEADERS_MULTI">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">HEADERS_MULTI</tt><em class="property"> = ['did', 'cid', 'ugid', 'tid', 'lid', 'gid', 'calc_key', 'calc_alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.HEADERS_MULTI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard headers for multivariate calculation.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.HEADERS_RAW">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">HEADERS_RAW</tt><em class="property"> = ['did', 'vid', 'ugid', 'tid', 'lid', 'gid', 'variable', 'alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.HEADERS_RAW" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard headers for subset operations.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.HEADERS_REQUIRED">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">HEADERS_REQUIRED</tt><em class="property"> = ['did', 'ugid', 'gid']</em><a class="headerlink" href="#ocgis.constants.HEADERS_REQUIRED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Required headers for every request.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.ICCLIM_PREFIX_FUNCTION_KEY">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">ICCLIM_PREFIX_FUNCTION_KEY</tt><em class="property"> = 'icclim'</em><a class="headerlink" href="#ocgis.constants.ICCLIM_PREFIX_FUNCTION_KEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function key prefix for the <cite>icclim</cite> indices library.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.MERIDIAN_180TH">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">MERIDIAN_180TH</tt><em class="property"> = 180.0</em><a class="headerlink" href="#ocgis.constants.MERIDIAN_180TH" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value for the 180th meridian to use when wrapping.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ocgis.constants.NETCDF_DEFAULT_DATA_MODEL">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">NETCDF_DEFAULT_DATA_MODEL</tt><em class="property"> = 'NETCDF4'</em><a class="headerlink" href="#ocgis.constants.NETCDF_DEFAULT_DATA_MODEL" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default netCDF4 output file type</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="ocgis.constants.np_float">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">np_float</tt><a class="headerlink" href="#ocgis.constants.np_float" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.NP_FLOAT">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">NP_FLOAT</tt><a class="headerlink" href="#ocgis.constants.NP_FLOAT" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data type to use for NumPy floats.</p>
 <p>alias of <tt class="xref py py-class docutils literal"><span class="pre">float32</span></tt></p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="ocgis.constants.np_int">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">np_int</tt><a class="headerlink" href="#ocgis.constants.np_int" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.NP_INT">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">NP_INT</tt><a class="headerlink" href="#ocgis.constants.NP_INT" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data type to use for NumPy integers.</p>
 <p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int32</span></tt></p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.output_formats">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">output_formats</tt><em class="property"> = ['numpy', 'nc', 'csv', 'csv+', 'shp', 'geojson', 'meta']</em><a class="headerlink" href="#ocgis.constants.output_formats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Key identifiers for output formats.</p>
+<dt id="ocgis.constants.OCGIS_UNIQUE_GEOMETRY_IDENTIFIER">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">OCGIS_UNIQUE_GEOMETRY_IDENTIFIER</tt><em class="property"> = 'UGID'</em><a class="headerlink" href="#ocgis.constants.OCGIS_UNIQUE_GEOMETRY_IDENTIFIER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard name for the unique identifier in GIS files.</p>
 </dd></dl>
 
 <dl class="data">
-<dt id="ocgis.constants.prefix_icclim_function_key">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">prefix_icclim_function_key</tt><em class="property"> = 'icclim'</em><a class="headerlink" href="#ocgis.constants.prefix_icclim_function_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function key prefix for the <cite>icclim</cite> indices library.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ocgis.constants.prime_meridian">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">prime_meridian</tt><em class="property"> = 179.9999999999999</em><a class="headerlink" href="#ocgis.constants.prime_meridian" title="Permalink to this definition">¶</a></dt>
-<dd><p>The value for the prime meridian to use when wrapping.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ocgis.constants.raw_headers">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">raw_headers</tt><em class="property"> = ['did', 'vid', 'ugid', 'tid', 'lid', 'gid', 'variable', 'alias', 'time', 'year', 'month', 'day', 'level', 'value']</em><a class="headerlink" href="#ocgis.constants.raw_headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Standard headers for subset operations.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ocgis.constants.required_headers">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">required_headers</tt><em class="property"> = ['did', 'ugid', 'gid']</em><a class="headerlink" href="#ocgis.constants.required_headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Required headers for every request.</p>
-</dd></dl>
-
-<dl class="data">
-<dt id="ocgis.constants.resolution_limit">
-<tt class="descclassname">ocgis.constants.</tt><tt class="descname">resolution_limit</tt><em class="property"> = 100</em><a class="headerlink" href="#ocgis.constants.resolution_limit" title="Permalink to this definition">¶</a></dt>
+<dt id="ocgis.constants.RESOLUTION_LIMIT">
+<tt class="descclassname">ocgis.constants.</tt><tt class="descname">RESOLUTION_LIMIT</tt><em class="property"> = 100</em><a class="headerlink" href="#ocgis.constants.RESOLUTION_LIMIT" title="Permalink to this definition">¶</a></dt>
 <dd><p>The number of values to use when calculating data resolution.</p>
 </dd></dl>
 
@@ -159,7 +292,7 @@
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="utility.html"
-                        title="previous chapter">Utility Functions</a></p>
+                        title="previous chapter">Utility/Helper Functions</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="exc.html"
                         title="next chapter">Exceptions</a></p>
@@ -192,9 +325,9 @@
           <a href="exc.html" title="Exceptions"
              >next</a></li>
         <li class="right" >
-          <a href="utility.html" title="Utility Functions"
+          <a href="utility.html" title="Utility/Helper Functions"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

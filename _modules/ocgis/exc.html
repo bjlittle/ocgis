@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.exc &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.exc &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../index.html" />
     <link rel="up" title="ocgis" href="../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -54,6 +54,30 @@
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
 
+
+<span class="c">########################################################################################################################</span>
+
+</div>
+<div class="viewcode-block" id="BoundsAlreadyAvailableError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.BoundsAlreadyAvailableError">[docs]</a><span class="k">class</span> <span class="nc">BoundsAlreadyAvailableError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when an attempt is made to extrapolate bounds and they are already present.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Bounds/corners already available.&#39;</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+</div>
+<div class="viewcode-block" id="CannotFormatTimeError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CannotFormatTimeError">[docs]</a><span class="k">class</span> <span class="nc">CannotFormatTimeError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when datetime objects from numeric are blocked by &quot;format_time&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">property_name</span> <span class="o">=</span> <span class="n">property_name</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Attempted to retrieve datetime values from &quot;{0}&quot; with &quot;format_time&quot; as &quot;False&quot;. Set &quot;format_time&quot; to &quot;True&quot;.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">property_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
 </div>
 <div class="viewcode-block" id="MultipleElementsFound"><a class="viewcode-back" href="../../exc.html#ocgis.exc.MultipleElementsFound">[docs]</a><span class="k">class</span> <span class="nc">MultipleElementsFound</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -70,6 +94,18 @@
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Shape of the spatial dimension object is: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sdim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">msg</span>
+
+</div>
+<div class="viewcode-block" id="ShapeError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.ShapeError">[docs]</a><span class="k">class</span> <span class="nc">ShapeError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when an array has an incompatible shape with an operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+</div>
+<div class="viewcode-block" id="SingleElementError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.SingleElementError">[docs]</a><span class="k">class</span> <span class="nc">SingleElementError</span><span class="p">(</span><span class="n">ShapeError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when an operation requires more than a single element.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 </div>
 <div class="viewcode-block" id="CalculationException"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CalculationException">[docs]</a><span class="k">class</span> <span class="nc">CalculationException</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
@@ -132,7 +168,6 @@
         <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Dimension data not found for axis: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">msg</span>
 
-
 </div>
 <div class="viewcode-block" id="DefinitionValidationError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.DefinitionValidationError">[docs]</a><span class="k">class</span> <span class="nc">DefinitionValidationError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when validation fails on :class:`~ocgis.OcgOperations`.</span>
@@ -194,10 +229,6 @@
 </div>
 <div class="viewcode-block" id="SpatialWrappingError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.SpatialWrappingError">[docs]</a><span class="k">class</span> <span class="nc">SpatialWrappingError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised for errors related to wrapping or unwrapping a geographic coordinate system.&quot;&quot;&quot;</span>
-    <span class="k">pass</span>
-
-</div>
-<div class="viewcode-block" id="ImproperPolygonBoundsError"><a class="viewcode-back" href="../../exc.html#ocgis.exc.ImproperPolygonBoundsError">[docs]</a><span class="k">class</span> <span class="nc">ImproperPolygonBoundsError</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
     <span class="k">pass</span>
 
 </div>
@@ -316,13 +347,7 @@
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">message</span> <span class="o">=</span> <span class="s">&#39;Validation failed on the keyword parameter &quot;{0}&quot; with the message: {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyword</span><span class="p">,</span>
                                                                                                   <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">message</span>
-
-</div>
-<div class="viewcode-block" id="CornersUnavailable"><a class="viewcode-back" href="../../exc.html#ocgis.exc.CornersUnavailable">[docs]</a><span class="k">class</span> <span class="nc">CornersUnavailable</span><span class="p">(</span><span class="n">OcgException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when grid corners may not be constructed.&quot;&quot;&quot;</span>
-
-    <span class="k">pass</span></div>
+        <span class="k">return</span> <span class="n">message</span></div>
 </pre></div>
 
           </div>
@@ -350,7 +375,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li>
           <li><a href="../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>Installation &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="index.html" />
     <link rel="next" title="Python API" href="api.html" />
     <link rel="prev" title="Important Links" href="links.html" /> 
   </head>
@@ -40,7 +40,7 @@
         <li class="right" >
           <a href="links.html" title="Important Links"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -75,22 +75,26 @@
 <td><a class="reference external" href="http://www.python.org/download/releases/2.7.6/">http://www.python.org/download/releases/2.7.6/</a></td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">osgeo</span></tt></td>
-<td>1.9.1</td>
-<td><a class="reference external" href="http://pypi.python.org/pypi/GDAL/">http://pypi.python.org/pypi/GDAL/</a></td>
+<td>1.11.1</td>
+<td><a class="reference external" href="https://pypi.python.org/pypi/GDAL/">https://pypi.python.org/pypi/GDAL/</a></td>
 </tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">shapely</span></tt></td>
-<td>1.2</td>
-<td><a class="reference external" href="http://pypi.python.org/pypi/Shapely">http://pypi.python.org/pypi/Shapely</a></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">setuptools</span></tt></td>
+<td>12.0.5</td>
+<td><a class="reference external" href="https://pypi.python.org/pypi/setuptools">https://pypi.python.org/pypi/setuptools</a></td>
 </tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">fiona</span></tt></td>
-<td>1.0.2</td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">shapely</span></tt></td>
+<td>1.4.3</td>
+<td><a class="reference external" href="https://pypi.python.org/pypi/Shapely">https://pypi.python.org/pypi/Shapely</a></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">fiona</span></tt></td>
+<td>1.4.5</td>
 <td><a class="reference external" href="https://pypi.python.org/pypi/Fiona">https://pypi.python.org/pypi/Fiona</a></td>
 </tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">numpy</span></tt></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">numpy</span></tt></td>
 <td>1.8.2</td>
 <td><a class="reference external" href="http://sourceforge.net/projects/numpy/files/NumPy/1.8.2/">http://sourceforge.net/projects/numpy/files/NumPy/1.8.2/</a></td>
 </tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">netCDF4</span></tt></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">netCDF4</span></tt></td>
 <td>1.1.1</td>
 <td><a class="reference external" href="http://unidata.github.io/netcdf4-python/">http://unidata.github.io/netcdf4-python/</a></td>
 </tr>
@@ -99,7 +103,7 @@
 </div>
 <div class="section" id="optional-dependencies">
 <h2>Optional Dependencies<a class="headerlink" href="#optional-dependencies" title="Permalink to this headline">¶</a></h2>
-<p>There are two optional dependencies. OpenClimateGIS will still operate without these libraries installed but functionality and performance may change.</p>
+<p>Optional dependencies are listed below. OpenClimateGIS will still operate without these libraries installed but functionality and performance may change.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="6%" />
@@ -116,7 +120,7 @@
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">rtree</span></tt></td>
-<td>2.7.2</td>
+<td>0.8.0</td>
 <td><a class="reference external" href="https://pypi.python.org/pypi/Rtree/">https://pypi.python.org/pypi/Rtree/</a></td>
 <td>Constructs spatial indexes at runtime. Useful for complicated GIS operations (i.e. large or complex polygons for subsetting)</td>
 </tr>
@@ -129,6 +133,11 @@
 <td>6.3.0rp1</td>
 <td><a class="reference external" href="https://www.earthsystemcog.org/projects/esmpy/releases">https://www.earthsystemcog.org/projects/esmpy/releases</a></td>
 <td>Supports regridding operations.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">icclim</span></tt></td>
+<td>3.0</td>
+<td><a class="reference external" href="http://icclim.readthedocs.org/en/latest/">http://icclim.readthedocs.org/en/latest/</a></td>
+<td>Calculation of the full suite of European Climate Assessment (ECA) indices with optimized code implementation.</td>
 </tr>
 </tbody>
 </table>
@@ -146,8 +155,6 @@ sudo pip install numpy netCDF4 shapely fiona rtree
 <span class="c">## osgeo ##</span>
 <span class="c">###########</span>
 
-<span class="c">## If this fails, try the apt-get install below...</span>
-
 <span class="c">## http://stackoverflow.com/questions/11336153/python-gdal-package-missing-header-file-when-installing-via-pip</span>
 pip install --no-install GDAL
 <span class="nb">cd</span> /tmp/pip_build_ubuntu/GDAL
@@ -163,22 +170,22 @@ sudo python setup.py install
 
 <span class="nv">CFUNITS_SRCDIR</span><span class="o">=</span>/tmp/build_cfunits
 <span class="nv">CFUNITS_VER</span><span class="o">=</span>0.9.6
-<span class="nv">CFUNITS_SRC</span><span class="o">=</span><span class="nv">$CFUNITS_SRCDIR</span>/cfunits-python/v<span class="nv">$CFUNITS_VER</span>
-<span class="nv">CFUNITS_TARBALL</span><span class="o">=</span>cfunits-<span class="nv">$CFUNITS_VER</span>.tar.gz
-<span class="nv">CFUNITS_URL</span><span class="o">=</span>https://cfunits-python.googlecode.com/files/<span class="nv">$CFUNITS_TARBALL</span>
+<span class="nv">CFUNITS_SRC</span><span class="o">=</span><span class="k">${</span><span class="nv">CFUNITS_SRCDIR</span><span class="k">}</span>/cfunits-python/v<span class="k">${</span><span class="nv">CFUNITS_VER</span><span class="k">}</span>
+<span class="nv">CFUNITS_TARBALL</span><span class="o">=</span>cfunits-<span class="k">${</span><span class="nv">CFUNITS_VER</span><span class="k">}</span>.tar.gz
+<span class="nv">CFUNITS_URL</span><span class="o">=</span>https://cfunits-python.googlecode.com/files/<span class="k">${</span><span class="nv">CFUNITS_TARBALL</span><span class="k">}</span>
 
-mkdir -p <span class="nv">$CFUNITS_SRC</span>
-<span class="nb">cd</span> <span class="nv">$CFUNITS_SRC</span>
-wget <span class="nv">$CFUNITS_URL</span>
-tar -xzvf <span class="nv">$CFUNITS_TARBALL</span>
-<span class="nb">cd </span>cfunits-<span class="nv">$CFUNITS_VER</span>
+mkdir -p <span class="k">${</span><span class="nv">CFUNITS_SRC</span><span class="k">}</span>
+<span class="nb">cd</span> <span class="k">${</span><span class="nv">CFUNITS_SRC</span><span class="k">}</span>
+wget <span class="k">${</span><span class="nv">CFUNITS_URL</span><span class="k">}</span>
+tar -xzvf <span class="k">${</span><span class="nv">CFUNITS_TARBALL</span><span class="k">}</span>
+<span class="nb">cd </span>cfunits-<span class="k">${</span><span class="nv">CFUNITS_VER</span><span class="k">}</span>
 sudo python setup.py install
 <span class="c">## installation does not copy UDUNITS database</span>
 <span class="nv">CFUNITS_SETUP_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
 <span class="c">## assumes a standard location. the installation directory may be retrieved by running the command:</span>
 <span class="c">##  python -c &quot;import cfunits, os;print(os.path.split(cfunits.__file__)[0])&quot;</span>
 <span class="nv">CFUNITS_INSTALL_DIR</span><span class="o">=</span>/usr/local/lib/python2.7/dist-packages/cfunits
-sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="nv">$CFUNITS_INSTALL_DIR</span>
+sudo cp -r <span class="k">${</span><span class="nv">CFUNITS_SETUP_DIR</span><span class="k">}</span>/cfunits/etc <span class="k">${</span><span class="nv">CFUNITS_INSTALL_DIR</span><span class="k">}</span>
 
 <span class="c">#########</span>
 <span class="c"># ESMPy #</span>
@@ -201,22 +208,35 @@ sudo cp -r <span class="nv">$CFUNITS_SETUP_DIR</span>/cfunits/etc <span class="n
 <span class="c">## ESMF framework install ##</span>
 
 sudo apt-get install gfortran g++
-mkdir -p <span class="nv">$ESMF_SRCDIR</span>
-<span class="nb">cd</span> <span class="nv">$ESMF_SRCDIR</span>
+mkdir -p <span class="k">${</span><span class="nv">ESMF_SRCDIR</span><span class="k">}</span>
+<span class="nb">cd</span> <span class="k">${</span><span class="nv">ESMF_SRCDIR</span><span class="k">}</span>
 &lt;make sure ESMF tarball is available in the <span class="nb">source </span>directory&gt;
-tar -xzvf <span class="nv">$ESMF_TAR</span>
+tar -xzvf <span class="k">${</span><span class="nv">ESMF_TAR</span><span class="k">}</span>
 <span class="nb">cd </span>esmf
 <span class="nb">export </span><span class="nv">ESMF_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
 make
-<span class="nb">export </span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>
-<span class="nb">export </span><span class="nv">ESMF_INSTALL_LIBDIR</span><span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>/lib
+<span class="nb">export </span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="o">=</span><span class="k">${</span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="k">}</span>
+<span class="nb">export </span><span class="nv">ESMF_INSTALL_LIBDIR</span><span class="o">=</span><span class="k">${</span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="k">}</span>/lib
 sudo -E make install
 
 <span class="c">## ESMPy install ##</span>
 
-<span class="nb">cd</span> <span class="nv">$ESMF_INSTALL_PREFIX</span>/esmf/src/addon/ESMPy
-python setup.py build --ESMFMKFILE<span class="o">=</span><span class="nv">$ESMF_INSTALL_PREFIX</span>/lib/esmf.mk
+<span class="nb">cd</span> <span class="k">${</span><span class="nv">ESMF_SRCDIR</span><span class="k">}</span>/esmf/src/addon/ESMPy
+python setup.py build --ESMFMKFILE<span class="o">=</span><span class="k">${</span><span class="nv">ESMF_INSTALL_PREFIX</span><span class="k">}</span>/lib/esmf.mk
 sudo python setup.py install
+
+<span class="c">##########</span>
+<span class="c"># ICCLIM #</span>
+<span class="c">##########</span>
+
+<span class="nv">ICCLIM_SRCDIR</span><span class="o">=</span>~/src/icclim/git
+
+git clone https://github.com/tatarinova/icclim.git
+<span class="nb">pushd</span> <span class="k">${</span><span class="nv">ICCLIM_SRCDIR</span><span class="k">}</span>/icclim
+gcc -fPIC -g -c -Wall ./icclim/libC.c -o ./icclim/libC.o
+gcc -shared -o ./icclim/libC.so ./icclim/libC.o
+sudo python setup.py install
+<span class="nb">popd</span>
 </pre></div>
 </div>
 <div class="section" id="package-notes">
@@ -286,7 +306,7 @@ sudo python setup.py install
 </ol>
 <blockquote>
 <div><ul class="simple">
-<li><a class="reference external" href="http://www.earthsystemmodeling.org/ocgis_releases/public/ocgis-1.0.1/reg/OCGIS_Framework_Reg.html">http://www.earthsystemmodeling.org/ocgis_releases/public/ocgis-1.0.1/reg/OCGIS_Framework_Reg.html</a></li>
+<li><a class="reference external" href="http://www.earthsystemmodeling.org/ocgis_releases/public/ocgis-1.0.0/reg/OCGIS_Framework_Reg.html">http://www.earthsystemmodeling.org/ocgis_releases/public/ocgis-1.0.0/reg/OCGIS_Framework_Reg.html</a></li>
 </ul>
 </div></blockquote>
 <ol class="arabic simple" start="2">
@@ -306,6 +326,18 @@ sudo python setup.py install
 <p>or</p>
 <div class="highlight-sh"><div class="highlight"><pre>python -c <span class="s1">&#39;import ocgis&#39;</span>
 </pre></div>
+</div>
+<div class="section" id="testing-the-installation">
+<h3>Testing the Installation<a class="headerlink" href="#testing-the-installation" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There are tests for the optional dependencies. These will fail if the optional dependencies are not installed!</p>
+</div>
+<p>It is recommended that a simple suite of tests are run to verify the new installation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span>
+</pre></div>
+</div>
+<p>Please report any errors to the support email address.</p>
 </div>
 <div class="section" id="configuring-the-shpcabinet">
 <h3>Configuring the <a class="reference internal" href="api.html#ocgis.ShpCabinet" title="ocgis.ShpCabinet"><tt class="xref py py-class docutils literal"><span class="pre">ShpCabinet</span></tt></a><a class="headerlink" href="#configuring-the-shpcabinet" title="Permalink to this headline">¶</a></h3>
@@ -340,6 +372,7 @@ sudo python setup.py install
 <li><a class="reference internal" href="#mac-os-x-notes">Mac OS X Notes</a></li>
 <li><a class="reference internal" href="#windows-notes">Windows Notes</a></li>
 <li><a class="reference internal" href="#installing-openclimategis">Installing OpenClimateGIS</a><ul>
+<li><a class="reference internal" href="#testing-the-installation">Testing the Installation</a></li>
 <li><a class="reference internal" href="#configuring-the-shpcabinet">Configuring the <tt class="docutils literal"><span class="pre">ShpCabinet</span></tt></a></li>
 </ul>
 </li>
@@ -385,7 +418,7 @@ sudo python setup.py install
         <li class="right" >
           <a href="links.html" title="Important Links"
              >previous</a> |</li>
-        <li><a href="index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

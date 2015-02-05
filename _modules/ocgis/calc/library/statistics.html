@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.library.statistics &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.calc.library.statistics &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../../../index.html" />
     <link rel="up" title="ocgis" href="../../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,20 +45,22 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.library.statistics</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">defaultdict</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
 <span class="kn">from</span> <span class="nn">ocgis.calc.base</span> <span class="kn">import</span> <span class="n">AbstractUnivariateFunction</span><span class="p">,</span> <span class="n">AbstractParameterizedFunction</span>
-<span class="kn">from</span> <span class="nn">ocgis.calc.library.math</span> <span class="kn">import</span> <span class="n">Convolve1D</span>
-<span class="kn">from</span> <span class="nn">ocgis.util.helpers</span> <span class="kn">import</span> <span class="n">iter_array</span>
 
 
 <div class="viewcode-block" id="MovingWindow"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.MovingWindow">[docs]</a><span class="k">class</span> <span class="nc">MovingWindow</span><span class="p">(</span><span class="n">AbstractUnivariateFunction</span><span class="p">,</span> <span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;moving_window&#39;</span>
     <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;k&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s">&#39;mode&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
     <span class="n">description</span> <span class="o">=</span> <span class="p">()</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;moving_window&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Moving Window Operation&#39;</span>
 
@@ -170,11 +172,231 @@
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
 
 </div>
+<span class="k">class</span> <span class="nc">DailyPercentile</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateFunction</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;daily_perc&#39;</span>
+    <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;percentile&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s">&#39;window_width&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s">&#39;only_leap_years&#39;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">}</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
+    <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;daily_percentile&#39;</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Daily Percentile&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DailyPercentile</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_only</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">get_grouping</span><span class="p">([</span><span class="s">&#39;month&#39;</span><span class="p">,</span> <span class="s">&#39;day&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tgd</span>
+
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">percentile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">window_width</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c"># assert(self.tgd is not None)</span>
+        <span class="c"># dtype = [(&#39;month&#39;, int), (&#39;day&#39;, int), (&#39;value&#39;, object)]</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">dt_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">value_datetime</span>
+        <span class="n">dp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_daily_percentile</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">dt_arr</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="o">=</span><span class="n">only_leap_years</span><span class="p">)</span>
+        <span class="n">shape_fill</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">shape_fill</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_fill</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">tgd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">get_grouping</span><span class="p">([</span><span class="s">&#39;month&#39;</span><span class="p">,</span> <span class="s">&#39;day&#39;</span><span class="p">])</span>
+        <span class="n">month_day_map</span> <span class="o">=</span> <span class="p">{(</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="p">):</span> <span class="n">ii</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">dt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tgd</span><span class="o">.</span><span class="n">value_datetime</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dp</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">fill</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">month_day_map</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">temporal</span> <span class="o">=</span> <span class="n">tgd</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">fill</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">fill</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="n">fill</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_daily_percentile_from_request_dataset</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">alias</span> <span class="o">=</span> <span class="n">alias</span> <span class="ow">or</span> <span class="n">rd</span><span class="o">.</span><span class="n">alias</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">temporal</span><span class="o">.</span><span class="n">value_datetime</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">alias</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dt</span><span class="p">)):</span>
+            <span class="n">curr</span> <span class="o">=</span> <span class="n">dt</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">ret</span><span class="p">[(</span><span class="n">curr</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">curr</span><span class="o">.</span><span class="n">day</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">get_daily_percentile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">,</span> <span class="n">dt_arr</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a dictionary with keys=calendar day (month,day) and values=numpy.ndarray (2D)</span>
+<span class="sd">        Example - to get the 2D percentile array corresponding to the 15th May: percentile_dict[5,15]</span>
+
+<span class="sd">        :param arr: array of values</span>
+<span class="sd">        :type arr: :class:`numpy.ndarray` (3D) of float</span>
+<span class="sd">        :param dt_arr: Corresponding time steps vector (base period: usually 1961-1990).</span>
+<span class="sd">        :type dt_arr: :class:`numpy.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">        :param percentile: Percentile to compute which must be between 0 and 100 inclusive.</span>
+<span class="sd">        :type percentile: int</span>
+<span class="sd">        :param window_width: Window width - must be odd.</span>
+<span class="sd">        :type window_width: int</span>
+<span class="sd">        :param only_leap_years: Option for February 29th. If ``True``, use only leap years when computing the basis.</span>
+<span class="sd">        :type only_leap_years: bool</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># we reduce the number of dimensions</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">elif</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+        <span class="n">dt_arr</span> <span class="o">=</span> <span class="n">dt_arr</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+
+        <span class="c"># step1: creation of the dictionary with all calendar days:</span>
+        <span class="n">dic_caldays</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dict_caldays</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">)</span>
+
+        <span class="n">percentile_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+        <span class="n">dt_hour</span> <span class="o">=</span> <span class="n">dt_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hour</span> <span class="c"># (we get hour of a date only one time, because usually the hour is the same for all dates in input dt_arr)</span>
+
+        <span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="n">dic_caldays</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">dic_caldays</span><span class="p">[</span><span class="n">month</span><span class="p">]:</span>
+
+                <span class="c"># step2: we do a mask for the datetime vector for current calendar day (day/month)</span>
+                <span class="n">dt_arr_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mask_dt_arr</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">)</span>
+
+                <span class="c"># step3: we are looking for the indices of non-masked dates (i.e. where dt_arr_mask==False)</span>
+                <span class="n">indices_non_masked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt_arr_mask</span><span class="o">==</span><span class="bp">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="c"># step4: we subset our arr</span>
+                <span class="n">arr_subset</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">indices_non_masked</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+                <span class="c"># step5: we compute the percentile for current arr_subset</span>
+                <span class="c">############## WARNING: type(arr_subset) = numpy.ndarray. Numpy.percentile does not work with masked arrays,</span>
+                <span class="c">############## so if arr_subset has aberrant values like 999999 or 1e+20, the result will be wrong.</span>
+                <span class="c">############## Check with numpy.nanpercentile (Numpy version 1.9) !!!</span>
+                <span class="n">arr_percentille_current_calday</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">arr_subset</span><span class="p">,</span> <span class="n">percentile</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+                <span class="c"># step6: we add to the dictionnary...</span>
+                <span class="n">percentile_dict</span><span class="p">[</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr_percentille_current_calday</span>
+
+            <span class="c"># print &#39;Creating percentile dictionary: month &#39;, month, &#39;---&gt; OK&#39;</span>
+
+        <span class="c"># print &#39;Percentile dictionary is created.&#39;</span>
+
+        <span class="k">return</span> <span class="n">percentile_dict</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_dict_caldays</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a dictionary of calendar days, where keys=months, values=days.</span>
+
+<span class="sd">        :param dt_arr: time steps vector</span>
+<span class="sd">        :type dt_arr: :class:`numpy.core.multiarray.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dic</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">:</span>
+            <span class="n">dic</span><span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dic</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">dic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dic</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">dic</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_masked</span><span class="p">(</span><span class="n">current_date</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns ``True`` if ``current_date`` is not in the window centered on the given calendar day (month-day). Returns</span>
+<span class="sd">        ``False``, if it enters in the window.</span>
+
+<span class="sd">        :param current_date: The date to check for inclusion in a given window.</span>
+<span class="sd">        :type current_date: :class:`datetime.datetime`</span>
+<span class="sd">        :param month: Month of the corresponding calendar day.</span>
+<span class="sd">        :type month: int</span>
+<span class="sd">        :param day: Day of the corresponding calendar day.</span>
+<span class="sd">        :type day: int</span>
+<span class="sd">        :param hour: Hour of the current day.</span>
+<span class="sd">        :type hour: int</span>
+<span class="sd">        :param window_width: Window width - must be odd.</span>
+<span class="sd">        :type window_width: int</span>
+<span class="sd">        :param only_leap_years: Option for February 29th. If ``True``, use only date from other leap years when constructing</span>
+<span class="sd">         the comparison basis.</span>
+<span class="sd">        :type only_leap_years: bool</span>
+<span class="sd">        :rtype: bool (if ``True``, the date will be masked)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">yyyy</span> <span class="o">=</span> <span class="n">current_date</span><span class="o">.</span><span class="n">year</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">day</span><span class="o">==</span><span class="mi">29</span> <span class="ow">and</span> <span class="n">month</span><span class="o">==</span><span class="mo">02</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">calendar</span><span class="o">.</span><span class="n">isleap</span><span class="p">(</span><span class="n">yyyy</span><span class="p">):</span>
+                <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span><span class="n">hour</span><span class="p">)</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+                <span class="n">toReturn</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">only_leap_years</span><span class="p">:</span>
+                    <span class="n">toReturn</span><span class="o">=</span><span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="mo">02</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="n">hour</span><span class="p">)</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+                    <span class="n">toReturn</span> <span class="o">=</span> <span class="p">(</span><span class="n">diff</span> <span class="o">&lt;</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">window_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d1</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+            <span class="c"># In the case the current date is in December and calendar day (day-month) is at the beginning of year.</span>
+            <span class="c"># For example we are looking for dates around January 2nd, and the current date is 31 Dec 1999,</span>
+            <span class="c"># we will compare it with 02 Jan 2000 (1999 + 1)</span>
+            <span class="n">d2</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+            <span class="c"># In the case the current date is in January and calendar day (day-month) is at the end of year.</span>
+            <span class="c"># For example we are looking for dates around December 31st, and the current date is 02 Jan 2003,</span>
+            <span class="c"># we will compare it with 01 Jan 2002 (2003 - 1)</span>
+            <span class="n">d3</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">yyyy</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">month</span><span class="p">,</span><span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+            <span class="n">diff</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d1</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d2</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">current_date</span><span class="o">-</span><span class="n">d3</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+            <span class="n">toReturn</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="n">window_width</span><span class="o">/</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">toReturn</span>
+
+    <span class="k">def</span> <span class="nf">get_mask_dt_arr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt_arr</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a binary mask for a datetime vector for a given calendar day (month-day).</span>
+
+<span class="sd">        :param dt_arr: Time steps vector.</span>
+<span class="sd">        :type dt_arr: :class:`numpy.ndarray` (1D) of :class:`datetime.datetime` objects</span>
+<span class="sd">        :param month: Month of a calendar day.</span>
+<span class="sd">        :type month: int</span>
+<span class="sd">        :param day: Day of a calendar day.</span>
+<span class="sd">        :type day: int</span>
+<span class="sd">        :param window_width: Window width - must be odd.</span>
+<span class="sd">        :type window_width: int</span>
+<span class="sd">        :param only_leap_years: Option for February 29th. If ``True``, use only leap years when constructing the basis.</span>
+<span class="sd">        :type only_leap_years: bool</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` (1D)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">get_masked</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">dt_hour</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">only_leap_years</span><span class="p">)</span> <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">mask</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_year_list</span><span class="p">(</span><span class="n">dt_arr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Just to get a list of all years conteining in time steps vector (dt_arr).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">year_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_arr</span><span class="p">:</span>
+            <span class="n">year_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+
+        <span class="n">year_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">year_list</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">year_list</span>
+
+
+
 <div class="viewcode-block" id="FrequencyPercentile"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.FrequencyPercentile">[docs]</a><span class="k">class</span> <span class="nc">FrequencyPercentile</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">,</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractParameterizedFunction</span><span class="p">):</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;freq_perc&#39;</span>
     <span class="n">parms_definition</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;percentile&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">}</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;The percentile value along the time axis. See: http://docs.scipy.org/doc/numpy-dev/reference/generated/numpy.percentile.html.&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;frequency_percentile&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Frequency Percentile&#39;</span>
     
@@ -190,7 +412,7 @@
 <div class="viewcode-block" id="Max"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Max">[docs]</a><span class="k">class</span> <span class="nc">Max</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Max value for the series.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;max&#39;</span>
     
@@ -201,7 +423,7 @@
 <div class="viewcode-block" id="Min"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Min">[docs]</a><span class="k">class</span> <span class="nc">Min</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Min value for the series.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;min&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;min&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Min&#39;</span>
     
@@ -212,7 +434,7 @@
 <div class="viewcode-block" id="Mean"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Mean">[docs]</a><span class="k">class</span> <span class="nc">Mean</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute mean value of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;mean&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;mean&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Mean&#39;</span>
     
@@ -223,7 +445,7 @@
 <div class="viewcode-block" id="Median"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.Median">[docs]</a><span class="k">class</span> <span class="nc">Median</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute median value of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;median&#39;</span>
     
@@ -234,7 +456,7 @@
 <div class="viewcode-block" id="StandardDeviation"><a class="viewcode-back" href="../../../../computation.html#ocgis.calc.library.statistics.StandardDeviation">[docs]</a><span class="k">class</span> <span class="nc">StandardDeviation</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractUnivariateSetFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Compute standard deviation of the set.&#39;</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;std&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;standard_deviation&#39;</span>
     <span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;Standard Deviation&#39;</span>
     
@@ -267,7 +489,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>

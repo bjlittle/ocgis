@@ -6,8 +6,8 @@ Python API
 
 Additional information on keyword arguments can be found below the initial documentation in the `Detailed Argument Information`_ section.
 
-:mod:`ocgis.env`
-================
+Environment/Global Parameters
+=============================
 
 These are global parameters used by OpenClimateGIS. For those familiar with :mod:`arcpy` programming, this behaves similarly to the :mod:`arcpy.env` module. Any :mod:`ocgis.env` variable be overloaded with system environment variables by setting `OCGIS_<variable-name>`.
 
@@ -21,6 +21,9 @@ These are global parameters used by OpenClimateGIS. For those familiar with :mod
 
 :attr:`env.DIR_SHPCABINET` = <path-to-directory>
  Location of the shapefile directory for use by :class:`~ocgis.ShpCabinet`.
+
+:attr:`env.MELTED` = ``False``
+ If ``True``, use a melted tabular format with all variable values collected in a single column.
 
 :attr:`env.OVERWRITE` = ``False``
  .. warning:: Use with caution.
@@ -39,8 +42,8 @@ These are global parameters used by OpenClimateGIS. For those familiar with :mod
 :attr:`env.VERBOSE` = ``False``
  Indicate if additional output information should be printed to terminal.
 
-:class:`ocgis.OcgOperations`
-============================
+Operations API (:class:`ocgis.OcgOperations`)
+=============================================
 
 .. autoclass:: ocgis.OcgOperations
    :members: execute, get_base_request_size
@@ -53,7 +56,10 @@ Additional information on arguments are found in their respective sections.
 dataset
 ~~~~~~~
 
-A `dataset` is the target file(s) where data is stored. A `dataset` may be on the local machine or network location accessible by the software. Unsecured OpenDAP datasets may also be accessed.
+A ``dataset`` is the target file(s) or object(s) containing data to process. A ``dataset`` may be:
+ 1. A file on the local machine or network location accessible by the software (use :class:`~ocgis.RequestDataset` or :class:`~ocgis.RequestDatasetCollection`).
+ 2. A URL to an unsecured OpenDAP dataset (use :class:`~ocgis.RequestDataset` or :class:`~ocgis.RequestDatasetCollection`).
+ 3. An OpenClimateGIS field object (use :class:`~Field` or :class:`~ocgis.RequestDatasetCollection`). If a :class:`~ocgis.Field` object is used, be aware operations may modify the object inplace.
 
 .. autoclass:: ocgis.RequestDataset
    :members: inspect, inspect_as_dct
@@ -81,9 +87,11 @@ Value                    Description
 geom
 ~~~~
 
-If a geometry(s) is provided, it is used to subset `every` :class:`ocgis.RequestDataset` object. Again, supplying a value of `None` (the default) results in the return of the entire spatial domain. Any shapefiles used for subsetting must include a unique integer attribute called `UGID` and have a WGS84 latitude/longitude geographic coordinate system.
+.. warning:: Subsetting with multiple geometries to netCDF will result in :ref:`agg_selection` being set to ``True``. Indexing multiple geometries using netCDF-CF convention is currently not possible.
 
-There are a number of ways to parameterize the `geom` keyword argument:
+If a geometry(s) is provided, it is used to subset `every` :class:`ocgis.RequestDataset` object. Supplying a value of ``None`` (the default) results in the return of the entire spatial domain. Any shapefiles used for subsetting must include a unique integer attribute matching the value of :attr:`ocgis.constants.ocgis_unique_geometry_identifier` and have a WGS84 latitude/longitude geographic coordinate system. If an ESRI Shapefile is being accessed and the file does not contain the unique identifier, the function :func:`~ocgis.util.helpers.add_shapefile_unique_identifier` may be used to add the appropriate unique identifier attribute.
+
+There are a number of ways to parameterize the ``geom`` keyword argument:
 
 1. Bounding Box
 
@@ -162,7 +170,7 @@ calc_grouping
 
 There are three forms for this argument:
 
-1. **Date Part Grouping**: Any combination of 'day', 'month', and 'year'.
+1. **Date Part Grouping**: Any combination of ``'day'``, ``'month'``, and ``'year'``.
 
 >>> calc_grouping = ['day']
 >>> calc_grouping = ['month','year']
@@ -176,27 +184,27 @@ Any temporal aggregation applied to a dataset should be consistent with the inpu
 
 >>> calc_grouping = 'all'
 
-3. **Seasonal Groups**: A sequence of integer sequences. Element sequences must be mutually exclusive (i.e. no repeated integers). Representatative times for the climatology are chosen as the center month in a sequence (i.e. January in the sequence [12,1,2]).
+3. **Seasonal Groups**: A sequence of integer sequences. Element sequences must be mutually exclusive (i.e. no repeated integers). Representative times for the climatology are chosen as the center month in a sequence (i.e. January in the sequence [12,1,2]).
 
 Month integers map as expected (1=January, 2=February, etc.). The example below constructs a single season composed of March, April, and May. Note the nested lists.
 
->>> calc_grouping = [[3,4,5]]
+>>> calc_grouping = [[3, 4, 5]]
 
 The next example consumes all the months in a year.
 
->>> calc_grouping = [[12,1,2],[3,4,5],[6,7,8],[9,10,11]]
+>>> calc_grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]]
 
-Unique, time sequential seasons are possible with the `'unique'` flag:
+Unique, time sequential seasons are possible with the ``'unique'`` flag:
 
->>> calc_grouping = [[12,1,2],'unique']
+>>> calc_grouping = [[12, 1, 2], 'unique']
 
-For example, this returns a calculation based on values with date coordinates in:
+A *unique* season has at least one value associated with each month in the season. If a month is missing, the season will be dropped. The season specification above returns a calculation based on values with date coordinates in:
  * Dec 1900, Jan 1901, Feb 1901
  * Dec 1901, Jan 1902, Feb 1902
 
 It is also possible to group the seasons by year.
 
->>> calc_grouping = [[12,1,2],[3,4,5],[6,7,8],[9,10,11],'year']
+>>> calc_grouping = [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], 'year']
 
 For example, this returns a calculation based on values with date coordinates in:
  * 1900: Dec, Jan, Feb
@@ -239,8 +247,8 @@ snippet
 ====================== ===========================================================================
 Value                  Description
 ====================== ===========================================================================
-`True`                 Return only the first time point and the first level slice (if applicable).
-`False` (default)      Return all data.
+``True``               Return only the first time point and the first level slice (if applicable).
+``False`` (default)    Return all data.
 ====================== ===========================================================================
 
 .. _output_format_headline:
@@ -248,26 +256,29 @@ Value                  Description
 output_format
 ~~~~~~~~~~~~~
 
-====================== ===============================================================================================
-Value                  Description
-====================== ===============================================================================================
-`numpy` (default)      Return a `ocgis.SpatialCollection` with keys matching `ugid` (see `geom`_).
-`shp`                  A shapefile representation of the data.
-`csv`                  A CSV file representation of the data.
-`csv+`                 In addition to a CSV representation, shapefiles with primary key links to the CSV are provided.
-`nc`                   A NetCDF4 file.
-`geojson`              A GeoJSON representation of the data.
-====================== ===============================================================================================
+=============================== ============================================================================================================================================
+Value                           Description
+=============================== ============================================================================================================================================
+``'numpy'`` (default)           Return a :class:`~ocgis.SpatialCollection` with keys matching `ugid` (see `geom`_).
+``'shp'``                       A shapefile representation of the data.
+``'csv'``                       A CSV file representation of the data.
+``'csv-shp'``                   In addition to a CSV representation, shapefiles with primary key links to the CSV are provided.
+``'nc'``                        A NetCDF4-CF file.
+``'geojson'``                   A GeoJSON representation of the data.
+``'nc-ugrid-2d-flexible-mesh'`` A flexible mesh representation. See :ref:`2d-flexible-mesh-label` for more details and :ref:`2d-flexible-mesh-example-label` for an example.
+=============================== ============================================================================================================================================
+
+.. _agg_selection:
 
 agg_selection
 ~~~~~~~~~~~~~
 
-================= ===============================================
-Value             Description
-================= ===============================================
-`True`            Aggregate (union) `geom`_ to a single geometry.
-`False` (default) Leave `geom`_ as is.
-================= ===============================================
+=================== ===============================================
+Value               Description
+=================== ===============================================
+``True``            Aggregate (union) `geom`_ to a single geometry.
+``False`` (default) Leave `geom`_ as is.
+=================== ===============================================
 
 The purpose of this data manipulation is to ease the method required to aggregate (union) geometries into arbitrary regions. A simple example would be unioning the U.S. state boundaries of Utah, Nevada, Arizona, and New Mexico into a single polygon representing a "Southwestern Region".
 

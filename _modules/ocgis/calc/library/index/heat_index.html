@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>ocgis.calc.library.index.heat_index &mdash; OpenClimateGIS 1.0.1 documentation</title>
+    <title>ocgis.calc.library.index.heat_index &mdash; OpenClimateGIS 1.0.1-next documentation</title>
     
     <link rel="stylesheet" href="../../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../../',
-        VERSION:     '1.0.1',
+        VERSION:     '1.0.1-next',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,14 +26,14 @@
     <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="OpenClimateGIS 1.0.1 documentation" href="../../../../../index.html" />
+    <link rel="top" title="OpenClimateGIS 1.0.1-next documentation" href="../../../../../index.html" />
     <link rel="up" title="ocgis" href="../../../../ocgis.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" accesskey="U">ocgis</a> &raquo;</li> 
       </ul>
@@ -45,14 +45,15 @@
           <div class="body">
             
   <h1>Source code for ocgis.calc.library.index.heat_index</h1><div class="highlight"><pre>
-<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">ocgis.calc</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">from</span> <span class="nn">ocgis</span> <span class="kn">import</span> <span class="n">constants</span>
 
 
 <div class="viewcode-block" id="HeatIndex"><a class="viewcode-back" href="../../../../../computation.html#ocgis.calc.library.index.heat_index.HeatIndex">[docs]</a><span class="k">class</span> <span class="nc">HeatIndex</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">AbstractMultivariateFunction</span><span class="p">):</span>
     <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Heat Index following: http://en.wikipedia.org/wiki/Heat_index. If temperature is &lt; 80F or relative humidity is &lt; 40%, the value is masked during calculation. Output units are Fahrenheit.&#39;</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">np_float</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">NP_FLOAT</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;tas&#39;</span><span class="p">,</span><span class="s">&#39;rhs&#39;</span><span class="p">]</span>
     <span class="n">required_units</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;tas&#39;</span><span class="p">:</span><span class="s">&#39;fahrenheit&#39;</span><span class="p">,</span><span class="s">&#39;rhs&#39;</span><span class="p">:</span><span class="s">&#39;percent&#39;</span><span class="p">}</span>
     <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;heat_index&#39;</span>
@@ -110,7 +111,7 @@
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1 documentation</a> &raquo;</li>
+        <li><a href="../../../../../index.html">OpenClimateGIS 1.0.1-next documentation</a> &raquo;</li>
           <li><a href="../../../../index.html" >Module code</a> &raquo;</li>
           <li><a href="../../../../ocgis.html" >ocgis</a> &raquo;</li> 
       </ul>
