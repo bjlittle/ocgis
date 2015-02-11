@@ -426,11 +426,15 @@ class TestRequestDataset(TestBase):
 
     def test_inspect(self):
         rd = RequestDataset(self.uri, self.variable)
-        rd.inspect()
+        with self.print_scope() as ps:
+            rd.inspect()
+        self.assertTrue(len(ps.storage) >= 1)
 
         uri = ShpCabinet().get_shp_path('state_boundaries')
         rd = RequestDataset(uri=uri, driver='vector')
-        str(rd.inspect())
+        with self.print_scope() as ps:
+            rd.inspect()
+        self.assertTrue(len(ps.storage) >= 1)
 
     def test_inspect_as_dct(self):
         variables = [

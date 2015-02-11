@@ -19,8 +19,7 @@ class TestOcgisLogging(TestBase):
         self.assertFalse(ocgis_lh.suppress_warnings)
 
     def test_call(self):
-        # todo:1 option to suppress warnings
-        # todo:1 add environment variable for suppressing warnings
+        # todo:1 add environment variable for suppressing warnings - this should default to true
         # test warning is logged to the terminal
         self.assertTrue(ocgis_lh.null)
 
