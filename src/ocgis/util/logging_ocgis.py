@@ -9,8 +9,7 @@ fiona_logger.setLevel(logging.ERROR)
 
 class ProgressOcgOperations(object):
     """
-    :param function callback: A function taking two parameters: ``percent_complete``
-     and ``message``.
+    :param function callback: A function taking two parameters: ``percent_complete`` ``message``.
     :param int n_subsettables: The number of data objects to subset and/or manipulate.
     :param int n_geometries: The number of geometries to use for subsetting.
     :param int n_calculations: The number of calculations to apply.
@@ -77,7 +76,7 @@ class OcgisLogging(object):
                 else:
                     self.duplicates.add(msg)
             dest_level = level or self.level
-            # # get the logger by string name
+            # get the logger by string name
             if isinstance(logger, basestring):
                 dest_logger = self.get_logger(logger)
             else:
@@ -91,33 +90,33 @@ class OcgisLogging(object):
                 raise exc
 
     def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO):
-        # # set the callback arguments
+        # set the callback arguments
         self.callback = callback
         self.callback_level = callback_level
-        ## no need to configure loggers
+        # no need to configure loggers
         if to_file is None and not to_stream:
             self.null = True
         else:
             self.level = level
             self.null = False
-            ## add the filehandler if request
+            # add the filehandler if request
             if to_file is None:
                 filename = os.devnull
             else:
                 filename = to_file
-            ## create the root logger
+            # create the root logger
             self.loggers = {}
             self.parent = logging.getLogger('ocgis')
             self.parent.parent = None
             self.parent.setLevel(level)
             self.parent.handlers = []
-            ## add the file handler
+            # add the file handler
             fh = logging.FileHandler(filename, 'w')
             fh.setLevel(level)
             fh.setFormatter(logging.Formatter(fmt='%(name)12s: %(levelname)s: %(asctime)s: %(message)s',
                                               datefmt='%Y-%m-%d %H:%M'))
             self.parent.addHandler(fh)
-            ## add the stream handler if requested
+            # add the stream handler if requested
             if to_stream:
                 console = logging.StreamHandler()
                 console.setLevel(level)
