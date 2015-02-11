@@ -427,7 +427,7 @@ class AbstractFunction(object):
         if len(self.field.variables) > 1:
             original_alias = dv.alias
             dv.alias = '{0}_{1}'.format(dv.alias, parent_variables[0].alias)
-            msg = 'Alias updated to maintain uniquencess Changing "{0}" to "{1}".'.format(original_alias, dv.alias)
+            msg = 'Alias updated to maintain uniqueness. Changing "{0}" to "{1}".'.format(original_alias, dv.alias)
             ocgis_lh(logger='calc.base', level=logging.WARNING, msg=msg)
 
 
