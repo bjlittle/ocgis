@@ -1,5 +1,6 @@
 import logging
 import os
+from warnings import warn
 
 
 # try to turn off fiona logging except for errors
@@ -57,6 +58,12 @@ class OcgisLogging(object):
     def __call__(self, msg=None, logger=None, level=logging.INFO, alias=None, ugid=None, exc=None,
                  check_duplicate=False):
 
+        # attach a default exception to messages to handle warnings if an exception is not provided
+        if level == logging.WARN:
+            if exc is None:
+                exc = RuntimeWarning(msg)
+            warn(exc)
+
         if self.callback is not None and self.callback_level <= level:
             if msg is not None:
                 self.callback(msg)
@@ -65,14 +72,14 @@ class OcgisLogging(object):
                 self.callback(callback_msg)
 
         if self.null:
-            if exc is None:
+            if exc is None or level == logging.WARN:
                 pass
             else:
                 raise exc
         else:
             if check_duplicate:
                 if msg in self.duplicates:
-                    return ()
+                    return
                 else:
                     self.duplicates.add(msg)
             dest_level = level or self.level
@@ -86,8 +93,12 @@ class OcgisLogging(object):
             if exc is None:
                 dest_logger.log(dest_level, msg)
             else:
-                dest_logger.exception(msg)
-                raise exc
+                if level == logging.WARN:
+                    wmsg = '{0}: {1}'.format(exc.__class__.__name__, exc.message)
+                    dest_logger.warn(wmsg)
+                else:
+                    dest_logger.exception(msg)
+                    raise exc
 
     def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO):
         # set the callback arguments

@@ -5,11 +5,11 @@ import os
 import pickle
 import shutil
 import numpy as np
+from datetime import datetime as dt
+import datetime
 
 from cfunits.cfunits import Units
 
-from datetime import datetime as dt
-import datetime
 from ocgis.api.request.driver.nc import DriverNetcdf
 from ocgis.api.request.driver.vector import DriverVector
 from ocgis.util.shp_cabinet import ShpCabinet
@@ -496,7 +496,10 @@ class TestRequestDataset(TestBase):
     def test_multiple_uris(self):
         rd = self.test_data.get_rd('narccap_pr_wrfg_ncep')
         self.assertEqual(len(rd.uri), 2)
-        rd.inspect()
+
+        with self.print_scope() as ps:
+            rd.inspect()
+        self.assertTrue(len(ps.storage) >= 1)
 
     def test_time_region(self):
         tr1 = {'month': [6], 'year': [2001]}

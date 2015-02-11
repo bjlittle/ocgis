@@ -70,6 +70,94 @@ class TestOcgisLogging(TestBase):
         ocgis_lh.shutdown()
         TestBase.tearDown(self)
 
+    def test_call(self):
+        # todo:1 option to suppress warnings
+        # test warning is logged to the terminal
+        self.assertTrue(ocgis_lh.null)
+
+        def _run_():
+            ocgis_lh.configure()
+            ocgis_lh(level=logging.WARNING, exc=RuntimeWarning('show me'))
+
+        self.assertWarns(RuntimeWarning, _run_)
+
+        # test warning is logged to the terminal and also logged to file
+        ocgis_lh.shutdown()
+
+        def _run_():
+            logpath = self.get_temporary_file_path('ocgis.log')
+            ocgis_lh.configure(to_file=logpath)
+            exc = FutureWarning('something is about to happen')
+            ocgis_lh(level=logging.WARNING, exc=exc)
+            with open(logpath, 'r') as f:
+                lines = f.readlines()
+                lines = ''.join(lines)
+            self.assertIn('FutureWarning', lines)
+            self.assertIn('something is about to happen', lines)
+
+        self.assertWarns(FutureWarning, _run_)
+
+        # test a warning without an exception
+        ocgis_lh.shutdown()
+
+        def _run_():
+            logpath = self.get_temporary_file_path('foo.log')
+            ocgis_lh.configure(to_file=logpath)
+            ocgis_lh(msg='hey there', level=logging.WARN)
+
+        self.assertWarns(RuntimeWarning, _run_)
+
+    def test_combinations(self):
+
+        def _run_():
+            _to_stream = [
+                # True,
+                False
+            ]
+            _to_file = [
+                os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log'),
+                None
+            ]
+            _level = [logging.INFO, logging.DEBUG, logging.WARN]
+            for ii, (to_file, to_stream, level) in enumerate(itertools.product(_to_file, _to_stream, _level)):
+                ocgis_lh.configure(to_file=to_file, to_stream=to_stream, level=level)
+                try:
+                    ocgis_lh(ii)
+                    ocgis_lh('a test message')
+                    subset = ocgis_lh.get_logger('subset')
+                    interp = ocgis_lh.get_logger('interp')
+                    ocgis_lh('a subset message', logger=subset)
+                    ocgis_lh('an interp message', logger=interp)
+                    ocgis_lh('a general message', alias='foo', ugid=10)
+                    ocgis_lh('another message', level=level)
+                    if to_file is not None:
+                        self.assertTrue(os.path.exists(to_file))
+                        os.remove(to_file)
+                finally:
+                    logging.shutdown()
+
+        self.assertWarns(RuntimeWarning, _run_)
+
+    def test_exc(self):
+        to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
+        to_stream = False
+        ocgis_lh.configure(to_file=to_file, to_stream=to_stream)
+        try:
+            raise (ValueError('some exception information'))
+        except Exception as e:
+            with self.assertRaises(ValueError):
+                ocgis_lh('something happened', exc=e)
+
+    def test_simple(self):
+        to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
+        to_stream = False
+
+        ocgis_lh.configure(to_file, to_stream)
+
+        ocgis_lh('a test message')
+        subset = ocgis_lh.get_logger('subset')
+        subset.info('a subset message')
+
     def test_with_callback(self):
         fp = get_temp_path(wd=self.current_dir_output)
 
@@ -96,59 +184,16 @@ class TestOcgisLogging(TestBase):
         self.assertEqual(lines, ['this is a test message\n', 'this is a second test message\n',
                                  'FooError: foo message for value error\n'])
 
-    def test_simple(self):
-        to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
-        to_stream = False
-
-        ocgis_lh.configure(to_file, to_stream)
-
-        ocgis_lh('a test message')
-        subset = ocgis_lh.get_logger('subset')
-        subset.info('a subset message')
-
-    def test_combinations(self):
-        _to_stream = [
-            # True,
-            False
-        ]
-        _to_file = [
-            os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log'),
-            None
-        ]
-        _level = [logging.INFO, logging.DEBUG, logging.WARN]
-        for ii, (to_file, to_stream, level) in enumerate(itertools.product(_to_file, _to_stream, _level)):
-            ocgis_lh.configure(to_file=to_file, to_stream=to_stream, level=level)
-            try:
-                ocgis_lh(ii)
-                ocgis_lh('a test message')
-                subset = ocgis_lh.get_logger('subset')
-                interp = ocgis_lh.get_logger('interp')
-                ocgis_lh('a subset message', logger=subset)
-                ocgis_lh('an interp message', logger=interp)
-                ocgis_lh('a general message', alias='foo', ugid=10)
-                ocgis_lh('another message', level=level)
-                if to_file is not None:
-                    self.assertTrue(os.path.exists(to_file))
-                    os.remove(to_file)
-            finally:
-                logging.shutdown()
-
-    def test_exc(self):
-        to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
-        to_stream = False
-        ocgis_lh.configure(to_file=to_file, to_stream=to_stream)
-        try:
-            raise (ValueError('some exception information'))
-        except Exception as e:
-            with self.assertRaises(ValueError):
-                ocgis_lh('something happened', exc=e)
-
     def test_writing(self):
-        rd = self.test_data.get_rd('cancm4_tas')
-        ops = ocgis.OcgOperations(dataset=rd, snippet=True, output_format='csv')
-        ret = ops.execute()
-        folder = os.path.split(ret)[0]
-        log = os.path.join(folder, ops.prefix + '.log')
-        with open(log) as f:
-            lines = f.readlines()
-            self.assertTrue(len(lines) >= 4)
+
+        def _run_():
+            rd = self.test_data.get_rd('cancm4_tas')
+            ops = ocgis.OcgOperations(dataset=rd, snippet=True, output_format='csv')
+            ret = ops.execute()
+            folder = os.path.split(ret)[0]
+            log = os.path.join(folder, ops.prefix + '.log')
+            with open(log) as f:
+                lines = f.readlines()
+                self.assertTrue(len(lines) >= 4)
+
+        self.assertWarns(RuntimeWarning, _run_)

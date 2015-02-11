@@ -10,8 +10,10 @@ import os
 from collections import OrderedDict
 import netCDF4 as nc
 import numpy as np
-
 import datetime
+import sys
+import warnings
+
 from ocgis.api.collection import SpatialCollection
 from ocgis.interface.base.field import Field
 from ocgis.interface.base.dimension.spatial import SpatialGridDimension, SpatialDimension
@@ -306,6 +308,12 @@ class TestBase(unittest.TestCase):
         else:
             raise AssertionError('Arrays are equivalent within precision.')
 
+    def assertWarns(self, warning, meth):
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter('always')
+            meth()
+            self.assertTrue(any(item.category == warning for item in warning_list))
+
     def get_esmf_field(self, **kwargs):
         """
         :keyword field: (``=None``) The field object. If ``None``, call :meth:`~ocgis.test.base.TestBase.get_field`
@@ -528,6 +536,9 @@ class TestBase(unittest.TestCase):
     def nc_scope(self, *args, **kwargs):
         return nc_scope(*args, **kwargs)
 
+    def print_scope(self):
+        return print_scope()
+
     def setUp(self):
         self.current_dir_output = None
         if self.reset_env:
@@ -702,7 +713,23 @@ def nc_scope(path, mode='r', format=None):
     ds = nc.Dataset(path, **kwds)
     try:
         yield ds
-    except:
-        raise
     finally:
         ds.close()
+
+
+@contextmanager
+def print_scope():
+    class MyPrinter(object):
+        def __init__(self):
+            self.storage = []
+
+        def write(self, msg):
+            self.storage.append(msg)
+
+    prev_stdout = sys.stdout
+    try:
+        myprinter = MyPrinter()
+        sys.stdout = myprinter
+        yield myprinter
+    finally:
+        sys.stdout = prev_stdout
