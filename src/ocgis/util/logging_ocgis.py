@@ -54,6 +54,7 @@ class OcgisLogging(object):
         self.duplicates = set()
         self.callback = None
         self.callback_level = None
+        self.loggers = None
 
     def __call__(self, msg=None, logger=None, level=logging.INFO, alias=None, ugid=None, exc=None,
                  check_duplicate=False):
@@ -61,7 +62,7 @@ class OcgisLogging(object):
         # attach a default exception to messages to handle warnings if an exception is not provided
         if level == logging.WARN:
             if exc is None:
-                exc = RuntimeWarning(msg)
+                exc = UserWarning(msg)
             warn(exc)
 
         if self.callback is not None and self.callback_level <= level:

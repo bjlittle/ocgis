@@ -105,7 +105,7 @@ class TestOcgisLogging(TestBase):
             ocgis_lh.configure(to_file=logpath)
             ocgis_lh(msg='hey there', level=logging.WARN)
 
-        self.assertWarns(RuntimeWarning, _run_)
+        self.assertWarns(UserWarning, _run_)
 
     def test_combinations(self):
 
@@ -136,7 +136,7 @@ class TestOcgisLogging(TestBase):
                 finally:
                     logging.shutdown()
 
-        self.assertWarns(RuntimeWarning, _run_)
+        self.assertWarns(UserWarning, _run_)
 
     def test_exc(self):
         to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
@@ -196,4 +196,4 @@ class TestOcgisLogging(TestBase):
                 lines = f.readlines()
                 self.assertTrue(len(lines) >= 4)
 
-        self.assertWarns(RuntimeWarning, _run_)
+        self.assertWarns(UserWarning, _run_)
