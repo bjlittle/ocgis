@@ -4,6 +4,8 @@ from warnings import warn
 
 
 # try to turn off fiona logging except for errors
+from ocgis.exc import OcgWarning
+
 fiona_logger = logging.getLogger('Fiona')
 fiona_logger.setLevel(logging.ERROR)
 
@@ -62,7 +64,7 @@ class OcgisLogging(object):
         # attach a default exception to messages to handle warnings if an exception is not provided
         if level == logging.WARN:
             if exc is None:
-                exc = UserWarning(msg)
+                exc = OcgWarning(msg)
             warn(exc)
 
         if self.callback is not None and self.callback_level <= level:

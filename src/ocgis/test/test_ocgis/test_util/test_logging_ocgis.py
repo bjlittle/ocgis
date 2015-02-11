@@ -2,67 +2,12 @@ import os
 import itertools
 import logging
 
+from ocgis.exc import OcgWarning
 from ocgis.test.base import TestBase
 from ocgis.util.logging_ocgis import ocgis_lh, ProgressOcgOperations
 from ocgis import env
 import ocgis
 from ocgis.util.helpers import get_temp_path
-
-
-class TestProgressOcgOperations(TestBase):
-    def test_constructor(self):
-        prog = ProgressOcgOperations(lambda x, y: (x, y))
-        self.assertEqual(prog.n_operations, 1)
-        self.assertEqual(prog.n_completed_operations, 0)
-
-    def test_simple(self):
-        n_geometries = 3
-        n_calculations = 3
-
-        def callback(percent, message):
-            return percent, message
-
-        for cb in [callback, None]:
-            prog = ProgressOcgOperations(callback=cb, n_geometries=n_geometries, n_calculations=n_calculations)
-            n_operations = 9
-            self.assertEqual(prog.n_operations, n_operations)
-            prog.mark()
-            if cb is None:
-                self.assertEqual(prog.percent_complete, 100 * (1 / float(n_operations)))
-                self.assertEqual(prog(), None)
-            else:
-                self.assertEqual(prog(), (100 * (1 / float(n_operations)), None))
-            prog.mark()
-            if cb is None:
-                self.assertEqual(prog.percent_complete, (100 * (2 / float(n_operations))))
-            else:
-                self.assertEqual(prog(message='hi'), (100 * (2 / float(n_operations)), 'hi'))
-
-    def test_hypothetical_operations_loop(self):
-
-        def callback(percent, message):
-            return percent, message
-
-        n = [0, 1, 2]
-        for n_subsettables, n_geometries, n_calculations in itertools.product(n, n, n):
-            try:
-                prog = ProgressOcgOperations(callback,
-                                             n_subsettables=n_subsettables,
-                                             n_geometries=n_geometries,
-                                             n_calculations=n_calculations)
-            except AssertionError:
-                if n_geometries == 0 or n_subsettables == 0:
-                    continue
-                else:
-                    raise
-
-            for ns in range(n_subsettables):
-                for ng in range(n_geometries):
-                    for nc in range(n_calculations):
-                        prog.mark()
-                    if n_calculations == 0:
-                        prog.mark()
-            self.assertEqual(prog(), (100.0, None))
 
 
 class TestOcgisLogging(TestBase):
@@ -105,7 +50,7 @@ class TestOcgisLogging(TestBase):
             ocgis_lh.configure(to_file=logpath)
             ocgis_lh(msg='hey there', level=logging.WARN)
 
-        self.assertWarns(UserWarning, _run_)
+        self.assertWarns(OcgWarning, _run_)
 
     def test_combinations(self):
 
@@ -136,7 +81,7 @@ class TestOcgisLogging(TestBase):
                 finally:
                     logging.shutdown()
 
-        self.assertWarns(UserWarning, _run_)
+        self.assertWarns(OcgWarning, _run_)
 
     def test_exc(self):
         to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')
@@ -196,4 +141,60 @@ class TestOcgisLogging(TestBase):
                 lines = f.readlines()
                 self.assertTrue(len(lines) >= 4)
 
-        self.assertWarns(UserWarning, _run_)
+        self.assertWarns(OcgWarning, _run_)
+
+
+class TestProgressOcgOperations(TestBase):
+    def test_constructor(self):
+        prog = ProgressOcgOperations(lambda x, y: (x, y))
+        self.assertEqual(prog.n_operations, 1)
+        self.assertEqual(prog.n_completed_operations, 0)
+
+    def test_simple(self):
+        n_geometries = 3
+        n_calculations = 3
+
+        def callback(percent, message):
+            return percent, message
+
+        for cb in [callback, None]:
+            prog = ProgressOcgOperations(callback=cb, n_geometries=n_geometries, n_calculations=n_calculations)
+            n_operations = 9
+            self.assertEqual(prog.n_operations, n_operations)
+            prog.mark()
+            if cb is None:
+                self.assertEqual(prog.percent_complete, 100 * (1 / float(n_operations)))
+                self.assertEqual(prog(), None)
+            else:
+                self.assertEqual(prog(), (100 * (1 / float(n_operations)), None))
+            prog.mark()
+            if cb is None:
+                self.assertEqual(prog.percent_complete, (100 * (2 / float(n_operations))))
+            else:
+                self.assertEqual(prog(message='hi'), (100 * (2 / float(n_operations)), 'hi'))
+
+    def test_hypothetical_operations_loop(self):
+
+        def callback(percent, message):
+            return percent, message
+
+        n = [0, 1, 2]
+        for n_subsettables, n_geometries, n_calculations in itertools.product(n, n, n):
+            try:
+                prog = ProgressOcgOperations(callback,
+                                             n_subsettables=n_subsettables,
+                                             n_geometries=n_geometries,
+                                             n_calculations=n_calculations)
+            except AssertionError:
+                if n_geometries == 0 or n_subsettables == 0:
+                    continue
+                else:
+                    raise
+
+            for ns in range(n_subsettables):
+                for ng in range(n_geometries):
+                    for nc in range(n_calculations):
+                        prog.mark()
+                    if n_calculations == 0:
+                        prog.mark()
+            self.assertEqual(prog(), (100.0, None))
