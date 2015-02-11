@@ -15,8 +15,12 @@ class TestOcgisLogging(TestBase):
         ocgis_lh.shutdown()
         TestBase.tearDown(self)
 
+    def test_init(self):
+        self.assertFalse(ocgis_lh.suppress_warnings)
+
     def test_call(self):
         # todo:1 option to suppress warnings
+        # todo:1 add environment variable for suppressing warnings
         # test warning is logged to the terminal
         self.assertTrue(ocgis_lh.null)
 
@@ -52,6 +56,22 @@ class TestOcgisLogging(TestBase):
 
         self.assertWarns(OcgWarning, _run_)
 
+        # test suppressing warnings
+        ocgis_lh.shutdown()
+
+        def _run_():
+            logpath = self.get_temporary_file_path('foo.log')
+            ocgis_lh.configure(to_file=logpath, suppress_warnings=True)
+            ocgis_lh(msg='oh my', level=logging.WARN)
+            with open(logpath, 'r') as f:
+                lines = f.readlines()
+                lines = ''.join(lines)
+            self.assertIn('OcgWarning', lines)
+            self.assertIn('oh my', lines)
+
+        with self.assertRaises(AssertionError):
+            self.assertWarns(OcgWarning, _run_)
+
     def test_combinations(self):
 
         def _run_():
@@ -82,6 +102,13 @@ class TestOcgisLogging(TestBase):
                     logging.shutdown()
 
         self.assertWarns(OcgWarning, _run_)
+
+    def test_configure(self):
+        # test suppressing warnings in the logger
+        ocgis_lh.configure()
+        self.assertFalse(ocgis_lh.suppress_warnings)
+        ocgis_lh.configure(suppress_warnings=True)
+        self.assertTrue(ocgis_lh.suppress_warnings)
 
     def test_exc(self):
         to_file = os.path.join(env.DIR_OUTPUT, 'test_ocgis_log.log')

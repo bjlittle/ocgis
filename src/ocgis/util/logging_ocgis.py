@@ -57,6 +57,7 @@ class OcgisLogging(object):
         self.callback = None
         self.callback_level = None
         self.loggers = None
+        self.suppress_warnings = False
 
     def __call__(self, msg=None, logger=None, level=logging.INFO, alias=None, ugid=None, exc=None,
                  check_duplicate=False):
@@ -65,7 +66,8 @@ class OcgisLogging(object):
         if level == logging.WARN:
             if exc is None:
                 exc = OcgWarning(msg)
-            warn(exc)
+            if not self.suppress_warnings:
+                warn(exc)
 
         if self.callback is not None and self.callback_level <= level:
             if msg is not None:
@@ -103,7 +105,16 @@ class OcgisLogging(object):
                     dest_logger.exception(msg)
                     raise exc
 
-    def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO):
+    def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO,
+                  suppress_warnings='default'):
+        """
+        :param bool suppress_warnings: If ``'default'``, use default initialization warning suppression. If ``True``, do
+         not print application warnings to stdout.
+        """
+
+        # use the default for suppress_warnings if none is provided
+        self.suppress_warnings = self.suppress_warnings if suppress_warnings == 'default' else suppress_warnings
+
         # set the callback arguments
         self.callback = callback
         self.callback_level = callback_level
